@@ -1,0 +1,16 @@
+generator_type: user
+
+# Control rule that described by each index
+#  1. Roll
+#  2. Pitch
+#  3. Yaw
+#  4. u, X speed
+#  5. v, Y speed
+#  6. w, Z speed
+control_allocation_matrix:
+  main:
+    [0.0, 0.0, 0.0, 1.0, 0.0, 0.0]
+  horizontal:
+    [0.0, 0.0, 0.48, 0.0, 1.0, 0.0]
+  vertical:
+    [0.0, 0.39, 0.0, 0.0, 0.0, -1.0]

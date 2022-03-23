@@ -1,0 +1,14 @@
+##
+# Control allocation matrix generator type
+#
+# Possible types: "tf" or "user"
+# Default value: "tf"
+#
+# if "matrix" is selected, control allocation matrix will
+# be generated based on "control_allocation_matrix" object
+# if "tf" is selected, control allocation matrix will be
+# generated automatically based on transform tree defined
+# in "control_tf" object.
+##
+
+# generator_type: tf

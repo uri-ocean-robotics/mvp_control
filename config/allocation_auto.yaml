@@ -1,0 +1,11 @@
+generator_type: tf
+
+
+##
+# Control Transform Tree
+##
+control_tf:
+  # Thruster links in transform tree
+  main: main_thruster_link
+  horizontal: horizontal_thruster_link
+  vertical: vertical_thruster_link

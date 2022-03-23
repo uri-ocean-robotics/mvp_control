@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<launch>
+
+    <arg name="robot_name" default="alpha"/>
+
+    <node pkg="mvp_control" type="mvp_control_ros_node" name="mvp_control" output="screen">
+        <rosparam command="load" file="$(find mvp_control)/config/allocation_auto.yaml"/>
+        <rosparam command="load" file="$(find mvp_control)/config/mappings.yaml"/>
+        <rosparam command="load" file="$(find mvp_control)/config/modes.yaml"/>
+        <rosparam command="load" file="$(find mvp_control)/config/thrusters.yaml"/>
+    </node>
+
+</launch>

@@ -1,0 +1,23 @@
+##
+# "tf_prefix" for transform tree
+# There is no default for parameter below.
+##
+tf_prefix: alpha
+
+##
+# Center of gravity link name in transform tree
+# There is no default for parameter below.
+##
+cg_link: cg_link
+
+##
+# World link
+# There is no default for parameter below.
+##
+world_link: world_ned
+
+##
+# Odometry source
+# There is no default for parameter below.
+##
+odometry_source: /odometry/filtered

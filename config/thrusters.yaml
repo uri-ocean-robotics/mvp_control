@@ -1,0 +1,64 @@
+##
+# Thruster IDs
+# Each thruster has its unique ID. These unique IDs
+# will be used for configuring them. In the rest of the
+# configuration file, those IDs must match.
+#
+# There are no defaults for parameters below.
+##
+thruster_ids:
+  - main
+  - horizontal
+  - vertical
+
+##
+# Thruster thrust command topic names.
+# Each topic should have type of std_msgs/Float64
+# Thruster command messages will be sent out to this
+# topic addresses.
+#
+# There are no defaults for parameters below.
+##
+thruster_command_topics:
+  main: control/thruster/main
+  horizontal: control/thruster/horizontal
+  vertical: control/thruster/vertical
+
+##
+# Force from each thruster
+##
+thruster_force_topics:
+  main: control/force/main
+  horizontal: control/force/horizontal
+  vertical: control/force/vertical
+
+
+##
+# Polynomials for each thruster.
+#
+# Quadratic Programming Optimization computes the thrust
+# required. We need to turn that number into thruster command.
+# Setpoint commands in this system defined between -1 and 1.
+#
+# y axis of the polynomial , f(x) = y, should be in Newton.
+#
+# Take the polynomial
+# f(x) = a_n x^n + a_(n-1) x^(n-1) + ... + a_1 x + a_0
+#
+# Array would hold the lower degrees in lower indexes. Shown below:
+# [a_0, a_1, ... ,a_(n-1), a(n)]
+#
+# For T200 bluerobotics thrusters:
+#   f(x) = a5*x^5 + a4*x^4 + a3*x^3 + a2*x^2 + a1*x + a0
+# Curve fitting results:
+#   a0 =      0.06165
+#   a1 =      20.32
+#   a2 =      9.632
+#   a3 =      93.05
+#   a4 =      -2.856
+#   a5 =      -74.1
+##
+thruster_polynomials:
+  main:       [0.06165, 20.32, 9.632, 93.05, -2.856, -74.1]
+  horizontal: [0.06165, 20.32, 9.632, 93.05, -2.856, -74.1]
+  vertical:   [0.06165, 20.32, 9.632, 93.05, -2.856, -74.1]
