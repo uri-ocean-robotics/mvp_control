@@ -1,20 +1,25 @@
 #pragma once
 
-// Boost
-#include "boost/thread/recursive_mutex.hpp"
-#include "boost/shared_ptr.hpp"
-#include "boost/function.hpp"
-
-// Eigen
+/*******************************************************************************
+ * Eigen
+ */
 #include "Eigen/Dense"
 
-// Quadratic Solver
+/*******************************************************************************
+ * Quadratic Solver
+ */
 #include "osqp++.h"
 
-// STD
+/*******************************************************************************
+ * STD
+ */
 #include "vector"
+#include "mutex"
+#include "functional"
 
-// Project
+/*******************************************************************************
+ * MVP
+ */
 #include "mimo_pid.h"
 
 namespace ctrl {
@@ -74,16 +79,16 @@ namespace ctrl {
             Eigen::ArrayXd desired, Eigen::ArrayXd current);
 
         //! @brief Mutex lock for protect allocation matrix during changes
-        boost::recursive_mutex m_allocation_matrix_lock;
+        std::recursive_mutex m_allocation_matrix_lock;
 
         //! @brief Mutex lock for protect controlled freedoms during changes
-        boost::recursive_mutex m_controlled_freedoms_lock;
+        std::recursive_mutex m_controlled_freedoms_lock;
 
         //! @brief Mutex lock for protect desired state during changes
-        boost::recursive_mutex m_desired_state_lock;
+        std::recursive_mutex m_desired_state_lock;
 
     public:
-        /** @brief Mvp Control default constructor
+        /**ns="alpha_control" @brief Mvp Control default constructor
          *
          */
         MvpControl();
@@ -105,7 +110,7 @@ namespace ctrl {
         decltype(m_control_allocation_matrix);
 
         //! @brief Standard shared pointer type
-        typedef boost::shared_ptr<MvpControl> Ptr;
+        typedef std::shared_ptr<MvpControl> Ptr;
 
         /** @brief Trivial getter for pid controller
          *

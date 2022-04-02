@@ -10,12 +10,12 @@ MvpControl::MvpControl() {
     /**
      * Initialize the error state
      */
-    m_error_state = Eigen::VectorXd(STATE_DOF_SIZE);
+    m_error_state = Eigen::VectorXd(CONTROLLABLE_DOF_LENGTH);
 
     /**
      * Create the multiple input multiple output PID controller
      */
-    m_pid = boost::make_shared<MimoPID>();
+    m_pid.reset(new MimoPID());
 
     /**
      * MIMO PID object does not implement the error function. It asks programmer
@@ -78,8 +78,7 @@ bool MvpControl::calculate_needed_forces(Eigen::VectorXd *f, double dt) {
 
     /**
      * vector 'u' represents the input values of the system. That is all degrees
-     * of freedoms. Size of the vector will change based on controllers active
-     * mode.
+     * of freedoms.
      */
     Eigen::VectorXd u;
     if(!f_calculate_pid(&u, dt)){
@@ -123,9 +122,8 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
          * sure that those variables will not change while execution is inside
          * in this scope.
          */
-        boost::recursive_mutex::scoped_lock lock_a(m_allocation_matrix_lock);
-        boost::recursive_mutex::scoped_lock lock_b(m_controlled_freedoms_lock);
-
+        std::scoped_lock lock(m_allocation_matrix_lock,
+                              m_controlled_freedoms_lock);
         /**
          * We are using a portion of the control allication matrix and the
          * control input. This is important for online mode updates.
@@ -154,6 +152,7 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
             Q_triplets.emplace_back(Eigen::Triplet<double>{i, j, Q(i,j)});
         }
     }
+
 
     // Creating a quadratic solver instance.
     osqp::OsqpInstance qp_instance;
@@ -194,10 +193,11 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     osqp::OsqpExitCode exitCode = solver.Solve();
 
     switch (exitCode) {
-        case osqp::OsqpExitCode::kOptimal:
+        case osqp::OsqpExitCode::kOptimal: {
             *t = solver.primal_solution();
             return true;
             break;
+        }
         case osqp::OsqpExitCode::kPrimalInfeasible:
             ROS_WARN_STREAM("kPrimalInfeasible");
             break;
@@ -243,9 +243,11 @@ auto MvpControl::get_state_error() -> decltype(this->m_error_state) {
     return m_error_state;
 }
 
-Eigen::ArrayXd MvpControl::f_error_function(
-        Eigen::ArrayXd desired, Eigen::ArrayXd current) {
-    boost::recursive_mutex::scoped_lock lock(m_desired_state_lock);
+Eigen::ArrayXd MvpControl::f_error_function(Eigen::ArrayXd desired,
+                                            Eigen::ArrayXd current)
+{
+
+    std::lock_guard<std::recursive_mutex> lock(m_desired_state_lock);
 
     if(desired.size() != current.size()) {
         throw control_exception(
@@ -255,9 +257,8 @@ Eigen::ArrayXd MvpControl::f_error_function(
 
     Eigen::ArrayXd error = desired - current;
 
-    for(const auto& i : std::vector<int>{
-        DOF::ROLL, DOF::PITCH, DOF::YAW
-    }) {
+    for(const auto& i : {DOF::ROLL, DOF::PITCH, DOF::YAW,
+                         DOF::ROLL_RATE, DOF::PITCH_RATE, DOF::YAW_RATE}) {
 
         // todo: wrap2pi implementation
 
@@ -276,18 +277,18 @@ Eigen::ArrayXd MvpControl::f_error_function(
 
 void MvpControl::update_control_allocation_matrix(
         const decltype(m_control_allocation_matrix) &m) {
-    boost::recursive_mutex::scoped_lock lock(m_allocation_matrix_lock);
+    std::scoped_lock lock(m_allocation_matrix_lock);
     m_control_allocation_matrix = m;
 }
 
 void MvpControl::update_freedoms(std::vector<int> freedoms) {
-    boost::recursive_mutex::scoped_lock lock(m_controlled_freedoms_lock);
+    std::scoped_lock lock(m_controlled_freedoms_lock);
     m_controlled_freedoms = std::move(freedoms);
 
 }
 
 void MvpControl::update_desired_state(
         const decltype(m_desired_state) &desired_state) {
-    boost::recursive_mutex::scoped_lock lock(m_desired_state_lock);
+    std::scoped_lock lock(m_desired_state_lock);
     m_desired_state = desired_state;
 }

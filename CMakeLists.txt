@@ -58,7 +58,7 @@ find_package(Boost REQUIRED COMPONENTS system regex)
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
-    ControlState.msg
+    ControlProcess.msg
     ControlMode.msg
     ControlModes.msg
     PIDgains.msg

@@ -3,6 +3,8 @@
 #include "tf2_eigen/tf2_eigen.h"
 
 #include "mvp_control/dictionary.h"
+
+
 #include "boost/regex.hpp"
 
 using namespace ctrl;
@@ -14,9 +16,9 @@ MvpControlROS::MvpControlROS()
         m_generator_type(MvpControlROS::GeneratorType::UNKNOWN)
 {
 
-    m_system_state = Eigen::VectorXd::Zero(STATE_DOF_SIZE);
+    m_process_values = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
 
-    m_desired_state = Eigen::VectorXd::Zero(STATE_DOF_SIZE);
+    m_set_point = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
 
     /**
      * Read basic configuration. Configuration regarding to thruster allocation
@@ -61,24 +63,24 @@ MvpControlROS::MvpControlROS()
             this
     );
 
-    m_desired_state_subscriber = m_nh.subscribe(
-            TOPIC_CONTROL_STATE_DESIRED,
-            100,
-            &MvpControlROS::f_cb_srv_desired_state,
-            this
+    m_set_point_subscriber = m_nh.subscribe(
+        TOPIC_CONTROL_PROCESS_SET_POINT,
+        100,
+        &MvpControlROS::f_cb_srv_set_point,
+        this
     );
 
     /**
      * Initialize publishers
      */
-    m_current_state_publisher = m_nh.advertise<mvp_control::ControlState>(
-            TOPIC_CONTROL_STATE_CURRENT,
-            100
+    m_process_value_publisher = m_nh.advertise<mvp_control::ControlProcess>(
+        TOPIC_CONTROL_PROCESS_VALUE,
+        100
     );
 
-    m_error_state_publisher = m_nh.advertise<mvp_control::ControlState>(
-            TOPIC_CONTROL_STATE_ERROR,
-            100
+    m_process_error_publisher = m_nh.advertise<mvp_control::ControlProcess>(
+        TOPIC_CONTROL_PROCESS_ERROR,
+        100
     );
 
     /**
@@ -89,11 +91,11 @@ MvpControlROS::MvpControlROS()
         mvp_control::GetControlModes::Response>
     (
         SERVICE_GET_CONTROL_MODES,
-        boost::bind(
+        std::bind(
             &MvpControlROS::f_cb_srv_get_control_modes,
             this,
-            boost::placeholders::_1,
-            boost::placeholders::_2
+            std::placeholders::_1,
+            std::placeholders::_2
         )
     );
 
@@ -102,11 +104,11 @@ MvpControlROS::MvpControlROS()
         mvp_control::SetControlPoint::Response>
     (
         SERVICE_SET_CONTROL_POINT,
-        boost::bind(
+        std::bind(
             &MvpControlROS::f_cb_srv_set_control_point,
             this,
-            boost::placeholders::_1,
-            boost::placeholders::_2
+            std::placeholders::_1,
+            std::placeholders::_2
         )
     );
 
@@ -115,11 +117,11 @@ MvpControlROS::MvpControlROS()
         std_srvs::Empty::Response>
     (
         SERVICE_CONTROL_ENABLE,
-        boost::bind(
+        std::bind(
             &MvpControlROS::f_cb_srv_enable,
             this,
-            boost::placeholders::_1,
-            boost::placeholders::_2
+            std::placeholders::_1,
+            std::placeholders::_2
         )
     );
 
@@ -128,11 +130,11 @@ MvpControlROS::MvpControlROS()
         std_srvs::Empty::Response>
     (
         SERVICE_CONTROL_DISABLE,
-        boost::bind(
+        std::bind(
             &MvpControlROS::f_cb_srv_disable,
             this,
-            boost::placeholders::_1,
-            boost::placeholders::_2
+            std::placeholders::_1,
+            std::placeholders::_2
         )
     );
 
@@ -141,24 +143,26 @@ MvpControlROS::MvpControlROS()
         mvp_control::GetControlMode::Response>
     (
         SERVICE_GET_ACTIVE_MODE,
-        boost::bind(
+        std::bind(
             &MvpControlROS::f_cb_srv_get_active_mode,
             this,
-            boost::placeholders::_1,
-            boost::placeholders::_2
+            std::placeholders::_1,
+            std::placeholders::_2
         )
     );
 
     /**
      * Initialize dynamic reconfigure server
      */
-    m_dynconf_pid_server = boost::make_shared
-        <dynamic_reconfigure::Server<mvp_control::PIDConfig>>(m_config_lock);
+    m_dynconf_pid_server.reset(
+        new dynamic_reconfigure::Server<mvp_control::PIDConfig>(
+            m_config_lock)
+        );
 
     /**
      * Initialize the actual controller
      */
-    m_mvp_control = boost::make_shared<MvpControl>();
+    m_mvp_control.reset(new MvpControl());
 
 }
 
@@ -205,25 +209,26 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
     }
 
     m_control_allocation_matrix = Eigen::MatrixXd::Zero(
-        STATE_DOF_SIZE, (int) m_thrusters.size()
+        CONTROLLABLE_DOF_LENGTH, (int) m_thrusters.size()
     );
 
-    if (m_generator_type == GeneratorType::USER) {
-        for (int i = 0; i < m_thrusters.size(); i++) {
-            m_control_allocation_matrix.col(i).tail(6) =
-                m_thrusters[i]->get_contribution_vector().transpose();
-        }
-    } else if (m_generator_type == GeneratorType::TF) {
-        for (int i = 0; i < m_thrusters.size(); i++) {
-            m_control_allocation_matrix.col(i).tail(6) =
-                m_thrusters[i]->get_contribution_vector().transpose();
-        }
-    } else {
-        throw control_ros_exception(
-            "thruster allocation matrix generation type is not defined! "
-            "Available options are 'user' or 'tf'."
-        );
 
+
+    /**
+     * Up until this point, all the allocation matrix related issued must be
+     * solved or exceptions thrown.
+     */
+
+    for (int i = 0; i < m_thrusters.size(); i++) {
+        for(const auto& j :
+            {DOF::ROLL, DOF::PITCH, DOF::YAW,
+             DOF::SURGE, DOF::SWAY, DOF::HEAVE,
+             DOF::ROLL_RATE, DOF::PITCH_RATE, DOF::YAW_RATE
+             })
+        {
+            m_control_allocation_matrix(j, i) =
+                m_thrusters[i]->get_contribution_vector()(j);
+        }
     }
 
     m_mvp_control->set_control_allocation_matrix(m_control_allocation_matrix);
@@ -232,17 +237,18 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
 
 void MvpControlROS::f_generate_thrusters() {
     // Read all the configuration file to get all the listed thrusters
-    std::vector<std::string> thruster_id_list;
-    m_pnh.param<decltype(thruster_id_list)>(
-            CONF_THRUSTER_IDS,
-            thruster_id_list,
-            decltype(thruster_id_list)()
-    );
 
+
+    if(!m_pnh.hasParam(CONF_THRUSTER_IDS)) {
+        throw control_ros_exception("thruster_ids empty");
+    }
+
+    std::vector<std::string> thruster_id_list;
+    m_pnh.getParam(CONF_THRUSTER_IDS, thruster_id_list);
 
     // create thruster objects
     for(const auto& id : thruster_id_list) {
-        ThrusterROS::Ptr t = boost::make_shared<ThrusterROS>();
+        ThrusterROS::Ptr t(new ThrusterROS());
         t->set_id(std::string(id));
         m_thrusters.emplace_back(t);
     }
@@ -289,27 +295,27 @@ void MvpControlROS::initialize() {
     f_generate_control_allocation_matrix();
 
     std::for_each(m_thrusters.begin(),m_thrusters.end(),
-            [](const ThrusterROS::Ptr& t){
-                t->initialize();
-            }
+        [](const ThrusterROS::Ptr& t){
+            t->initialize();
+        }
     );
 
     m_controller_frequency = 10;
 
-    m_mvp_control->set_desired_state(m_desired_state);
-    m_mvp_control->set_system_state(m_system_state);
+    m_mvp_control->set_desired_state(m_set_point);
+    m_mvp_control->set_system_state(m_process_values);
 
-    m_controller_worker = boost::thread([this] { f_control_loop(); });
+    m_controller_worker = std::thread([this] { f_control_loop(); });
 
     m_controller_worker.detach();
 
     m_dynconf_pid_server->setCallback(
-            boost::bind(
-                    &MvpControlROS::f_cb_dynconf_pid,
-                    this,
-                    boost::placeholders::_1,
-                    boost::placeholders::_2
-            )
+        std::bind(
+            &MvpControlROS::f_cb_dynconf_pid,
+            this,
+            std::placeholders::_1,
+            std::placeholders::_2
+        )
     );
 
 }
@@ -358,27 +364,57 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
         );
         auto eigen_tf = tf2::transformToEigen(tf);
 
-        Eigen::VectorXd rpyuvw(6);
+        Eigen::VectorXd contribution_vector(CONTROLLABLE_DOF_LENGTH);
 
-        rpyuvw.tail(3) = eigen_tf.rotation().col(0);
+        contribution_vector(DOF::SURGE) = eigen_tf.rotation()(0, 0);
+        contribution_vector(DOF::SWAY) = eigen_tf.rotation()(1, 0);
+        contribution_vector(DOF::HEAVE) = eigen_tf.rotation()(2, 0);
 
         // for each axis, roll pitch and yaw
         for(int i = 0 ; i < 3 ; i++ ) {
             int a = (i + 1) % 3;
             int b = (i + 2) % 3;
-            float hypotenuse = sqrt(
-                powf(eigen_tf.translation()[a], 2)
-                + powf(eigen_tf.translation()[b], 2 )
+            double hypotenuse = sqrt(
+                pow(eigen_tf.translation()[a], 2)
+                + pow(eigen_tf.translation()[b], 2 )
             );
-            rpyuvw[i] = hypotenuse
-                * sin(eigen_tf.rotation().eulerAngles(0,1,2)[i]);
+
+            int cont_idx;
+
+            switch (i) {
+                case 0:
+                    cont_idx = DOF::ROLL;
+                    break;
+                case 1:
+                    cont_idx = DOF::PITCH;
+                    break;
+                case 2:
+                    cont_idx = DOF::YAW;
+                    break;
+                default:
+                    cont_idx = i + DOF::ROLL;
+                    break;
+            }
+
+            contribution_vector(cont_idx) =
+                 hypotenuse * sin(
+                     eigen_tf.rotation().eulerAngles(0,1,2)[i]
+                 );
         }
 
-        t->set_contribution_vector(rpyuvw);
+        contribution_vector(DOF::ROLL_RATE) =
+            -contribution_vector(DOF::ROLL);
+        contribution_vector(DOF::PITCH_RATE) =
+            -contribution_vector(DOF::PITCH);
+        contribution_vector(DOF::YAW_RATE) =
+            -contribution_vector(DOF::YAW);
+
+
+        t->set_contribution_vector(contribution_vector);
     }
 }
 
-bool MvpControlROS::f_compute_state() {
+bool MvpControlROS::f_compute_process_values() {
 
     try {
         // Transform center of gravity to world
@@ -416,13 +452,13 @@ bool MvpControlROS::f_compute_state() {
 
         }
 
-        m_system_state(DOF::X) = cg_world.transform.translation.x;
-        m_system_state(DOF::Y) = cg_world.transform.translation.y;
-        m_system_state(DOF::Z) = cg_world.transform.translation.z;
+        m_process_values(DOF::X) = cg_world.transform.translation.x;
+        m_process_values(DOF::Y) = cg_world.transform.translation.y;
+        m_process_values(DOF::Z) = cg_world.transform.translation.z;
 
-        m_system_state(DOF::ROLL) = roll;
-        m_system_state(DOF::PITCH) = pitch;
-        m_system_state(DOF::YAW) = yaw;
+        m_process_values(DOF::ROLL) = roll;
+        m_process_values(DOF::PITCH) = pitch;
+        m_process_values(DOF::YAW) = yaw;
 
     } catch(tf2::LookupException &e) {
         ROS_WARN_STREAM_THROTTLE(10, e.what());
@@ -434,7 +470,7 @@ bool MvpControlROS::f_compute_state() {
 
     // Transform from odom to world
     try{
-        boost::recursive_mutex::scoped_lock lock(m_odom_lock);
+        std::scoped_lock lock(m_odom_lock);
 
         auto cg_odom = m_transform_buffer.lookupTransform(
                 m_cg_link_id,
@@ -452,9 +488,20 @@ bool MvpControlROS::f_compute_state() {
 
         uvw = cg_odom_eigen.rotation()  * uvw;
 
-        m_system_state(DOF::SURGE) = uvw(0);
-        m_system_state(DOF::SWAY) = uvw(1);
-        m_system_state(DOF::HEAVE) = uvw(2);
+        m_process_values(DOF::SURGE) = uvw(0);
+        m_process_values(DOF::SWAY) = uvw(1);
+        m_process_values(DOF::HEAVE) = uvw(2);
+
+        Eigen::Vector3d angular_rate;
+        angular_rate(0) = m_odometry_msg.twist.twist.angular.x;
+        angular_rate(1) = m_odometry_msg.twist.twist.angular.y;
+        angular_rate(2) = m_odometry_msg.twist.twist.angular.z;
+
+        angular_rate = cg_odom_eigen.rotation() * angular_rate;
+
+        m_process_values(DOF::ROLL_RATE) = angular_rate(0);
+        m_process_values(DOF::PITCH_RATE) = angular_rate(1);
+        m_process_values(DOF::YAW_RATE) = angular_rate(2);
 
     } catch(tf2::LookupException &e) {
         ROS_WARN_STREAM_THROTTLE(10, e.what());
@@ -468,28 +515,27 @@ bool MvpControlROS::f_compute_state() {
         m_control_allocation_matrix
     );
 
-
-    mvp_control::ControlState s;
+    mvp_control::ControlProcess s;
 
     s.control_mode = m_control_mode;
-    s.position.x = m_system_state(DOF::X);
-    s.position.y = m_system_state(DOF::Y);
-    s.position.z = m_system_state(DOF::Z);
-    s.orientation.x = m_system_state(DOF::ROLL);
-    s.orientation.y = m_system_state(DOF::PITCH);
-    s.orientation.z = m_system_state(DOF::YAW);
-    s.velocity.x = m_system_state(DOF::SURGE);
-    s.velocity.y = m_system_state(DOF::SWAY);
-    s.velocity.z = m_system_state(DOF::HEAVE);
-    s.angular_rate.x = m_system_state(DOF::ROLL_RATE);
-    s.angular_rate.y = m_system_state(DOF::PITCH_RATE);
-    s.angular_rate.z = m_system_state(DOF::YAW_RATE);
+    s.position.x = m_process_values(DOF::X);
+    s.position.y = m_process_values(DOF::Y);
+    s.position.z = m_process_values(DOF::Z);
+    s.orientation.x = m_process_values(DOF::ROLL);
+    s.orientation.y = m_process_values(DOF::PITCH);
+    s.orientation.z = m_process_values(DOF::YAW);
+    s.velocity.x = m_process_values(DOF::SURGE);
+    s.velocity.y = m_process_values(DOF::SWAY);
+    s.velocity.z = m_process_values(DOF::HEAVE);
+    s.angular_rate.x = m_process_values(DOF::ROLL_RATE);
+    s.angular_rate.y = m_process_values(DOF::PITCH_RATE);
+    s.angular_rate.z = m_process_values(DOF::YAW_RATE);
 
-    m_mvp_control->set_system_state(m_system_state);
+    m_mvp_control->set_system_state(m_process_values);
 
-    m_current_state_publisher.publish(s);
+    m_process_value_publisher.publish(s);
 
-    mvp_control::ControlState e;
+    mvp_control::ControlProcess e;
 
     Eigen::VectorXd error_state = m_mvp_control->get_state_error();
 
@@ -507,7 +553,7 @@ bool MvpControlROS::f_compute_state() {
     e.angular_rate.y = error_state(DOF::PITCH_RATE);
     e.angular_rate.z = error_state(DOF::YAW_RATE);
 
-    m_error_state_publisher.publish(e);
+    m_process_error_publisher.publish(e);
 
     return true;
 }
@@ -540,10 +586,9 @@ void MvpControlROS::f_control_loop() {
          * Compute the state of the system. Continue on failure. This may
          * happen when transform tree is not ready.
          */
-        if(not f_compute_state()) {
+        if(not f_compute_process_values()) {
             continue;
         }
-
 
         Eigen::VectorXd needed_forces;
 
@@ -574,23 +619,23 @@ void MvpControlROS::f_control_loop() {
 
 void MvpControlROS::f_cb_msg_odometry(
         const nav_msgs::Odometry::ConstPtr &msg) {
-    boost::recursive_mutex::scoped_lock lock(m_odom_lock);
+    std::scoped_lock lock(m_odom_lock);
     m_odometry_msg = *msg;
 }
 
-void MvpControlROS::f_cb_srv_desired_state(
-        const mvp_control::ControlState::ConstPtr &msg) {
-    f_amend_desired_state(*msg);
+void MvpControlROS::f_cb_srv_set_point(
+        const mvp_control::ControlProcess::ConstPtr &msg) {
+    f_amend_set_point(*msg);
 }
 
 void MvpControlROS::f_cb_dynconf_pid(
         mvp_control::PIDConfig &config, uint32_t level) {
 
-    Eigen::VectorXd p(STATE_DOF_SIZE);
-    Eigen::VectorXd i(STATE_DOF_SIZE);
-    Eigen::VectorXd d(STATE_DOF_SIZE);
-    Eigen::VectorXd i_max(STATE_DOF_SIZE);
-    Eigen::VectorXd i_min(STATE_DOF_SIZE);
+    Eigen::VectorXd p(CONTROLLABLE_DOF_LENGTH);
+    Eigen::VectorXd i(CONTROLLABLE_DOF_LENGTH);
+    Eigen::VectorXd d(CONTROLLABLE_DOF_LENGTH);
+    Eigen::VectorXd i_max(CONTROLLABLE_DOF_LENGTH);
+    Eigen::VectorXd i_min(CONTROLLABLE_DOF_LENGTH);
 
 
     p <<
@@ -673,7 +718,7 @@ void MvpControlROS::f_cb_dynconf_pid(
 
 void MvpControlROS::f_amend_dynconf() {
 
-    boost::recursive_mutex::scoped_lock lock(m_config_lock);
+    std::scoped_lock lock(m_config_lock);
 
     auto pid = m_mvp_control->get_pid();
 
@@ -793,19 +838,18 @@ void MvpControlROS::f_read_control_modes() {
 
             auto found =
                 std::find_if(CONF_DOF_LOOKUP.begin(), CONF_DOF_LOOKUP.end(),
-                             [dof](const std::pair<const char *, int> &t) -> bool {
-                                          return std::strcmp(dof.c_str(),
-                                                             t.first) == 0;
-                                      }
-            );
+                    [dof](const std::pair<const char *, int> &t) -> bool {
+                        return std::strcmp(dof.c_str(),t.first) == 0;
+                    }
+                );
 
             if (found != CONF_DOF_LOOKUP.end()) {
                 mode_rules[mode].insert(found->second);
             } else {
                 throw control_ros_exception(
                         "Unknown freedom name passed '" + dof + "'"
-                                                                "Possible values are "
-                                                                "'x, y, z, roll, pitch, yaw, surge, sway, heave"
+                        "Possible values are "
+                       "'x, y, z, roll, pitch, yaw, surge, sway, heave"
                 );
             }
         }
@@ -817,7 +861,8 @@ void MvpControlROS::f_read_control_modes() {
 
         m.name = mode;
 
-        m.dofs = std::vector<int>(mode_rules[mode].begin(), mode_rules[mode].end());
+        m.dofs = std::vector<int>(
+            mode_rules[mode].begin(), mode_rules[mode].end());
 
         for (const auto &dof: mode_rules[mode]) {
             std::string param;
@@ -893,26 +938,26 @@ void MvpControlROS::f_read_control_modes() {
                 m_pnh.param<double>(param + CONF_PID_P, m.pid_roll_rate.kp, 0);
                 m_pnh.param<double>(param + CONF_PID_I, m.pid_roll_rate.ki, 0);
                 m_pnh.param<double>(param + CONF_PID_D, m.pid_roll_rate.kd, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MAX, m.pid_roll_rate.k_i_max,
-                                    0);
-                m_pnh.param<double>(param + CONF_PID_I_MIN, m.pid_roll_rate.k_i_min,
-                                    0);
+                m_pnh.param<double>(param + CONF_PID_I_MAX,
+                                    m.pid_roll_rate.k_i_max, 0);
+                m_pnh.param<double>(param + CONF_PID_I_MIN,
+                                    m.pid_roll_rate.k_i_min, 0);
             } else if (dof == DOF::PITCH_RATE) {
                 m_pnh.param<double>(param + CONF_PID_P, m.pid_pitch_rate.kp, 0);
                 m_pnh.param<double>(param + CONF_PID_I, m.pid_pitch_rate.ki, 0);
                 m_pnh.param<double>(param + CONF_PID_D, m.pid_pitch_rate.kd, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MAX, m.pid_pitch_rate.k_i_max,
-                                    0);
-                m_pnh.param<double>(param + CONF_PID_I_MIN, m.pid_pitch_rate.k_i_min,
-                                    0);
+                m_pnh.param<double>(param + CONF_PID_I_MAX,
+                                    m.pid_pitch_rate.k_i_max, 0);
+                m_pnh.param<double>(param + CONF_PID_I_MIN,
+                                    m.pid_pitch_rate.k_i_min, 0);
             } else if (dof == DOF::YAW_RATE) {
                 m_pnh.param<double>(param + CONF_PID_P, m.pid_yaw_rate.kp, 0);
                 m_pnh.param<double>(param + CONF_PID_I, m.pid_yaw_rate.ki, 0);
                 m_pnh.param<double>(param + CONF_PID_D, m.pid_yaw_rate.kd, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MAX, m.pid_yaw_rate.k_i_max,
-                                    0);
-                m_pnh.param<double>(param + CONF_PID_I_MIN, m.pid_yaw_rate.k_i_min,
-                                    0);
+                m_pnh.param<double>(param + CONF_PID_I_MAX,
+                                    m.pid_yaw_rate.k_i_max, 0);
+                m_pnh.param<double>(param + CONF_PID_I_MIN,
+                                    m.pid_yaw_rate.k_i_min, 0);
             }
         }
 
@@ -940,7 +985,7 @@ bool MvpControlROS::f_cb_srv_set_control_point(
         mvp_control::SetControlPoint::Request req,
         mvp_control::SetControlPoint::Response resp) {
 
-    return f_amend_desired_state(req.setpoint);
+    return f_amend_set_point(req.setpoint);
 }
 
 bool MvpControlROS::f_cb_srv_enable(
@@ -1065,6 +1110,24 @@ bool MvpControlROS::f_amend_control_mode(std::string mode) {
         pid_conf.heave_i_max = found->pid_heave.k_i_max;
         pid_conf.heave_i_min = found->pid_heave.k_i_min;
 
+        pid_conf.roll_rate_p = found->pid_roll_rate.kp;
+        pid_conf.roll_rate_i = found->pid_roll_rate.ki;
+        pid_conf.roll_rate_d = found->pid_roll_rate.kd;
+        pid_conf.roll_rate_i_max = found->pid_roll_rate.k_i_max;
+        pid_conf.roll_rate_i_min = found->pid_roll_rate.k_i_min;
+
+        pid_conf.pitch_rate_p = found->pid_pitch_rate.kp;
+        pid_conf.pitch_rate_i = found->pid_pitch_rate.ki;
+        pid_conf.pitch_rate_d = found->pid_pitch_rate.kd;
+        pid_conf.pitch_rate_i_max = found->pid_pitch_rate.k_i_max;
+        pid_conf.pitch_rate_i_min = found->pid_pitch_rate.k_i_min;
+
+        pid_conf.yaw_rate_p = found->pid_yaw_rate.kp;
+        pid_conf.yaw_rate_i = found->pid_yaw_rate.ki;
+        pid_conf.yaw_rate_d = found->pid_yaw_rate.kd;
+        pid_conf.yaw_rate_i_max = found->pid_yaw_rate.k_i_max;
+        pid_conf.yaw_rate_i_min = found->pid_yaw_rate.k_i_min;
+
         f_cb_dynconf_pid(pid_conf, 0);
 
         f_amend_dynconf();
@@ -1085,26 +1148,41 @@ bool MvpControlROS::f_amend_control_mode(std::string mode) {
 }
 
 
-bool MvpControlROS::f_amend_desired_state(
-        const mvp_control::ControlState &state) {
+bool MvpControlROS::f_amend_set_point(
+    const mvp_control::ControlProcess &set_point) {
 
-    if(!f_amend_control_mode(state.control_mode)) {
+    if(!f_amend_control_mode(set_point.control_mode)) {
         return false;
     }
 
-    m_desired_state(mvp_control::ControlMode::DOF_X) = state.position.x;
-    m_desired_state(mvp_control::ControlMode::DOF_Y) = state.position.y;
-    m_desired_state(mvp_control::ControlMode::DOF_Z) = state.position.z;
-    m_desired_state(mvp_control::ControlMode::DOF_ROLL) = state.orientation.x;
-    m_desired_state(mvp_control::ControlMode::DOF_PITCH) = state.orientation.y;
-    m_desired_state(mvp_control::ControlMode::DOF_YAW) = state.orientation.z;
-    m_desired_state(mvp_control::ControlMode::DOF_SURGE) = state.velocity.x;
-    m_desired_state(mvp_control::ControlMode::DOF_SWAY) = state.velocity.y;
-    m_desired_state(mvp_control::ControlMode::DOF_HEAVE) = state.velocity.z;
+    m_set_point(mvp_control::ControlMode::DOF_X) =
+        set_point.position.x;
+    m_set_point(mvp_control::ControlMode::DOF_Y) =
+        set_point.position.y;
+    m_set_point(mvp_control::ControlMode::DOF_Z) =
+        set_point.position.z;
+    m_set_point(mvp_control::ControlMode::DOF_ROLL) =
+        set_point.orientation.x;
+    m_set_point(mvp_control::ControlMode::DOF_PITCH) =
+        set_point.orientation.y;
+    m_set_point(mvp_control::ControlMode::DOF_YAW) =
+        set_point.orientation.z;
+    m_set_point(mvp_control::ControlMode::DOF_SURGE) =
+        set_point.velocity.x;
+    m_set_point(mvp_control::ControlMode::DOF_SWAY) =
+        set_point.velocity.y;
+    m_set_point(mvp_control::ControlMode::DOF_HEAVE) =
+        set_point.velocity.z;
+    m_set_point(mvp_control::ControlMode::DOF_ROLL_RATE) =
+        set_point.angular_rate.x;
+    m_set_point(mvp_control::ControlMode::DOF_PITCH_RATE) =
+        set_point.angular_rate.y;
+    m_set_point(mvp_control::ControlMode::DOF_YAW_RATE) =
+        set_point.angular_rate.z;
 
-    m_mvp_control->update_desired_state(m_desired_state);
+    m_mvp_control->update_desired_state(m_set_point);
 
-    m_desired_state_msg = state;
+    m_set_point_msg = set_point;
 
     return true;
 }

@@ -3,8 +3,7 @@
 #include "Eigen/Dense"
 #include "deque"
 #include "functional"
-#include "boost/shared_ptr.hpp"
-#include "boost/function.hpp"
+#include "memory"
 
 namespace ctrl {
 
@@ -73,7 +72,7 @@ namespace ctrl {
                        const Eigen::ArrayXd &current, double dt);
 
         //! @brief Generic shared pointer
-        typedef boost::shared_ptr<MimoPID> Ptr;
+        typedef std::shared_ptr<MimoPID> Ptr;
 
         //! @brief Default getter for proportional gain
         auto get_kp() -> decltype(m_kp);

@@ -50,9 +50,9 @@ namespace ctrl {
 
     static constexpr const char * TOPIC_SAFETY = "safety";
     static constexpr const char * TOPIC_STATUS = "status";
-    static constexpr const char * TOPIC_CONTROL_STATE_CURRENT = "controller/state/current";
-    static constexpr const char * TOPIC_CONTROL_STATE_DESIRED = "controller/state/desired";
-    static constexpr const char * TOPIC_CONTROL_STATE_ERROR = "controller/state/error";
+    static constexpr const char * TOPIC_CONTROL_PROCESS_VALUE = "controller/process/value";
+    static constexpr const char * TOPIC_CONTROL_PROCESS_SET_POINT = "controller/process/set_point";
+    static constexpr const char * TOPIC_CONTROL_PROCESS_ERROR = "controller/process/error";
 
     static constexpr const char * SERVICE_CONTROL_ENABLE = "controller/enable";
     static constexpr const char * SERVICE_CONTROL_DISABLE = "controller/disable";
@@ -110,5 +110,5 @@ namespace ctrl {
         nullptr
     };
 
-    static constexpr int STATE_DOF_SIZE = 12;
+    static constexpr int CONTROLLABLE_DOF_LENGTH = 12;
 }

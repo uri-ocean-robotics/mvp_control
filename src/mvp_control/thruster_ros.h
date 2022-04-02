@@ -5,7 +5,6 @@
 #include "Eigen/Dense"
 #include "polynomial_solver.h"
 
-#include "boost/shared_ptr.hpp"
 
 namespace ctrl {
 /** @brief Thruster class for managing data
@@ -146,7 +145,7 @@ namespace ctrl {
         void set_poly_solver(decltype(m_poly_solver) solver);
 
         //! @brief Generic typedef for shared pointer
-        typedef boost::shared_ptr<ThrusterROS> Ptr;
+        typedef std::shared_ptr<ThrusterROS> Ptr;
 
         /** @brief Publish thruster command
          *
@@ -154,7 +153,7 @@ namespace ctrl {
          *
          * @param cmd
          */
-        void command(float cmd);
+        void command(double cmd);
 
         /** @brief Request force from thruster
          *

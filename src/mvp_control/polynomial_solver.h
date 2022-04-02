@@ -4,7 +4,6 @@
 #include "complex"
 #include "memory"
 #include "gsl/gsl_poly.h"
-#include "boost/shared_ptr.hpp"
 
 namespace ctrl {
 /** @brief Polynomial Solver
@@ -64,7 +63,7 @@ namespace ctrl {
         bool solve_for_y(std::vector<std::complex<double>> &roots, double y);
 
         //! @brief Trivial smart pointer for polynomial solver
-        typedef boost::shared_ptr<PolynomialSolver> Ptr;
+        typedef std::shared_ptr<PolynomialSolver> Ptr;
 
     };
 }

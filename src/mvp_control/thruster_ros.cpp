@@ -1,11 +1,13 @@
 #include "thruster_ros.h"
+
+#include <utility>
 #include "exception.hpp"
 #include "mvp_control/dictionary.h"
 
 using namespace ctrl;
 
 ThrusterROS::ThrusterROS() {
-    m_poly_solver = boost::make_shared<PolynomialSolver>();
+    m_poly_solver.reset(new PolynomialSolver());
 }
 
 ThrusterROS::ThrusterROS(std::string id, std::string topic_id, Eigen::VectorXd contribution_vector) :
@@ -14,9 +16,10 @@ ThrusterROS::ThrusterROS(std::string id, std::string topic_id, Eigen::VectorXd c
         m_contribution_vector(std::move(contribution_vector))
 {
 
-    m_thrust_publisher = m_nh.advertise<std_msgs::Float64>(m_thrust_command_topic_id, 10);
+    m_thrust_publisher = m_nh.advertise<std_msgs::Float64>(
+        m_thrust_command_topic_id, 10);
 
-    m_poly_solver = boost::make_shared<PolynomialSolver>();
+    m_poly_solver.reset(new PolynomialSolver());
 }
 
 auto ThrusterROS::get_thrust_command_topic_id() -> decltype(m_thrust_command_topic_id) {
@@ -54,13 +57,15 @@ void ThrusterROS::set_contribution_vector(const decltype(m_contribution_vector)&
 void ThrusterROS::initialize() {
 
     if(!m_thrust_command_topic_id.empty()) {
-        m_thrust_publisher = m_nh.advertise<std_msgs::Float64>(m_thrust_command_topic_id, 100);
+        m_thrust_publisher = m_nh.advertise<std_msgs::Float64>(
+            m_thrust_command_topic_id, 100);
     } else {
         throw control_ros_exception("empty topic name");
     }
 
     if(!m_thrust_command_topic_id.empty()) {
-         m_force_publisher = m_nh.advertise<std_msgs::Float64>(m_thrust_force_topic_id, 100);
+         m_force_publisher = m_nh.advertise<std_msgs::Float64>(
+             m_thrust_force_topic_id, 100);
     } else {
         throw control_ros_exception("empty topic name");
     }
@@ -74,7 +79,7 @@ void ThrusterROS::set_link_id(const decltype(m_link_id)& link_id) {
     m_link_id = link_id;
 }
 
-void ThrusterROS::command(float cmd) {
+void ThrusterROS::command(double cmd) {
     std_msgs::Float64 msg;
     msg.data = cmd;
     m_thrust_publisher.publish(msg);
@@ -85,7 +90,7 @@ auto ThrusterROS::get_poly_solver() -> decltype(m_poly_solver) {
 }
 
 void ThrusterROS::set_poly_solver(decltype(m_poly_solver) solver) {
-    m_poly_solver = solver;
+    m_poly_solver = std::move(solver);
 }
 
 bool ThrusterROS::request_force(double N) {

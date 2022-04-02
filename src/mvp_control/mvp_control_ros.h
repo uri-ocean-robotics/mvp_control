@@ -1,8 +1,15 @@
 #pragma once
 
+/*******************************************************************************
+ * STD
+ */
+#include "functional"
 #include "thread"
+
+/*******************************************************************************
+ * ROS
+ */
 #include "ros/ros.h"
-#include "mvp_control.h"
 
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2_eigen/tf2_eigen.h"
@@ -13,33 +20,33 @@
 #include "nav_msgs/Odometry.h"
 #include "dynamic_reconfigure/server.h"
 
-/**
- * custom dynamic reconfigure
- */
 #include "mvp_control/PIDConfig.h"
-
-/**
- * Custom message types
- */
 #include "mvp_control/PIDgains.h"
-#include "mvp_control/ControlState.h"
+#include "mvp_control/ControlProcess.h"
 #include "mvp_control/ControlModes.h"
-
-/**
- * Custom services
- */
 #include "mvp_control/GetControlMode.h"
 #include "mvp_control/GetControlModes.h"
 #include "mvp_control/SetControlPoint.h"
 
+/*******************************************************************************
+ * MVP
+ */
+
+#include "mvp_control.h"
+#include "thruster_ros.h"
+
+
+/*******************************************************************************
+ * Eigen
+ */
 
 #include "Eigen/Dense"
 
-#include "thruster_ros.h"
+/*******************************************************************************
+ * BOOST
+ */
+#include "boost/thread/recursive_mutex.hpp"
 
-#include "boost/shared_ptr.hpp"
-#include "boost/thread.hpp"
-#include "boost/bind.hpp"
 
 namespace ctrl {
 /** @brief ROS wrapper for MvpControl
@@ -97,11 +104,11 @@ namespace ctrl {
         //! @brief Mvp Control object
         MvpControl::Ptr m_mvp_control;
 
-        //! @brief System state
-        Eigen::VectorXd m_system_state;
+        //! @brief Process values
+        Eigen::VectorXd m_process_values;
 
-        //! @brief Desired state
-        Eigen::VectorXd m_desired_state;
+        //! @brief Set point
+        Eigen::VectorXd m_set_point;
 
         //! @brief Controller frequency
         double m_controller_frequency;
@@ -124,14 +131,14 @@ namespace ctrl {
         //! @brief Trivial subscriber
         ros::Subscriber m_odometry_subscriber;
 
-        //! @brief Current state publisher
-        ros::Publisher m_current_state_publisher;
+        //! @brief Process value publisher
+        ros::Publisher m_process_value_publisher;
 
-        //! @brief Desired state subscriber
-        ros::Subscriber m_desired_state_subscriber;
+        //! @brief Set point subscriber
+        ros::Subscriber m_set_point_subscriber;
 
-        //! @brief Publishes error in the state
-        ros::Publisher m_error_state_publisher;
+        //! @brief Publishes process error publisher
+        ros::Publisher m_process_error_publisher;
 
         //! @brief Holder for latest odometry msg
         nav_msgs::Odometry m_odometry_msg;
@@ -139,26 +146,29 @@ namespace ctrl {
         //! @brief Control modes stored as ros message
         mvp_control::ControlModes m_control_modes;
 
-        //! @brief Desired state message
-        mvp_control::ControlState m_desired_state_msg;
+        //! @brief Desired state of the system, set point of the controller
+        mvp_control::ControlProcess m_set_point_msg;
 
         //! @brief Current control mode
         std::string m_control_mode;
 
         //! @brief Protects odometry_msg during changes
-        boost::recursive_mutex m_odom_lock;
+        std::recursive_mutex m_odom_lock;
 
-        //! @brief Protects dynamic reconfigure server from dead locks
+        /**
+         * @brief Protects dynamic reconfigure server from dead locks
+         * @todo In the future, boost might be replaced with std
+         */
         boost::recursive_mutex m_config_lock;
 
         //! @brief Controller worker
-        boost::thread m_controller_worker;
+        std::thread m_controller_worker;
 
         //! @brief A variable holds the controller status
         bool m_enabled;
 
         //! @brief Dynamic configure server for PID configuration
-        boost::shared_ptr<dynamic_reconfigure::Server<mvp_control::PIDConfig>>
+        std::shared_ptr<dynamic_reconfigure::Server<mvp_control::PIDConfig>>
             m_dynconf_pid_server;
 
         /** @brief Generates control allocation matrix from transform tree
@@ -188,10 +198,10 @@ namespace ctrl {
          */
         void f_read_control_modes();
 
-        /** @brief computes state of the system
+        /** @brief Compute process values
          *
          */
-        bool f_compute_state();
+        bool f_compute_process_values();
 
         /** @brief Control Loop
          *
@@ -216,15 +226,15 @@ namespace ctrl {
          */
         bool f_amend_control_mode(std::string mode);
 
-        /** @brief Amends the desired stateUpdates
+        /** @brief Amends controllers set point
          *
-         * Returns false if desired state mode is invalid.
+         * Returns false if set point mode is invalid.
          * See #MvpControlROS::f_amend_control_mode
          *
-         * @param state
+         * @param set_point
          * @return
          */
-        bool f_amend_desired_state(const mvp_control::ControlState &state);
+        bool f_amend_set_point(const mvp_control::ControlProcess &set_point);
 
         /** @brief Trivial subscriber
          *
@@ -232,12 +242,12 @@ namespace ctrl {
          */
         void f_cb_msg_odometry(const nav_msgs::Odometry::ConstPtr &msg);
 
-        /** @brief Trivial desired state callback
+        /** @brief Trivial set point callback
          *
          * @param msg
          */
-        void f_cb_srv_desired_state(
-            const mvp_control::ControlState::ConstPtr &msg);
+        void f_cb_srv_set_point(
+            const mvp_control::ControlProcess::ConstPtr &msg);
 
         /** @brief Dynamic reconfigure server callback
          *
@@ -252,7 +262,7 @@ namespace ctrl {
          *
          * @param req
          * @param resp
-         * @return Success of the operai_min = -10}, pid_sway = {kp = 0, ki = 0, kd = 0, k_i_max = 0, k_i_min = 0}, pid_heave = {kp = 0, ki = 0, kd = 0, k_i_max = 0, k_i_min = 0}}tion
+         * @return Success of the operation
          */
         bool f_cb_srv_get_control_modes(
             mvp_control::GetControlModes::Request &req,
@@ -317,7 +327,7 @@ namespace ctrl {
         void initialize();
 
         //! @brief Generic typedef for shared pointer
-        typedef boost::shared_ptr<MvpControlROS> Ptr;
+        typedef std::shared_ptr<MvpControlROS> Ptr;
 
 
     };
