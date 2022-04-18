@@ -403,62 +403,44 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
         }
 
         contribution_vector(DOF::ROLL_RATE) =
-            -contribution_vector(DOF::ROLL);
+            contribution_vector(DOF::ROLL);
         contribution_vector(DOF::PITCH_RATE) =
-            -contribution_vector(DOF::PITCH);
+            contribution_vector(DOF::PITCH);
         contribution_vector(DOF::YAW_RATE) =
-            -contribution_vector(DOF::YAW);
+            contribution_vector(DOF::YAW);
 
 
         t->set_contribution_vector(contribution_vector);
     }
 }
 
-bool MvpControlROS::f_compute_process_values() {
+bool MvpControlROS::f_update_control_allocation_matrix() {
 
     try {
         // Transform center of gravity to world
         auto cg_world = m_transform_buffer.lookupTransform(
-                m_world_link_id,
-                m_cg_link_id,
-                ros::Time::now(),
-                ros::Duration(10.0)
+            m_world_link_id,
+            m_cg_link_id,
+            ros::Time::now(),
+            ros::Duration(10.0)
         );
-
-        tf2::Quaternion quat;
-        quat.setW(cg_world.transform.rotation.w);
-        quat.setX(cg_world.transform.rotation.x);
-        quat.setY(cg_world.transform.rotation.y);
-        quat.setZ(cg_world.transform.rotation.z);
-
-        double roll, pitch, yaw;
-        tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
 
         auto tf_eigen = tf2::transformToEigen(cg_world);
 
         // for each thruster compute contribution in earth frame
-        for(int i = 0 ; i < m_control_allocation_matrix.cols() ; i++){
+        for(int j = 0 ; j < m_control_allocation_matrix.cols() ; j++){
             Eigen::Vector3d uvw;
             uvw <<
-                    m_control_allocation_matrix(DOF::SURGE, i),
-                    m_control_allocation_matrix(DOF::SWAY, i),
-                    m_control_allocation_matrix(DOF::HEAVE, i);
+                m_control_allocation_matrix(DOF::SURGE, j),
+                m_control_allocation_matrix(DOF::SWAY, j),
+                m_control_allocation_matrix(DOF::HEAVE, j);
 
             Eigen::Vector3d xyz = tf_eigen.rotation() * uvw;
 
-            m_control_allocation_matrix(DOF::X, i) = xyz(0);
-            m_control_allocation_matrix(DOF::Y, i) = xyz(1);
-            m_control_allocation_matrix(DOF::Z, i) = xyz(2);
-
+            m_control_allocation_matrix(DOF::X, j) = xyz(0);
+            m_control_allocation_matrix(DOF::Y, j) = xyz(1);
+            m_control_allocation_matrix(DOF::Z, j) = xyz(2);
         }
-
-        m_process_values(DOF::X) = cg_world.transform.translation.x;
-        m_process_values(DOF::Y) = cg_world.transform.translation.y;
-        m_process_values(DOF::Z) = cg_world.transform.translation.z;
-
-        m_process_values(DOF::ROLL) = roll;
-        m_process_values(DOF::PITCH) = pitch;
-        m_process_values(DOF::YAW) = yaw;
 
     } catch(tf2::LookupException &e) {
         ROS_WARN_STREAM_THROTTLE(10, e.what());
@@ -468,7 +450,50 @@ bool MvpControlROS::f_compute_process_values() {
         return false;
     }
 
-    // Transform from odom to world
+    m_mvp_control->update_control_allocation_matrix(
+        m_control_allocation_matrix
+    );
+
+    return true;
+}
+
+bool MvpControlROS::f_compute_process_values() {
+
+    f_update_control_allocation_matrix();
+
+    try {
+        // Transform center of gravity to world
+        auto cg_world = m_transform_buffer.lookupTransform(
+            m_world_link_id,
+            m_cg_link_id,
+            ros::Time::now(),
+            ros::Duration(10.0)
+        );
+
+        tf2::Quaternion quat;
+        quat.setW(cg_world.transform.rotation.w);
+        quat.setX(cg_world.transform.rotation.x);
+        quat.setY(cg_world.transform.rotation.y);
+        quat.setZ(cg_world.transform.rotation.z);
+
+        tf2::Matrix3x3(quat).getRPY(
+            m_process_values(DOF::ROLL),
+            m_process_values(DOF::PITCH),
+            m_process_values(DOF::YAW)
+        );
+
+        m_process_values(DOF::X) = cg_world.transform.translation.x;
+        m_process_values(DOF::Y) = cg_world.transform.translation.y;
+        m_process_values(DOF::Z) = cg_world.transform.translation.z;
+
+    } catch(tf2::LookupException &e) {
+        ROS_WARN_STREAM_THROTTLE(10, e.what());
+        return false;
+    } catch(tf2::ExtrapolationException& e) {
+        ROS_WARN_STREAM_THROTTLE(10, e.what());
+        return false;
+    }
+        // Transform from odom to world
     try{
         std::scoped_lock lock(m_odom_lock);
 
@@ -511,12 +536,9 @@ bool MvpControlROS::f_compute_process_values() {
         return false;
     }
 
-    m_mvp_control->update_control_allocation_matrix(
-        m_control_allocation_matrix
-    );
-
     mvp_control::ControlProcess s;
-
+    s.header.stamp = ros::Time::now();
+    s.header.frame_id = m_world_link_id;
     s.control_mode = m_control_mode;
     s.position.x = m_process_values(DOF::X);
     s.position.y = m_process_values(DOF::Y);
@@ -538,7 +560,8 @@ bool MvpControlROS::f_compute_process_values() {
     mvp_control::ControlProcess e;
 
     Eigen::VectorXd error_state = m_mvp_control->get_state_error();
-
+    e.header.stamp = ros::Time::now();
+    e.header.frame_id = m_world_link_id;
     e.control_mode = m_control_mode;
     e.position.x = error_state(DOF::X);
     e.position.y = error_state(DOF::Y);

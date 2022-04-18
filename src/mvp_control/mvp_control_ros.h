@@ -183,10 +183,18 @@ namespace ctrl {
          */
         void f_generate_control_allocation_from_user();
 
-        /**! @brief Generates control allocation matrix
-         *
+        /**!
+         * @brief Generates control allocation matrix
+         * This method reads the thruster configuration and generates the
+         * initial matrix. It meant to be called once.
          */
         void f_generate_control_allocation_matrix();
+
+        /**
+         * @brief
+         * @return
+         */
+        bool f_update_control_allocation_matrix();
 
         /** @brief Generate thrusters
          *
