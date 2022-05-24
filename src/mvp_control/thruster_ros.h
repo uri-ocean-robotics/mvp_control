@@ -7,11 +7,17 @@
 
 
 namespace ctrl {
-/** @brief Thruster class for managing data
- *
- */
+
+    class MvpControlROS;
+
+    /** @brief Thruster class for managing data
+     *
+     */
     class ThrusterROS {
     private:
+
+        friend MvpControlROS;
+
 
         //! @brief Public node handler
         ros::NodeHandle m_nh;
@@ -44,6 +50,10 @@ namespace ctrl {
 
         //! @brief Polynomial solver
         PolynomialSolver::Ptr m_poly_solver;
+
+        double m_force_max;
+
+        double m_force_min;
 
     public:
 

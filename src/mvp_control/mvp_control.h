@@ -47,6 +47,10 @@ namespace ctrl {
         //! @brief Controlled freedoms
         std::vector<int> m_controlled_freedoms;
 
+        Eigen::VectorXd m_upper_limit;
+
+        Eigen::VectorXd m_lower_limit;
+
         /** @brief Calculates PID using #MimoPID
          *
          * Measures the error between desired and current state.
@@ -190,6 +194,10 @@ namespace ctrl {
          */
         void
         update_desired_state(const decltype(m_desired_state) &desired_state);
+
+        void set_lower_limit(const decltype(m_lower_limit) &lower_limit);
+
+        void set_upper_limit(const decltype(m_upper_limit) &upper_limit);
 
     };
 

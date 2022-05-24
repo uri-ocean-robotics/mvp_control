@@ -26,6 +26,10 @@ namespace ctrl {
     static constexpr const char * CONF_THRUSTER_FORCE_TOPICS = "thruster_force_topics";
     static constexpr const char * CONF_THRUSTER_IDS = "thruster_ids";
 
+    static constexpr const char * CONF_THRUSTER_LIMITS = "thruster_limits";
+    static constexpr const char * CONF_THRUSTER_MAX = "max";
+    static constexpr const char * CONF_THRUSTER_MIN = "min";
+
     static constexpr const char * CONF_GENERATOR_TYPE = "generator_type";
     static constexpr const char * CONF_GENERATOR_TYPE_OPT_TF = "tf";
     static constexpr const char * CONF_GENERATOR_TYPE_OPT_USER = "user";
@@ -48,6 +52,7 @@ namespace ctrl {
     static constexpr const char * CONF_CONTROL_ALLOCATION_MATRIX = "control_allocation_matrix";
     static constexpr const char * CONF_CONTROL_TF = "control_tf";
 
+
     static constexpr const char * TOPIC_SAFETY = "safety";
     static constexpr const char * TOPIC_STATUS = "status";
     static constexpr const char * TOPIC_CONTROL_PROCESS_VALUE = "controller/process/value";
@@ -59,6 +64,7 @@ namespace ctrl {
     static constexpr const char * SERVICE_GET_CONTROL_MODES = "controller/get_modes";
     static constexpr const char * SERVICE_SET_CONTROL_POINT = "controller/set_point";
     static constexpr const char * SERVICE_GET_ACTIVE_MODE = "controller/active_mode";
+
 
     static constexpr float THRUST_LIMIT_NEWTON = 20;
 

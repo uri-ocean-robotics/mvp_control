@@ -69,6 +69,14 @@ void MvpControl::set_desired_state(
     m_desired_state = desired_state;
 }
 
+void MvpControl::set_lower_limit(const decltype(m_lower_limit) &lower_limit) {
+    m_lower_limit = lower_limit;
+}
+
+void MvpControl::set_upper_limit(const decltype(m_upper_limit) &upper_limit) {
+    m_upper_limit = upper_limit;
+}
+
 bool MvpControl::calculate_needed_forces(Eigen::VectorXd *f, double dt) {
 
     /**
@@ -166,11 +174,9 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     qp_instance.objective_matrix = Q_sparse;
 
     qp_instance.objective_vector = c;
-    Eigen::VectorXd upper_bounds =
-        THRUST_LIMIT_NEWTON * Eigen::VectorXd::Ones(T.cols());
+    Eigen::VectorXd upper_bounds = m_upper_limit;
 
-    Eigen::VectorXd lower_bounds =
-        -THRUST_LIMIT_NEWTON * Eigen::VectorXd::Ones(T.cols());
+    Eigen::VectorXd lower_bounds = m_lower_limit;
 
     qp_instance.lower_bounds = lower_bounds;
 

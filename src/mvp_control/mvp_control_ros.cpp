@@ -259,29 +259,38 @@ void MvpControlROS::f_generate_thrusters() {
         // read topic id config for thruster
         std::string thrust_command_topic_id;
         m_pnh.param<std::string>(std::string()
-                + CONF_THRUST_COMMAND_TOPICS + "/" + t->get_id(),
+                + CONF_THRUST_COMMAND_TOPICS + "/" + t->m_id,
                 thrust_command_topic_id,
-                "control/thruster/" + t->get_id() + "/command");
+                "control/thruster/" + t->m_id + "/command");
         t->set_thrust_command_topic_id(thrust_command_topic_id);
 
         // read topic id config for thruster
         std::string thrust_force_topic_id;
         m_pnh.param<std::string>(std::string()
-                + CONF_THRUSTER_FORCE_TOPICS + "/" + t->get_id(),
+                + CONF_THRUSTER_FORCE_TOPICS + "/" + t->m_id,
                 thrust_force_topic_id,
-                "control/thruster/" + t->get_id() + "/force"
+                "control/thruster/" + t->m_id + "/force"
         );
         t->set_thrust_force_topic_id(thrust_force_topic_id);
 
         // read polynomials for thruster
         std::vector<double> poly;
         m_pnh.param<std::vector<double>>(std::string()
-                + CONF_THRUSTER_POLY + "/" + t->get_id(),
+                + CONF_THRUSTER_POLY + "/" + t->m_id,
                 poly,
                 std::vector<double>()
         );
         t->get_poly_solver()->set_coeff(poly);
 
+        m_pnh.param<double>(std::string() +
+            CONF_THRUSTER_LIMITS + "/" + t->get_id() + "/" + CONF_THRUSTER_MAX,
+            t->m_force_max,
+            10.0);
+
+        m_pnh.param<double>(std::string() +
+            CONF_THRUSTER_LIMITS + "/" + t->get_id() + "/" + CONF_THRUSTER_MIN,
+            t->m_force_min,
+            -10.0);
     }
 
 }
@@ -416,6 +425,8 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
 
 bool MvpControlROS::f_update_control_allocation_matrix() {
 
+    // update control allocation based on actuators as well
+
     try {
         // Transform center of gravity to world
         auto cg_world = m_transform_buffer.lookupTransform(
@@ -453,6 +464,18 @@ bool MvpControlROS::f_update_control_allocation_matrix() {
     m_mvp_control->update_control_allocation_matrix(
         m_control_allocation_matrix
     );
+
+    Eigen::VectorXd upper_limit(m_thrusters.size());
+    Eigen::VectorXd lower_limit(m_thrusters.size());
+
+    for(int i = 0 ; i < m_thrusters.size() ; i++) {
+        upper_limit[i] = m_thrusters[i]->m_force_max;
+        lower_limit[i] = m_thrusters[i]->m_force_min;
+    }
+
+    m_mvp_control->set_lower_limit(lower_limit);
+
+    m_mvp_control->set_upper_limit(upper_limit);
 
     return true;
 }
