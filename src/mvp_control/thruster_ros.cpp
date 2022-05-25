@@ -96,15 +96,6 @@ void ThrusterROS::set_poly_solver(decltype(m_poly_solver) solver) {
 bool ThrusterROS::request_force(double N) {
     std::vector<std::complex<double>> roots;
 
-
-    if(fabs(N) > THRUST_LIMIT_NEWTON) {
-        if(signbit(N) != 0) {
-            N = -THRUST_LIMIT_NEWTON;
-        } else {
-            N = THRUST_LIMIT_NEWTON;
-        }
-    }
-
     std_msgs::Float64  msg;
     msg.data = N;
     m_force_publisher.publish(msg);
