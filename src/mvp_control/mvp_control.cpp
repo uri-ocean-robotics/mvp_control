@@ -174,16 +174,17 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     qp_instance.objective_matrix = Q_sparse;
 
     qp_instance.objective_vector = c;
-    Eigen::VectorXd upper_bounds = m_upper_limit;
 
-    Eigen::VectorXd lower_bounds = m_lower_limit;
+    qp_instance.lower_bounds.resize(m_lower_limit.size());
+    qp_instance.lower_bounds << m_lower_limit;
 
-    qp_instance.lower_bounds = lower_bounds;
-
-    qp_instance.upper_bounds = upper_bounds;
+    qp_instance.upper_bounds.resize(m_upper_limit.size());
+    qp_instance.upper_bounds << m_upper_limit;
 
     qp_instance.constraint_matrix =
         Eigen::SparseMatrix<double>(Q.cols(),Q.cols());
+
+    qp_instance.constraint_matrix.setIdentity();
 
     osqp::OsqpSolver solver;
     osqp::OsqpSettings settings;
@@ -235,6 +236,7 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
             ROS_WARN_STREAM("kUnknown");
             break;
         default:
+            ROS_WARN_STREAM("something went wrong");
             break;
     }
 

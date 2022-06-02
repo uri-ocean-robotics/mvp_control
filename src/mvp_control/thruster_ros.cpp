@@ -100,6 +100,12 @@ bool ThrusterROS::request_force(double N) {
     msg.data = N;
     m_force_publisher.publish(msg);
 
+    if(N > m_force_max) {
+        N = m_force_max;
+    } else if (N < m_force_min) {
+        N = m_force_min;
+    }
+
     if(!m_poly_solver->solve_for_y(roots, N)) {
         ROS_WARN_STREAM("No feasible command found for force: " << N);
         return false;
