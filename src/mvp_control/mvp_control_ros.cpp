@@ -366,50 +366,31 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
     for(const auto& t : m_thrusters) {
 
         auto tf = m_transform_buffer.lookupTransform(
-                m_cg_link_id,
-                t->get_link_id(),
-                ros::Time::now(),
-                ros::Duration(10.0)
+            m_cg_link_id,
+            t->get_link_id(),
+            ros::Time::now(),
+            ros::Duration(10.0)
         );
         auto eigen_tf = tf2::transformToEigen(tf);
 
         Eigen::VectorXd contribution_vector(CONTROLLABLE_DOF_LENGTH);
 
-        contribution_vector(DOF::SURGE) = eigen_tf.rotation()(0, 0);
-        contribution_vector(DOF::SWAY) = eigen_tf.rotation()(1, 0);
-        contribution_vector(DOF::HEAVE) = eigen_tf.rotation()(2, 0);
+        double Fx = eigen_tf.rotation()(0, 0);
+        double Fy = eigen_tf.rotation()(1, 0);
+        double Fz = eigen_tf.rotation()(2, 0);
 
-        // for each axis, roll pitch and yaw
-        for(int i = 0 ; i < 3 ; i++ ) {
-            int a = (i + 1) % 3;
-            int b = (i + 2) % 3;
-            double hypotenuse = sqrt(
-                pow(eigen_tf.translation()[a], 2)
-                + pow(eigen_tf.translation()[b], 2 )
-            );
+        contribution_vector(DOF::SURGE) = Fx;
+        contribution_vector(DOF::SWAY) = Fy;
+        contribution_vector(DOF::HEAVE) = Fz;
 
-            int cont_idx;
+        auto trans_xyz = eigen_tf.translation();
 
-            switch (i) {
-                case 0:
-                    cont_idx = DOF::ROLL;
-                    break;
-                case 1:
-                    cont_idx = DOF::PITCH;
-                    break;
-                case 2:
-                    cont_idx = DOF::YAW;
-                    break;
-                default:
-                    cont_idx = i + DOF::ROLL;
-                    break;
-            }
-
-            contribution_vector(cont_idx) =
-                 hypotenuse * sin(
-                     eigen_tf.rotation().eulerAngles(0,1,2)[i]
-                 );
-        }
+        contribution_vector(DOF::ROLL) =
+            Fz * trans_xyz[1] - Fy * trans_xyz[2];
+        contribution_vector(DOF::PITCH) =
+            Fx * trans_xyz[2] - Fz * trans_xyz[0];
+        contribution_vector(DOF::YAW) =
+            Fy * trans_xyz[0] - Fx * trans_xyz[1];
 
         contribution_vector(DOF::ROLL_RATE) =
             contribution_vector(DOF::ROLL);
@@ -417,7 +398,6 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
             contribution_vector(DOF::PITCH);
         contribution_vector(DOF::YAW_RATE) =
             contribution_vector(DOF::YAW);
-
 
         t->set_contribution_vector(contribution_vector);
     }
@@ -476,6 +456,9 @@ bool MvpControlROS::f_update_control_allocation_matrix() {
     m_mvp_control->set_lower_limit(lower_limit);
 
     m_mvp_control->set_upper_limit(upper_limit);
+
+    std::cout << "Control allocation matrix: " << std::endl;
+    std::cout << m_control_allocation_matrix << std::endl;
 
     return true;
 }
