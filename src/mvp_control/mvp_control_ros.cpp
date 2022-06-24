@@ -457,9 +457,6 @@ bool MvpControlROS::f_update_control_allocation_matrix() {
 
     m_mvp_control->set_upper_limit(upper_limit);
 
-    std::cout << "Control allocation matrix: " << std::endl;
-    std::cout << m_control_allocation_matrix << std::endl;
-
     return true;
 }
 
