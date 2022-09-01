@@ -1,9 +1,29 @@
+/*
+    This file is part of MVP-Control program.
+
+    MVP-Control is free software: you can redistribute it and/or modify it under the
+    terms of the GNU General Public License as published by the Free Software
+    Foundation, either version 3 of the License, or (at your option) any later
+    version.
+
+    MVP-Control is distributed in the hope that it will be useful, but WITHOUT ANY
+    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+    FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License along with
+    MVP-Control. If not, see <https://www.gnu.org/licenses/>.
+
+    Author: Emir Cem Gezer
+    Email: emircem@uri.edu;emircem.gezer@gmail.com
+    Year: 2022
+*/
+
 #include "mvp_control_ros.h"
 #include "exception.hpp"
 #include "tf2_eigen/tf2_eigen.h"
 
 #include "mvp_control/dictionary.h"
-
 
 #include "boost/regex.hpp"
 
@@ -53,6 +73,12 @@ MvpControlROS::MvpControlROS()
             CONF_ODOMETRY_SOURCE_DEFAULT
     );
 
+    m_pnh.param<double>(
+        CONF_CONTROLLER_FREQUENCY,
+        m_controller_frequency,
+        10.0
+    );
+
     /**
      * Initialize Subscribers
      */
@@ -73,12 +99,12 @@ MvpControlROS::MvpControlROS()
     /**
      * Initialize publishers
      */
-    m_process_value_publisher = m_nh.advertise<mvp_control::ControlProcess>(
+    m_process_value_publisher = m_nh.advertise<mvp_msgs::ControlProcess>(
         TOPIC_CONTROL_PROCESS_VALUE,
         100
     );
 
-    m_process_error_publisher = m_nh.advertise<mvp_control::ControlProcess>(
+    m_process_error_publisher = m_nh.advertise<mvp_msgs::ControlProcess>(
         TOPIC_CONTROL_PROCESS_ERROR,
         100
     );
@@ -87,8 +113,8 @@ MvpControlROS::MvpControlROS()
      * Initialize services
      */
     m_get_control_modes_server = m_nh.advertiseService
-        <mvp_control::GetControlModes::Request,
-        mvp_control::GetControlModes::Response>
+        <mvp_msgs::GetControlModes::Request,
+        mvp_msgs::GetControlModes::Response>
     (
         SERVICE_GET_CONTROL_MODES,
         std::bind(
@@ -100,8 +126,8 @@ MvpControlROS::MvpControlROS()
     );
 
     m_set_control_point_server = m_nh.advertiseService
-        <mvp_control::SetControlPoint::Request,
-        mvp_control::SetControlPoint::Response>
+        <mvp_msgs::SetControlPoint::Request,
+        mvp_msgs::SetControlPoint::Response>
     (
         SERVICE_SET_CONTROL_POINT,
         std::bind(
@@ -139,8 +165,8 @@ MvpControlROS::MvpControlROS()
     );
 
     m_get_active_mode_server = m_nh.advertiseService
-        <mvp_control::GetControlMode::Request,
-        mvp_control::GetControlMode::Response>
+        <mvp_msgs::GetControlMode::Request,
+        mvp_msgs::GetControlMode::Response>
     (
         SERVICE_GET_ACTIVE_MODE,
         std::bind(
@@ -176,6 +202,7 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
             CONF_GENERATOR_TYPE_OPT_TF
     );
 
+    // Parse the control allocation generator type and save it as enum type
     if(generator_type == CONF_GENERATOR_TYPE_OPT_TF) {
         m_generator_type = GeneratorType::TF;
     } else if (generator_type == CONF_GENERATOR_TYPE_OPT_USER) {
@@ -184,6 +211,7 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
         m_generator_type = GeneratorType::UNKNOWN;
     }
 
+    // Generate the control allocation matrix
     if(m_generator_type == GeneratorType::USER) {
         f_generate_control_allocation_from_user();
     } else if (m_generator_type == GeneratorType::TF) {
@@ -199,6 +227,10 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
         throw control_ros_exception("no thruster specified");
     }
 
+    // Control allocation matrix is generated based on each thruster. Each
+    // thruster must have equal number of elements in their contribution matrix.
+    // Code below checks the validity of the contribution vectors for each
+    // thruster.
     for(int i = 0 ; i < m_thrusters.size() - 1 ; i++ ) {
         if (m_thrusters[i]->get_contribution_vector().size() !=
             m_thrusters[i + 1]->get_contribution_vector().size()) {
@@ -208,17 +240,20 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
         }
     }
 
+    // Initialize the control allocation matrix based on zero matrix.
+    // M by N matrix. M -> number of all controllable DOF, N -> number of
+    // thrusters
     m_control_allocation_matrix = Eigen::MatrixXd::Zero(
         CONTROLLABLE_DOF_LENGTH, (int) m_thrusters.size()
     );
 
+    // Until this point, all the allocation matrix related issued must be
+    // solved or exceptions thrown.
 
 
-    /**
-     * Up until this point, all the allocation matrix related issued must be
-     * solved or exceptions thrown.
-     */
-
+    // Acquire DOF per actuator. Register it to control allocation matrix.
+    // Only DOF::X, DOF::Y and DOF::Z are left unregistered. They are computed
+    // online after each iteration.
     for (int i = 0; i < m_thrusters.size(); i++) {
         for(const auto& j :
             {DOF::ROLL, DOF::PITCH, DOF::YAW,
@@ -231,6 +266,7 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
         }
     }
 
+    // Finally, set the control allocation matrix for the controller object.
     m_mvp_control->set_control_allocation_matrix(m_control_allocation_matrix);
 
 }
@@ -297,21 +333,24 @@ void MvpControlROS::f_generate_thrusters() {
 
 void MvpControlROS::initialize() {
 
+    // Read configured control modes from the ROS parameter server
     f_read_control_modes();
 
+    // Generate thrusters with the given configuration
     f_generate_thrusters();
 
+    // Generate control allocation matrix with defined method
     f_generate_control_allocation_matrix();
 
+    // Initialize thruster objects.
     std::for_each(m_thrusters.begin(),m_thrusters.end(),
         [](const ThrusterROS::Ptr& t){
             t->initialize();
         }
     );
 
-    m_controller_frequency = 10;
-
     m_mvp_control->set_desired_state(m_set_point);
+
     m_mvp_control->set_system_state(m_process_values);
 
     m_controller_worker = std::thread([this] { f_control_loop(); });
@@ -371,6 +410,7 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
             ros::Time::now(),
             ros::Duration(10.0)
         );
+
         auto eigen_tf = tf2::transformToEigen(tf);
 
         Eigen::VectorXd contribution_vector(CONTROLLABLE_DOF_LENGTH);
@@ -379,25 +419,19 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
         double Fy = eigen_tf.rotation()(1, 0);
         double Fz = eigen_tf.rotation()(2, 0);
 
+        auto trans_xyz = eigen_tf.translation();
+
+        auto rpy = trans_xyz.cross(Eigen::Vector3d{Fx, Fy, Fz});
+
         contribution_vector(DOF::SURGE) = Fx;
         contribution_vector(DOF::SWAY) = Fy;
         contribution_vector(DOF::HEAVE) = Fz;
-
-        auto trans_xyz = eigen_tf.translation();
-
-        contribution_vector(DOF::ROLL) =
-            Fz * trans_xyz[1] - Fy * trans_xyz[2];
-        contribution_vector(DOF::PITCH) =
-            Fx * trans_xyz[2] - Fz * trans_xyz[0];
-        contribution_vector(DOF::YAW) =
-            Fy * trans_xyz[0] - Fx * trans_xyz[1];
-
-        contribution_vector(DOF::ROLL_RATE) =
-            contribution_vector(DOF::ROLL);
-        contribution_vector(DOF::PITCH_RATE) =
-            contribution_vector(DOF::PITCH);
-        contribution_vector(DOF::YAW_RATE) =
-            contribution_vector(DOF::YAW);
+        contribution_vector(DOF::ROLL) = rpy(0);
+        contribution_vector(DOF::PITCH) = rpy(1);
+        contribution_vector(DOF::YAW) = rpy(2);
+        contribution_vector(DOF::ROLL_RATE) = rpy(0);
+        contribution_vector(DOF::PITCH_RATE) = rpy(1);
+        contribution_vector(DOF::YAW_RATE) = rpy(2);
 
         t->set_contribution_vector(contribution_vector);
     }
@@ -413,7 +447,7 @@ bool MvpControlROS::f_update_control_allocation_matrix() {
             m_world_link_id,
             m_cg_link_id,
             ros::Time::now(),
-            ros::Duration(10.0)
+            ros::Duration(15.0)
         );
 
         auto tf_eigen = tf2::transformToEigen(cg_world);
@@ -433,14 +467,10 @@ bool MvpControlROS::f_update_control_allocation_matrix() {
             m_control_allocation_matrix(DOF::Z, j) = xyz(2);
         }
 
-    } catch(tf2::LookupException &e) {
-        ROS_WARN_STREAM_THROTTLE(10, e.what());
-        return false;
-    } catch(tf2::ExtrapolationException& e) {
-        ROS_WARN_STREAM_THROTTLE(10, e.what());
+    } catch(tf2::TransformException& e) {
+        ROS_WARN_STREAM_THROTTLE(10, std::string("Can't update control allocation matrix ") + e.what());
         return false;
     }
-
     m_mvp_control->update_control_allocation_matrix(
         m_control_allocation_matrix
     );
@@ -489,11 +519,8 @@ bool MvpControlROS::f_compute_process_values() {
         m_process_values(DOF::Y) = cg_world.transform.translation.y;
         m_process_values(DOF::Z) = cg_world.transform.translation.z;
 
-    } catch(tf2::LookupException &e) {
-        ROS_WARN_STREAM_THROTTLE(10, e.what());
-        return false;
-    } catch(tf2::ExtrapolationException& e) {
-        ROS_WARN_STREAM_THROTTLE(10, e.what());
+    } catch(tf2::TransformException &e) {
+        ROS_WARN_STREAM_THROTTLE(10, std::string("Can't compute process values: ") + e.what());
         return false;
     }
         // Transform from odom to world
@@ -531,15 +558,12 @@ bool MvpControlROS::f_compute_process_values() {
         m_process_values(DOF::PITCH_RATE) = angular_rate(1);
         m_process_values(DOF::YAW_RATE) = angular_rate(2);
 
-    } catch(tf2::LookupException &e) {
-        ROS_WARN_STREAM_THROTTLE(10, e.what());
-        return false;
-    } catch(tf2::ExtrapolationException& e) {
-        ROS_WARN_STREAM_THROTTLE(10, e.what());
+    } catch(tf2::TransformException &e) {
+        ROS_WARN_STREAM_THROTTLE(10, std::string("Can't compute process values!, check odometry!: ") + e.what());
         return false;
     }
 
-    mvp_control::ControlProcess s;
+    mvp_msgs::ControlProcess s;
     s.header.stamp = ros::Time::now();
     s.header.frame_id = m_world_link_id;
     s.control_mode = m_control_mode;
@@ -560,7 +584,7 @@ bool MvpControlROS::f_compute_process_values() {
 
     m_process_value_publisher.publish(s);
 
-    mvp_control::ControlProcess e;
+    mvp_msgs::ControlProcess e;
 
     Eigen::VectorXd error_state = m_mvp_control->get_state_error();
     e.header.stamp = ros::Time::now();
@@ -650,7 +674,7 @@ void MvpControlROS::f_cb_msg_odometry(
 }
 
 void MvpControlROS::f_cb_srv_set_point(
-        const mvp_control::ControlProcess::ConstPtr &msg) {
+        const mvp_msgs::ControlProcess::ConstPtr &msg) {
     f_amend_set_point(*msg);
 }
 
@@ -883,7 +907,7 @@ void MvpControlROS::f_read_control_modes() {
 
     // Loop through all the modes and break them down
     for (const auto &mode: modes) {
-        mvp_control::ControlMode m;
+        mvp_msgs::ControlMode m;
 
         m.name = mode;
 
@@ -995,8 +1019,8 @@ void MvpControlROS::f_read_control_modes() {
 }
 
 bool MvpControlROS::f_cb_srv_get_control_modes(
-    mvp_control::GetControlModes::Request &req,
-    mvp_control::GetControlModes::Response &resp) {
+    mvp_msgs::GetControlModes::Request &req,
+    mvp_msgs::GetControlModes::Response &resp) {
 
     if(!m_control_modes.modes.empty()) {
         resp.modes = m_control_modes.modes;
@@ -1008,8 +1032,8 @@ bool MvpControlROS::f_cb_srv_get_control_modes(
 }
 
 bool MvpControlROS::f_cb_srv_set_control_point(
-        mvp_control::SetControlPoint::Request req,
-        mvp_control::SetControlPoint::Response resp) {
+        mvp_msgs::SetControlPoint::Request req,
+        mvp_msgs::SetControlPoint::Response resp) {
 
     return f_amend_set_point(req.setpoint);
 }
@@ -1033,14 +1057,14 @@ bool MvpControlROS::f_cb_srv_disable(
 }
 
 bool MvpControlROS::f_cb_srv_get_active_mode(
-    mvp_control::GetControlMode::Request& req,
-    mvp_control::GetControlMode::Response& resp) {
+    mvp_msgs::GetControlMode::Request& req,
+    mvp_msgs::GetControlMode::Response& resp) {
 
     auto found =
         std::find_if(
             m_control_modes.modes.begin(),
             m_control_modes.modes.end(),
-            [this](const mvp_control::ControlMode &t) -> bool {
+            [this](const mvp_msgs::ControlMode &t) -> bool {
                  if(this->m_control_mode == t.name) {
                      return true;
                  }
@@ -1063,7 +1087,7 @@ bool MvpControlROS::f_amend_control_mode(std::string mode) {
         auto found = std::find_if(
                 m_control_modes.modes.begin(),
                 m_control_modes.modes.end(),
-                [mode](const mvp_control::ControlMode& m) -> bool {
+                [mode](const mvp_msgs::ControlMode& m) -> bool {
                 if(m.name == mode) {
                     return true;
                 }
@@ -1175,35 +1199,35 @@ bool MvpControlROS::f_amend_control_mode(std::string mode) {
 
 
 bool MvpControlROS::f_amend_set_point(
-    const mvp_control::ControlProcess &set_point) {
+    const mvp_msgs::ControlProcess &set_point) {
 
     if(!f_amend_control_mode(set_point.control_mode)) {
         return false;
     }
 
-    m_set_point(mvp_control::ControlMode::DOF_X) =
+    m_set_point(mvp_msgs::ControlMode::DOF_X) =
         set_point.position.x;
-    m_set_point(mvp_control::ControlMode::DOF_Y) =
+    m_set_point(mvp_msgs::ControlMode::DOF_Y) =
         set_point.position.y;
-    m_set_point(mvp_control::ControlMode::DOF_Z) =
+    m_set_point(mvp_msgs::ControlMode::DOF_Z) =
         set_point.position.z;
-    m_set_point(mvp_control::ControlMode::DOF_ROLL) =
+    m_set_point(mvp_msgs::ControlMode::DOF_ROLL) =
         set_point.orientation.x;
-    m_set_point(mvp_control::ControlMode::DOF_PITCH) =
+    m_set_point(mvp_msgs::ControlMode::DOF_PITCH) =
         set_point.orientation.y;
-    m_set_point(mvp_control::ControlMode::DOF_YAW) =
+    m_set_point(mvp_msgs::ControlMode::DOF_YAW) =
         set_point.orientation.z;
-    m_set_point(mvp_control::ControlMode::DOF_SURGE) =
+    m_set_point(mvp_msgs::ControlMode::DOF_SURGE) =
         set_point.velocity.x;
-    m_set_point(mvp_control::ControlMode::DOF_SWAY) =
+    m_set_point(mvp_msgs::ControlMode::DOF_SWAY) =
         set_point.velocity.y;
-    m_set_point(mvp_control::ControlMode::DOF_HEAVE) =
+    m_set_point(mvp_msgs::ControlMode::DOF_HEAVE) =
         set_point.velocity.z;
-    m_set_point(mvp_control::ControlMode::DOF_ROLL_RATE) =
+    m_set_point(mvp_msgs::ControlMode::DOF_ROLL_RATE) =
         set_point.angular_rate.x;
-    m_set_point(mvp_control::ControlMode::DOF_PITCH_RATE) =
+    m_set_point(mvp_msgs::ControlMode::DOF_PITCH_RATE) =
         set_point.angular_rate.y;
-    m_set_point(mvp_control::ControlMode::DOF_YAW_RATE) =
+    m_set_point(mvp_msgs::ControlMode::DOF_YAW_RATE) =
         set_point.angular_rate.z;
 
     m_mvp_control->update_desired_state(m_set_point);

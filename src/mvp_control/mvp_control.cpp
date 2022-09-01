@@ -1,3 +1,24 @@
+/*
+    This file is part of MVP-Control program.
+
+    MVP-Control is free software: you can redistribute it and/or modify it under the
+    terms of the GNU General Public License as published by the Free Software
+    Foundation, either version 3 of the License, or (at your option) any later
+    version.
+
+    MVP-Control is distributed in the hope that it will be useful, but WITHOUT ANY
+    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+    FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License along with
+    MVP-Control. If not, see <https://www.gnu.org/licenses/>.
+
+    Author: Emir Cem Gezer
+    Email: emircem@uri.edu;emircem.gezer@gmail.com
+    Year: 2022
+*/
+
 #include "mvp_control.h"
 #include "ros/ros.h"
 #include "mvp_control/dictionary.h"
@@ -151,8 +172,7 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     // Q -> objective matrix
     Eigen::MatrixXd Q = 2 * T.transpose() * T;
     // c -> objective vector
-    Eigen::VectorXd c =
-        (-(T.transpose() * U).transpose() - (U.transpose() * T)).transpose();
+    Eigen::VectorXd c = (-2 * (U.transpose() * T)).transpose();
 
     std::vector<Eigen::Triplet<double>> Q_triplets;
     for(int i = 0 ; i < Q.rows() ; i++) {

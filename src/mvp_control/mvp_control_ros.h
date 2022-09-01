@@ -1,3 +1,24 @@
+/*
+    This file is part of MVP-Control program.
+
+    MVP-Control is free software: you can redistribute it and/or modify it under the
+    terms of the GNU General Public License as published by the Free Software
+    Foundation, either version 3 of the License, or (at your option) any later
+    version.
+
+    MVP-Control is distributed in the hope that it will be useful, but WITHOUT ANY
+    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+    FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License along with
+    MVP-Control. If not, see <https://www.gnu.org/licenses/>.
+
+    Author: Emir Cem Gezer
+    Email: emircem@uri.edu;emircem.gezer@gmail.com
+    Year: 2022
+*/
+
 #pragma once
 
 /*******************************************************************************
@@ -21,12 +42,13 @@
 #include "dynamic_reconfigure/server.h"
 
 #include "mvp_control/PIDConfig.h"
-#include "mvp_control/PIDgains.h"
-#include "mvp_control/ControlProcess.h"
-#include "mvp_control/ControlModes.h"
-#include "mvp_control/GetControlMode.h"
-#include "mvp_control/GetControlModes.h"
-#include "mvp_control/SetControlPoint.h"
+
+#include "mvp_msgs/PIDgains.h"
+#include "mvp_msgs/ControlProcess.h"
+#include "mvp_msgs/ControlModes.h"
+#include "mvp_msgs/GetControlMode.h"
+#include "mvp_msgs/GetControlModes.h"
+#include "mvp_msgs/SetControlPoint.h"
 
 /*******************************************************************************
  * MVP
@@ -144,10 +166,10 @@ namespace ctrl {
         nav_msgs::Odometry m_odometry_msg;
 
         //! @brief Control modes stored as ros message
-        mvp_control::ControlModes m_control_modes;
+        mvp_msgs::ControlModes m_control_modes;
 
         //! @brief Desired state of the system, set point of the controller
-        mvp_control::ControlProcess m_set_point_msg;
+        mvp_msgs::ControlProcess m_set_point_msg;
 
         //! @brief Current control mode
         std::string m_control_mode;
@@ -242,7 +264,7 @@ namespace ctrl {
          * @param set_point
          * @return
          */
-        bool f_amend_set_point(const mvp_control::ControlProcess &set_point);
+        bool f_amend_set_point(const mvp_msgs::ControlProcess &set_point);
 
         /** @brief Trivial subscriber
          *
@@ -255,7 +277,7 @@ namespace ctrl {
          * @param msg
          */
         void f_cb_srv_set_point(
-            const mvp_control::ControlProcess::ConstPtr &msg);
+            const mvp_msgs::ControlProcess::ConstPtr &msg);
 
         /** @brief Dynamic reconfigure server callback
          *
@@ -273,8 +295,8 @@ namespace ctrl {
          * @return Success of the operation
          */
         bool f_cb_srv_get_control_modes(
-            mvp_control::GetControlModes::Request &req,
-            mvp_control::GetControlModes::Response &resp);
+            mvp_msgs::GetControlModes::Request &req,
+            mvp_msgs::GetControlModes::Response &resp);
 
         /** @brief Trivial ros service server callback for set control point
          *
@@ -283,8 +305,8 @@ namespace ctrl {
          * @return Success of the operation
          */
         bool f_cb_srv_set_control_point(
-            mvp_control::SetControlPoint::Request req,
-            mvp_control::SetControlPoint::Response resp);
+            mvp_msgs::SetControlPoint::Request req,
+            mvp_msgs::SetControlPoint::Response resp);
 
         /**
          * @brief Enables the controller
@@ -317,8 +339,8 @@ namespace ctrl {
          * @return true Always returns true
          */
         bool f_cb_srv_get_active_mode(
-            mvp_control::GetControlMode::Request &req,
-            mvp_control::GetControlMode::Response &resp);
+            mvp_msgs::GetControlMode::Request &req,
+            mvp_msgs::GetControlMode::Response &resp);
 
     public:
 

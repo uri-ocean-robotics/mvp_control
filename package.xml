@@ -11,7 +11,7 @@
   <!-- One license tag required, multiple allowed, one license per tag -->
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>MIT</license>
+  <license>GPLv3</license>
 
   <!-- <url type="website">http://wiki.ros.org/alpha_control</url> -->
 
@@ -23,9 +23,8 @@
   <depend>tf2_ros</depend>
   <depend>tf2_eigen</depend>
   <depend>libgsl</depend>
+  <depend>mvp_msgs</depend>
   <depend>dynamic_reconfigure</depend>
-  <exec_depend>message_runtime</exec_depend>
-  <build_depend>message_generation</build_depend>
   <doc_depend>doxygen</doc_depend>
 
   <!-- The export tag contains other, unspecified, tags -->

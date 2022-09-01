@@ -1,10 +1,31 @@
+/*
+    This file is part of MVP-Control program.
+
+    MVP-Control is free software: you can redistribute it and/or modify it under the
+    terms of the GNU General Public License as published by the Free Software
+    Foundation, either version 3 of the License, or (at your option) any later
+    version.
+
+    MVP-Control is distributed in the hope that it will be useful, but WITHOUT ANY
+    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+    FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+    details.
+
+    You should have received a copy of the GNU General Public License along with
+    MVP-Control. If not, see <https://www.gnu.org/licenses/>.
+
+    Author: Emir Cem Gezer
+    Email: emircem@uri.edu;emircem.gezer@gmail.com
+    Year: 2022
+*/
+
 #pragma once
 
 #include "vector"
 #include "string"
 #include "map"
 
-#include "mvp_control/ControlModes.h"
+#include "mvp_msgs/ControlModes.h"
 
 namespace ctrl {
 
@@ -51,6 +72,7 @@ namespace ctrl {
     static constexpr const char * CONF_PID_I_MIN = "i_min";
     static constexpr const char * CONF_CONTROL_ALLOCATION_MATRIX = "control_allocation_matrix";
     static constexpr const char * CONF_CONTROL_TF = "control_tf";
+    static constexpr const char * CONF_CONTROLLER_FREQUENCY = "controller_frequency";
 
 
     static constexpr const char * TOPIC_SAFETY = "safety";
@@ -65,23 +87,20 @@ namespace ctrl {
     static constexpr const char * SERVICE_SET_CONTROL_POINT = "controller/set_point";
     static constexpr const char * SERVICE_GET_ACTIVE_MODE = "controller/active_mode";
 
-
-    static constexpr float THRUST_LIMIT_NEWTON = 20;
-
     struct DOF {
         enum IDX : int {
-            X =             mvp_control::ControlMode::DOF_X,
-            Y =             mvp_control::ControlMode::DOF_Y,
-            Z =             mvp_control::ControlMode::DOF_Z,
-            ROLL =          mvp_control::ControlMode::DOF_ROLL,
-            PITCH =         mvp_control::ControlMode::DOF_PITCH,
-            YAW =           mvp_control::ControlMode::DOF_YAW,
-            SURGE =         mvp_control::ControlMode::DOF_SURGE,
-            SWAY =          mvp_control::ControlMode::DOF_SWAY,
-            HEAVE =         mvp_control::ControlMode::DOF_HEAVE,
-            ROLL_RATE =     mvp_control::ControlMode::DOF_ROLL_RATE,
-            PITCH_RATE =    mvp_control::ControlMode::DOF_PITCH_RATE,
-            YAW_RATE =      mvp_control::ControlMode::DOF_YAW_RATE,
+            X =             mvp_msgs::ControlMode::DOF_X,
+            Y =             mvp_msgs::ControlMode::DOF_Y,
+            Z =             mvp_msgs::ControlMode::DOF_Z,
+            ROLL =          mvp_msgs::ControlMode::DOF_ROLL,
+            PITCH =         mvp_msgs::ControlMode::DOF_PITCH,
+            YAW =           mvp_msgs::ControlMode::DOF_YAW,
+            SURGE =         mvp_msgs::ControlMode::DOF_SURGE,
+            SWAY =          mvp_msgs::ControlMode::DOF_SWAY,
+            HEAVE =         mvp_msgs::ControlMode::DOF_HEAVE,
+            ROLL_RATE =     mvp_msgs::ControlMode::DOF_ROLL_RATE,
+            PITCH_RATE =    mvp_msgs::ControlMode::DOF_PITCH_RATE,
+            YAW_RATE =      mvp_msgs::ControlMode::DOF_YAW_RATE,
         };
     };
 
