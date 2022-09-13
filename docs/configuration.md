@@ -32,6 +32,7 @@ thruster_ids:
 The thrust curve is configured with `thruster_polynomials` ros_parameter for `mvp_control` node.
 Each item under `thruster_polynomials` dictionary represents the polynomial for each thruster.
 Array would hold the lower degrees in lower indexes. Shown below:
+
 $$
 f(x) = a_n x^n + a_{n-1} x^{n-1} + ... + a_1 x + a_0
 $$
