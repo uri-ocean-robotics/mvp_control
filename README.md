@@ -22,4 +22,4 @@ rosdep install --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} -y
 Compile using `catkin_make`.
 
 ## Funding
-This work is supported by the [National Science Foundation](https://www.nsf.gov/) award #2154901
+This work is supported by the [National Science Foundation](https://www.nsf.gov/) award [#2154901](https://www.nsf.gov/awardsearch/showAward?AWD_ID=2154901&HistoricalAwards=false)
