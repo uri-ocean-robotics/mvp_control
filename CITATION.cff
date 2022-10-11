@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+title: >-
+  Working toward the development of a generic
+  marine vehicle framework: ROS-MVP
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: inproceedings
+authors:
+  - given-names: Emir Cem
+    family-names: Gezer
+    email: 'emircem.gezer@gmail.com,emircem@uri.edu'
+    affiliation: University of Rhode Island, College of Engineering
+    orcid: 'https://orcid.org/0000-0002-6223-9805'
+  - given-names: Mingxi
+    family-names: Zhou
+    email: mzhou@uri.edu
+    affiliation: University of Rhode Island, Graduate School of Oceanography
+    orcid: 'https://orcid.org/0000-0002-7081-0901'
+  - given-names: Zhao
+    family-names: Lin
+    email: linzhao@uri.edu
+    affiliation: University of Rhode Island, College of Engineering
+    orcid: https://orcid.org/0000-0001-9769-4907
+  - given-names: William
+    family-names: McConnell
+    email: wmcconnell@uri.edu
+    affiliation: University of Rhode Island, College of Engineering
+license: GPL-3.0
+year: 2022
+proceedings: 'OCEANS 2022: Hampton Roads'
+# todo: replace it with DOI after publication
+unpublished: true
