@@ -28,6 +28,13 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          repository: GSO-soslab/mvp_msgs
+          ref: master
+
       - name: Checkout submodules
         run: git submodule update --init --recursive
 
