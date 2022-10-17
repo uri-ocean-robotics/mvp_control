@@ -312,4 +312,8 @@ tags
 
 .build
 
+_build
+Thumbs.db
+.DS_Store
+
 # End of https://www.toptal.com/developers/gitignore/api/clion,ros,pycharm,visualstudiocode,linux,vim,cmake,macos
