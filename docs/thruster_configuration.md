@@ -1,4 +1,4 @@
-# MVP-Control Configuration
+# Thruster Configuration
 
 ## Actuators
 
@@ -76,6 +76,24 @@ thruster_limits:
   ...
 ```
 
+## Example Configuration
 
+```yaml
+thruster_polynomials:
+  main:       [0.06165, 20.32, 9.632, 93.05, -2.856, -74.1]
+  horizontal: [0.06165, 20.32, 9.632, 93.05, -2.856, -74.1]
+  vertical:   [0.06165, 20.32, 9.632, 93.05, -2.856, -74.1]
 
+## Force limits
+thruster_limits:
+  main:
+    max: 40
+    min: -30
+  horizontal:
+    max: 20
+    min: -20
+  vertical:
+    max: 20
+    min: -20
+```
 
