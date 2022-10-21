@@ -1,7 +1,9 @@
 ```{toctree}
 self
-configuration.md
+installation.rst
+configuration.rst
 parameters.rst
+contributing.rst
 ```
 
 ```{include} ../README.md
