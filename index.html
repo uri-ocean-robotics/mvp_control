@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MVP - Low Level Controller &mdash; MVP Control  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/tooltipster.custom.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/tooltipster.bundle.min.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/tooltipster-sideTip-shadow.min.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/tooltipster-sideTip-punk.min.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/tooltipster-sideTip-noir.min.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/tooltipster-sideTip-light.min.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/tooltipster-sideTip-borderless.min.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/micromodal.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/sphinx_rtd_theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/js/hoverxref.js"></script>
+        <script src="_static/js/tooltipster.bundle.min.js"></script>
+        <script src="_static/js/micromodal.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Configuration" href="configuration.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="#" class="icon icon-home"> MVP Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">MVP - Low Level Controller</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">MVP Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+      <li>MVP - Low Level Controller</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="toctree-wrapper compound">
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">MVP - Low Level Controller</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuring-the-transforms">Configuring the transforms</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parameters.html#basic-parameters">Basic Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameters.html#control-allocation-parameters">Control Allocation Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameters.html#actuator-parameters">Actuator Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameters.html#control-law-parameters">Control Law Parameters</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="tex2jax_ignore mathjax_ignore section" id="mvp-low-level-controller">
+<h1>MVP - Low Level Controller<a class="headerlink" href="#mvp-low-level-controller" title="Permalink to this heading"></a></h1>
+<p>This repository contains low-level controller for marine vehicles.</p>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">mvp_control</span></code> is the low level vehicle controller of the MVP framework.
+It uses control allocation matrix with quadratic programming optimization.
+It highly relies on ROS and ROS transform tree.</p>
+<p><img alt="diagram" src="_images/diagram.svg" /></p>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this heading"></a></h2>
+<p>The documentation for <code class="docutils literal notranslate"><span class="pre">mvp_control</span></code> package is is at https://uri-ocean-robotics.github.io/mvp_control.</p>
+</div>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h2>
+<p>Pull the <code class="docutils literal notranslate"><span class="pre">mvp_msgs</span></code> repository if you don’t have it already</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/GSO-soslab/mvp_mission
+</pre></div>
+</div>
+<p>Pull the repository</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/GSO-soslab/mvp_control
+</pre></div>
+</div>
+<p>Install dependencies</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rosdep install --from-paths src --ignore-src --rosdistro <span class="si">${</span><span class="nv">ROS_DISTRO</span><span class="si">}</span> -y
+</pre></div>
+</div>
+<p>Compile using <code class="docutils literal notranslate"><span class="pre">catkin_make</span></code>.</p>
+</div>
+<div class="section" id="citation">
+<h2>Citation<a class="headerlink" href="#citation" title="Permalink to this heading"></a></h2>
+<p>If you find this software useful in your research, please cite:</p>
+<blockquote>
+<div><p>Note, this work is published in OCEANS 2022 conference. Once the paper is publicly available, bibtex entry
+will be updated with the one from IEEExplore.</p>
+</div></blockquote>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@inproceedings</span><span class="p">{</span><span class="n">mvp_paper</span><span class="p">,</span>
+    <span class="n">title</span> <span class="o">=</span> <span class="p">{</span><span class="n">Working</span> <span class="n">towards</span> <span class="n">the</span> <span class="n">development</span> <span class="n">of</span> <span class="n">a</span> <span class="n">generic</span> <span class="n">marine</span> <span class="n">vehicle</span> <span class="n">framework</span><span class="p">:</span> <span class="n">ROS</span><span class="o">-</span><span class="n">MVP</span><span class="p">},</span>
+    <span class="n">author</span><span class="o">=</span><span class="p">{</span><span class="n">Gezer</span><span class="p">,</span> <span class="n">Emir</span> <span class="n">Cem</span> <span class="ow">and</span> <span class="n">Zhou</span><span class="p">,</span> <span class="n">Mingxi</span> <span class="ow">and</span> <span class="n">Zhao</span><span class="p">,</span> <span class="n">Lin</span> <span class="ow">and</span> <span class="n">McConnell</span><span class="p">,</span> <span class="n">William</span><span class="p">},</span>
+    <span class="n">journal</span> <span class="o">=</span> <span class="p">{</span><span class="n">OCEANS</span> <span class="mi">2022</span><span class="p">,</span> <span class="n">Hampton</span> <span class="n">Road</span><span class="p">},</span>
+    <span class="n">year</span> <span class="o">=</span><span class="p">{</span><span class="mi">2022</span><span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="funding">
+<h2>Funding<a class="headerlink" href="#funding" title="Permalink to this heading"></a></h2>
+<p>This work is supported by the <a class="reference external" href="https://www.nsf.gov/">National Science Foundation</a> award <a class="reference external" href="https://www.nsf.gov/awardsearch/showAward?AWD_ID=2154901&amp;HistoricalAwards=false">#2154901</a></p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="configuration.html" class="btn btn-neutral float-right" title="Configuration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, URI Ocean Robotics.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

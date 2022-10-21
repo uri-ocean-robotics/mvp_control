@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parameters &mdash; MVP Control  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/tooltipster.custom.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/tooltipster.bundle.min.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/tooltipster-sideTip-shadow.min.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/tooltipster-sideTip-punk.min.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/tooltipster-sideTip-noir.min.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/tooltipster-sideTip-light.min.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/tooltipster-sideTip-borderless.min.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/micromodal.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/sphinx_rtd_theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/js/hoverxref.js"></script>
+        <script src="_static/js/tooltipster.bundle.min.js"></script>
+        <script src="_static/js/micromodal.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Configuration" href="configuration.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> MVP Control
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">MVP - Low Level Controller</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Parameters</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#basic-parameters">Basic Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#control-allocation-parameters">Control Allocation Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#actuator-parameters">Actuator Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#control-law-parameters">Control Law Parameters</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">MVP Control</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Parameters</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/parameters.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="parameters">
+<h1>Parameters<a class="headerlink" href="#parameters" title="Permalink to this heading"></a></h1>
+<div class="section" id="basic-parameters">
+<h2>Basic Parameters<a class="headerlink" href="#basic-parameters" title="Permalink to this heading"></a></h2>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv47enabled">
+<span id="_CPPv37enabled"></span><span id="_CPPv27enabled"></span><span id="enabled__bA"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">enabled</span></span></span><span class="p"><span class="pre">[</span></span><span class="k"><span class="pre">not</span></span><span class="w"> </span><span class="n"><span class="pre">required</span></span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#_CPPv47enabled" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><cite>False</cite></p>
+</dd>
+<dt class="field-even">Brief</dt>
+<dd class="field-even"><p>Initial state of the controller</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv420controller_frequency">
+<span id="_CPPv320controller_frequency"></span><span id="_CPPv220controller_frequency"></span><span id="controller_frequency__doubleA"></span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">controller_frequency</span></span></span><span class="p"><span class="pre">[</span></span><span class="k"><span class="pre">not</span></span><span class="w"> </span><span class="n"><span class="pre">required</span></span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#_CPPv420controller_frequency" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><cite>10.0</cite></p>
+</dd>
+<dt class="field-even">Brief</dt>
+<dd class="field-even"><p>Frequency of the controller</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv49tf_prefix">
+<span id="_CPPv39tf_prefix"></span><span id="_CPPv29tf_prefix"></span><span id="tf_prefix__stringA"></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">tf_prefix</span></span></span><span class="p"><span class="pre">[</span></span><span class="k"><span class="pre">not</span></span><span class="w"> </span><span class="n"><span class="pre">required</span></span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#_CPPv49tf_prefix" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><cite>‘’</cite></p>
+</dd>
+<dt class="field-even">Brief</dt>
+<dd class="field-even"><p>Transform Tree prefix</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv415odometry_source">
+<span id="_CPPv315odometry_source"></span><span id="_CPPv215odometry_source"></span><span id="odometry_source__string"></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">odometry_source</span></span></span><a class="headerlink" href="#_CPPv415odometry_source" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><cite>odometry</cite></p>
+</dd>
+<dt class="field-even">Brief</dt>
+<dd class="field-even"><p>Odometry topic name</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv410world_link">
+<span id="_CPPv310world_link"></span><span id="_CPPv210world_link"></span><span id="world_link__stringA"></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">world_link</span></span></span><span class="p"><span class="pre">[</span></span><span class="k"><span class="pre">not</span></span><span class="w"> </span><span class="n"><span class="pre">required</span></span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#_CPPv410world_link" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><cite>world</cite></p>
+</dd>
+<dt class="field-even">Brief</dt>
+<dd class="field-even"><p>Transform tree worl link name</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv47cg_link">
+<span id="_CPPv37cg_link"></span><span id="_CPPv27cg_link"></span><span id="cg_link__stringA"></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cg_link</span></span></span><span class="p"><span class="pre">[</span></span><span class="k"><span class="pre">not</span></span><span class="w"> </span><span class="n"><span class="pre">required</span></span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#_CPPv47cg_link" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Defeault</dt>
+<dd class="field-odd"><p><cite>cg_link</cite></p>
+</dd>
+<dt class="field-even">Brief</dt>
+<dd class="field-even"><p>Center of gavity transform tree link name</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="control-allocation-parameters">
+<h2>Control Allocation Parameters<a class="headerlink" href="#control-allocation-parameters" title="Permalink to this heading"></a></h2>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv414generator_type">
+<span id="_CPPv314generator_type"></span><span id="_CPPv214generator_type"></span><span id="generator_type__string"></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">generator_type</span></span></span><a class="headerlink" href="#_CPPv414generator_type" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p>Defines the control allocation matrix generation method.</p>
+</dd>
+</dl>
+<p>Depending on the
+parameter, it is either auto generated or user defined</p>
+<dl class="field-list simple">
+<dt class="field-odd">Option</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">tf</span></code> Control allocaiton matrix generated using Transform Tree. If this option is selected, user must define actuator links in the <cite>thruster_ids</cite> parameter.|</p>
+</dd>
+<dt class="field-even">Option</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">user</span></code> User provides the control allocation matrix</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv425control_allocation_matrix">
+<span id="_CPPv325control_allocation_matrix"></span><span id="_CPPv225control_allocation_matrix"></span><span id="control_allocation_matrix__complex"></span><span class="n"><span class="pre">complex</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">control_allocation_matrix</span></span></span><a class="headerlink" href="#_CPPv425control_allocation_matrix" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p>User defined control allocation matrix.</p>
+</dd>
+</dl>
+<p>User defines the control allocation matrix as vectors per actuator. Those
+vectors are so-called <em>contribution vectors</em>.</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N25control_allocation_matrixUt13_ACTUATOR_NAMEE">
+<span id="_CPPv3N25control_allocation_matrixUt13_ACTUATOR_NAMEE"></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">[anonymous]</span></span></span><a class="headerlink" href="#_CPPv4N25control_allocation_matrixUt13_ACTUATOR_NAMEE" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p>Contribution vector for given actuator</p>
+</dd>
+</dl>
+<div class="math">
+<p><span class="math">\texttt{&lt;actuator\_name&gt;} \leftarrow [\phi, \theta, \psi, u, v, w]</span></p>
+</div></dd></dl>
+
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">Example control_allocation_matrix configuration.</span><a class="headerlink" href="#id1" title="Permalink to this code"></a></div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">control_allocation_matrix</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">main</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="p p-Indicator">[</span><span class="nv">0.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.0</span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="w">    </span><span class="nt">horizontal</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="p p-Indicator">[</span><span class="nv">0.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.48</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.0</span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="w">    </span><span class="nt">vertical</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="p p-Indicator">[</span><span class="nv">0.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.39</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-1.0</span><span class="p p-Indicator">]</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv410control_tf">
+<span id="_CPPv310control_tf"></span><span id="_CPPv210control_tf"></span><span id="control_tf__complex"></span><span class="n"><span class="pre">complex</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">control_tf</span></span></span><a class="headerlink" href="#_CPPv410control_tf" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p>Transform tree link names for actuators</p>
+</dd>
+</dl>
+<p>If <cite>generator_type</cite> parameter is set to <cite>tf</cite>, the mvp_control will look for actuator links in the transform tree.
+Transform tree link names is required to generate the control allocaiton matrix.</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N10control_tfUt8_thrusterE">
+<span id="_CPPv3N10control_tfUt8_thrusterE"></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">[anonymous]</span></span></span><a class="headerlink" href="#_CPPv4N10control_tfUt8_thrusterE" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p>Trasform tree link name for the actuator</p>
+</dd>
+</dl>
+</dd></dl>
+
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">Example</span><a class="headerlink" href="#id2" title="Permalink to this code"></a></div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">control_tf</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">main</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main_thruster_link</span><span class="w"></span>
+<span class="w">    </span><span class="nt">horizontal</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">horizontal_thruster_link</span><span class="w"></span>
+<span class="w">    </span><span class="nt">vertical</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vertical_thruster_link</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="actuator-parameters">
+<h2>Actuator Parameters<a class="headerlink" href="#actuator-parameters" title="Permalink to this heading"></a></h2>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv412thruster_ids">
+<span id="_CPPv312thruster_ids"></span><span id="_CPPv212thruster_ids"></span><span id="thruster_ids__vector:string:"></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">thruster_ids</span></span></span><a class="headerlink" href="#_CPPv412thruster_ids" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p>Arbitrary names for actuators</p>
+</dd>
+</dl>
+<p>The user must declare arbitrary id for actuators.
+Each thruster has its unique ID.
+These unique IDs will be used for configuring them.
+In the rest of the configuration file, those IDs must match.</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">Example</span><a class="headerlink" href="#id3" title="Permalink to this code"></a></div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">thruster_ids</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">horizontal</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vertical</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv423thruster_command_topics">
+<span id="_CPPv323thruster_command_topics"></span><span id="_CPPv223thruster_command_topics"></span><span id="thruster_command_topics__complex"></span><span class="n"><span class="pre">complex</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">thruster_command_topics</span></span></span><a class="headerlink" href="#_CPPv423thruster_command_topics" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p>Control command topics for each actuator.</p>
+</dd>
+</dl>
+<p>Control command for the actuator will be published under the topic defined with this parameter.
+The topic will publish the control command in <cite>std_msgs/Float64</cite> format.</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N23thruster_command_topicsUt11_thruster_idE">
+<span id="_CPPv3N23thruster_command_topicsUt11_thruster_idE"></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">[anonymous]</span></span></span><a class="headerlink" href="#_CPPv4N23thruster_command_topicsUt11_thruster_idE" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p>Control commad topic for an actuator</p>
+</dd>
+</dl>
+</dd></dl>
+
+<div class="literal-block-wrapper docutils container" id="id4">
+<div class="code-block-caption"><span class="caption-text">Example configuration</span><a class="headerlink" href="#id4" title="Permalink to this code"></a></div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">thruster_command_topics</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">main</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control/thruster/main</span><span class="w"></span>
+<span class="w">    </span><span class="nt">horizontal</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control/thruster/horizontal</span><span class="w"></span>
+<span class="w">    </span><span class="nt">vertical</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control/thruster/vertical</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv421thruster_force_topics">
+<span id="_CPPv321thruster_force_topics"></span><span id="_CPPv221thruster_force_topics"></span><span id="thruster_force_topics__complex"></span><span class="n"><span class="pre">complex</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">thruster_force_topics</span></span></span><a class="headerlink" href="#_CPPv421thruster_force_topics" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p>Topic for controller force output for each actuator.</p>
+</dd>
+</dl>
+<p>This topic will publish requested force from each actuator in Newtons.
+The topic will publish the control command in <cite>std_msgs/Float64</cite> format.</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N21thruster_force_topicsUt11_thruster_idE">
+<span id="_CPPv3N21thruster_force_topicsUt11_thruster_idE"></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">[anonymous]</span></span></span><a class="headerlink" href="#_CPPv4N21thruster_force_topicsUt11_thruster_idE" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p>Force topic for an actuator</p>
+</dd>
+</dl>
+</dd></dl>
+
+<div class="literal-block-wrapper docutils container" id="id5">
+<div class="code-block-caption"><span class="caption-text">Example configuration</span><a class="headerlink" href="#id5" title="Permalink to this code"></a></div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">thruster_force_topics</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">main</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control/force/main</span><span class="w"></span>
+<span class="w">    </span><span class="nt">horizontal</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control/force/horizontal</span><span class="w"></span>
+<span class="w">    </span><span class="nt">vertical</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control/force/vertical</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv420thruster_polynomials">
+<span id="_CPPv320thruster_polynomials"></span><span id="_CPPv220thruster_polynomials"></span><span id="thruster_polynomials__complex"></span><span class="n"><span class="pre">complex</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">thruster_polynomials</span></span></span><a class="headerlink" href="#_CPPv420thruster_polynomials" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p>Thrust curve for each thruster</p>
+</dd>
+</dl>
+<p>Control allocation computes the demanded force from each actuator.
+Thrust curves help converting force into control command.
+This could be a <span class="math">[1100,1900]</span> PWM value or simple <span class="math">[-1.0,1.0]</span> value.</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N20thruster_polynomialsUt8_thrusterE">
+<span id="_CPPv3N20thruster_polynomialsUt8_thrusterE"></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">float</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">[anonymous]</span></span></span><a class="headerlink" href="#_CPPv4N20thruster_polynomialsUt8_thrusterE" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p>Thrust curve for thruster defined</p>
+</dd>
+</dl>
+<p>For given thrust curve, <span class="math">f(x)</span>, thrust polynomial is set as follows.</p>
+<div class="math">
+<p><span class="math">f(x) = a_n x^n + a_{n-1} x^{n-1} + ... + a_1 x + a_0 \\
+\text{Thruster Polynomial} \leftarrow [a_0, a_1, ... ,a_{n-1}, a_n]</span></p>
+</div></dd></dl>
+
+<div class="literal-block-wrapper docutils container" id="id6">
+<div class="code-block-caption"><span class="caption-text">Example Configuration</span><a class="headerlink" href="#id6" title="Permalink to this code"></a></div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">thruster_polynomials</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">main</span><span class="p">:</span><span class="w">       </span><span class="p p-Indicator">[</span><span class="nv">0.06165</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">20.32</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">9.632</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">93.05</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-2.856</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-74.1</span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="w">    </span><span class="nt">horizontal</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0.06165</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">20.32</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">9.632</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">93.05</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-2.856</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-74.1</span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="w">    </span><span class="nt">vertical</span><span class="p">:</span><span class="w">   </span><span class="p p-Indicator">[</span><span class="nv">0.06165</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">20.32</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">9.632</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">93.05</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-2.856</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-74.1</span><span class="p p-Indicator">]</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+<div class="literal-block-wrapper docutils container" id="id7">
+<div class="code-block-caption"><span class="caption-text">Template for thruster polynomial configuration</span><a class="headerlink" href="#id7" title="Permalink to this code"></a></div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">thruster_polynomials</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">{{</span><span class="w"> </span><span class="nv">Thruster ID</span><span class="w"> </span><span class="p p-Indicator">}}:</span><span class="w"> </span><span class="p p-Indicator">[{{</span><span class="nv">a0</span><span class="p p-Indicator">},</span><span class="w"> </span><span class="p p-Indicator">{{</span><span class="nv">a1</span><span class="p p-Indicator">}}},</span><span class="w"> </span><span class="nv">...</span><span class="p p-Indicator">,{{</span><span class="nv">an</span><span class="p p-Indicator">}}]</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">{{</span><span class="w"> </span><span class="nv">Thruster ID</span><span class="w"> </span><span class="p p-Indicator">}}:</span><span class="w"> </span><span class="p p-Indicator">[{{</span><span class="nv">a0</span><span class="p p-Indicator">},</span><span class="w"> </span><span class="p p-Indicator">{{</span><span class="nv">a1</span><span class="p p-Indicator">}}},</span><span class="w"> </span><span class="nv">...</span><span class="p p-Indicator">,{{</span><span class="nv">an</span><span class="p p-Indicator">}}]</span><span class="w"></span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv415thruster_limits">
+<span id="_CPPv315thruster_limits"></span><span id="_CPPv215thruster_limits"></span><span id="thruster_limits__complex"></span><span class="n"><span class="pre">complex</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">thruster_limits</span></span></span><a class="headerlink" href="#_CPPv415thruster_limits" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p>Force limits for each thruster</p>
+</dd>
+</dl>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N15thruster_limitsUt8_thrusterE">
+<span id="_CPPv3N15thruster_limitsUt8_thrusterE"></span><span class="n"><span class="pre">complex</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">[anonymous]</span></span></span><a class="headerlink" href="#_CPPv4N15thruster_limitsUt8_thrusterE" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p>Maximum and minimum limits for given thruster</p>
+</dd>
+</dl>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N15thruster_limitsUt8_thruster3maxE">
+<span id="_CPPv3N15thruster_limitsUt8_thruster3maxE"></span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">max</span></span></span><a class="headerlink" href="#_CPPv4N15thruster_limitsUt8_thruster3maxE" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p>maximum limit for the given thruster</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N15thruster_limitsUt8_thruster3minE">
+<span id="_CPPv3N15thruster_limitsUt8_thruster3minE"></span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">min</span></span></span><a class="headerlink" href="#_CPPv4N15thruster_limitsUt8_thruster3minE" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p>minimum limit for the given thruster</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<div class="literal-block-wrapper docutils container" id="id8">
+<div class="code-block-caption"><span class="caption-text">Example</span><a class="headerlink" href="#id8" title="Permalink to this code"></a></div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">thruster_limits</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">main</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">40</span><span class="w"></span>
+<span class="w">        </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-30</span><span class="w"></span>
+<span class="w">    </span><span class="nt">horizontal</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span><span class="w"></span>
+<span class="w">        </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-20</span><span class="w"></span>
+<span class="w">    </span><span class="nt">vertical</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span><span class="w"></span>
+<span class="w">        </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-20</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="control-law-parameters">
+<h2>Control Law Parameters<a class="headerlink" href="#control-law-parameters" title="Permalink to this heading"></a></h2>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv413control_modes">
+<span id="_CPPv313control_modes"></span><span id="_CPPv213control_modes"></span><span id="control_modes__complex"></span><span class="n"><span class="pre">complex</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">control_modes</span></span></span><a class="headerlink" href="#_CPPv413control_modes" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p>Control modes with PID gains</p>
+</dd>
+</dl>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N13control_modesUt4_modeE">
+<span id="_CPPv3N13control_modesUt4_modeE"></span><span class="n"><span class="pre">complex</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">[anonymous]</span></span></span><a class="headerlink" href="#_CPPv4N13control_modesUt4_modeE" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p><strong>Control mode</strong></p>
+</dd>
+</dl>
+<p>Control mode name is given with this parameter.
+Target degree of freedoms and PID gains described under each control mode.
+MVP Controller can be configured with more than one control mode.</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N13control_modesUt4_modeUt3_dofE">
+<span id="_CPPv3N13control_modesUt4_modeUt3_dofE"></span><span class="n"><span class="pre">complex</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">[anonymous]</span></span></span><a class="headerlink" href="#_CPPv4N13control_modesUt4_modeUt3_dofE" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Brief</dt>
+<dd class="field-odd"><p><strong>Target degree of freedoms</strong> and their PID gains</p>
+</dd>
+</dl>
+<p>Target degree of freedoms of a control mode with its PID gains.
+This complex object can only have members that are described in the table below.
+Each ‘member’ of this complex object contains PID gains.</p>
+<table class="colwidths-given docutils align-default" id="id9">
+<caption><span class="caption-text">Possible values for target degree of freedoms</span><a class="headerlink" href="#id9" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Target DOFs</p></th>
+<th class="head"><p>Keyword</p></th>
+<th class="head"><p>SNAME Symbol</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Position in X axis</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">x</span></code></p></td>
+<td><p><span class="math">x</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>Position in Y axis</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">y</span></code></p></td>
+<td><p><span class="math">y</span></p></td>
+</tr>
+<tr class="row-even"><td><p>Position in Z axis</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">z</span></code></p></td>
+<td><p><span class="math">z</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>Orientation around X axis</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">roll</span></code></p></td>
+<td><p><span class="math">\phi</span></p></td>
+</tr>
+<tr class="row-even"><td><p>Orientation around Y axis</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">pitch</span></code></p></td>
+<td><p><span class="math">\theta</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>Orientation around Z axis</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">yaw</span></code></p></td>
+<td><p><span class="math">\psi</span></p></td>
+</tr>
+<tr class="row-even"><td><p>Linear speed on X axis</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">surge</span></code></p></td>
+<td><p><span class="math">u</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>Linear speed on Y axis</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">sway</span></code></p></td>
+<td><p><span class="math">v</span></p></td>
+</tr>
+<tr class="row-even"><td><p>Linear speed on Z axis</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">heave</span></code></p></td>
+<td><p><span class="math">w</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>Angular speed around X</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">roll_rate</span></code></p></td>
+<td><p><span class="math">\dot{\phi}</span></p></td>
+</tr>
+<tr class="row-even"><td><p>Angular speed around Y</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">pitch_rate</span></code></p></td>
+<td><p><span class="math">\dot{\theta}</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>Angular speed around  Z</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">yaw_rate</span></code></p></td>
+<td><p><span class="math">\dot{\psi}</span></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N13control_modesUt4_modeUt3_dof1pE">
+<span id="_CPPv3N13control_modesUt4_modeUt3_dof1pE"></span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">p</span></span></span><a class="headerlink" href="#_CPPv4N13control_modesUt4_modeUt3_dof1pE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>P gain for PID controller</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N13control_modesUt4_modeUt3_dof1iE">
+<span id="_CPPv3N13control_modesUt4_modeUt3_dof1iE"></span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">i</span></span></span><a class="headerlink" href="#_CPPv4N13control_modesUt4_modeUt3_dof1iE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>I gain for PID controller</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N13control_modesUt4_modeUt3_dof1dE">
+<span id="_CPPv3N13control_modesUt4_modeUt3_dof1dE"></span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">d</span></span></span><a class="headerlink" href="#_CPPv4N13control_modesUt4_modeUt3_dof1dE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>D gain for PID controller</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N13control_modesUt4_modeUt3_dof5i_maxE">
+<span id="_CPPv3N13control_modesUt4_modeUt3_dof5i_maxE"></span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">i_max</span></span></span><a class="headerlink" href="#_CPPv4N13control_modesUt4_modeUt3_dof5i_maxE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Maximum integral value</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N13control_modesUt4_modeUt3_dof5i_minE">
+<span id="_CPPv3N13control_modesUt4_modeUt3_dof5i_minE"></span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">i_min</span></span></span><a class="headerlink" href="#_CPPv4N13control_modesUt4_modeUt3_dof5i_minE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Minimum interal value</p>
+</dd></dl>
+
+</dd></dl>
+
+</dd></dl>
+
+<p>Example configuration is given in the code snippet below.
+In the code snippet three control modes are configured.
+The first control mode is <code class="docutils literal notranslate"><span class="pre">flight</span></code> mode that controls pitch, yaw and surge.
+Second control mode is <code class="docutils literal notranslate"><span class="pre">hold</span></code> that controls <span class="math">x</span> and <span class="math">y</span>.
+The third and the last contol mode is <code class="docutils literal notranslate"><span class="pre">kill</span></code>.
+This is a special setting that allows user to create control modes that doesn’t control any degree of freedoms.
+It is particularly useful when creating safety behaviors.</p>
+<p>Simply put, first indentation after <code class="docutils literal notranslate"><span class="pre">control_modes</span></code> directive starts to create a new control mode.
+And then the next indentation is to describe target degree of freedoms.</p>
+<div class="literal-block-wrapper docutils container" id="id10">
+<div class="code-block-caption"><span class="caption-text">Example control mode configuration</span><a class="headerlink" href="#id10" title="Permalink to this code"></a></div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">control_modes</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">flight</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">pitch</span><span class="p">:</span><span class="w">    </span><span class="p p-Indicator">{</span><span class="nt">p</span><span class="p">:</span><span class="w"> </span><span class="nv">5.0</span><span class="p p-Indicator">,</span><span class="nt">    i</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="nt">   d</span><span class="p">:</span><span class="w"> </span><span class="nv">2.0</span><span class="p p-Indicator">,</span><span class="nt">   i_max</span><span class="p">:</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">,</span><span class="nt"> i_min</span><span class="p">:</span><span class="w"> </span><span class="nv">-10</span><span class="p p-Indicator">}</span><span class="w"></span>
+<span class="w">        </span><span class="nt">yaw</span><span class="p">:</span><span class="w">      </span><span class="p p-Indicator">{</span><span class="nt">p</span><span class="p">:</span><span class="w"> </span><span class="nv">5.0</span><span class="p p-Indicator">,</span><span class="nt">    i</span><span class="p">:</span><span class="w"> </span><span class="nv">0.5</span><span class="p p-Indicator">,</span><span class="nt">   d</span><span class="p">:</span><span class="w"> </span><span class="nv">30.0</span><span class="p p-Indicator">,</span><span class="nt">  i_max</span><span class="p">:</span><span class="w"> </span><span class="nv">20</span><span class="p p-Indicator">,</span><span class="nt"> i_min</span><span class="p">:</span><span class="w"> </span><span class="nv">-20</span><span class="p p-Indicator">}</span><span class="w"></span>
+<span class="w">        </span><span class="nt">surge</span><span class="p">:</span><span class="w">    </span><span class="p p-Indicator">{</span><span class="nt">p</span><span class="p">:</span><span class="w"> </span><span class="nv">10.0</span><span class="p p-Indicator">,</span><span class="nt">   i</span><span class="p">:</span><span class="w"> </span><span class="nv">3.0</span><span class="p p-Indicator">,</span><span class="nt">   d</span><span class="p">:</span><span class="w"> </span><span class="nv">5.0</span><span class="p p-Indicator">,</span><span class="nt">   i_max</span><span class="p">:</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">,</span><span class="nt"> i_min</span><span class="p">:</span><span class="w"> </span><span class="nv">-10</span><span class="p p-Indicator">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="nt">hold</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">x</span><span class="p">:</span><span class="w">        </span><span class="p p-Indicator">{</span><span class="nt">p</span><span class="p">:</span><span class="w"> </span><span class="nv">2.0</span><span class="p p-Indicator">,</span><span class="nt">    i</span><span class="p">:</span><span class="w"> </span><span class="nv">0.5</span><span class="p p-Indicator">,</span><span class="nt">   d</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="nt">   i_max</span><span class="p">:</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">,</span><span class="nt"> i_min</span><span class="p">:</span><span class="w"> </span><span class="nv">-10</span><span class="p p-Indicator">}</span><span class="w"></span>
+<span class="w">        </span><span class="nt">y</span><span class="p">:</span><span class="w">        </span><span class="p p-Indicator">{</span><span class="nt">p</span><span class="p">:</span><span class="w"> </span><span class="nv">2.0</span><span class="p p-Indicator">,</span><span class="nt">    i</span><span class="p">:</span><span class="w"> </span><span class="nv">0.5</span><span class="w"> </span><span class="p p-Indicator">,</span><span class="nt">  d</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="nt">   i_max</span><span class="p">:</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">,</span><span class="nt"> i_min</span><span class="p">:</span><span class="w"> </span><span class="nv">-10</span><span class="p p-Indicator">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="nt">kill</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="configuration.html" class="btn btn-neutral float-left" title="Configuration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, URI Ocean Robotics.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
