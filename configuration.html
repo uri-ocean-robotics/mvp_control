@@ -32,7 +32,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Parameters" href="parameters.html" />
-    <link rel="prev" title="MVP - Low Level Controller" href="index.html" /> 
+    <link rel="prev" title="Installation" href="installation.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -52,11 +52,14 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">MVP - Low Level Controller</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#configuring-the-transforms">Configuring the transforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#configuring-the-transform-tree">Configuring the Transform Tree</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-the-thrust-curve">Setting up the thrust curve</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
 </ul>
 
         </div>
@@ -85,8 +88,8 @@
              
   <div class="section" id="configuration">
 <h1>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading"></a></h1>
-<div class="section" id="configuring-the-transforms">
-<h2>Configuring the transforms<a class="headerlink" href="#configuring-the-transforms" title="Permalink to this heading"></a></h2>
+<div class="section" id="configuring-the-transform-tree">
+<h2>Configuring the Transform Tree<a class="headerlink" href="#configuring-the-transform-tree" title="Permalink to this heading"></a></h2>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
 <p>It is crucial that users of MVP have a clear understandin of <a class="reference external" href="https://www.ros.org/reps/rep-0105.html">REP 105</a> and <a class="reference external" href="https://www.ros.org/reps/rep-0103.html">REP 103</a>.</p>
@@ -109,13 +112,29 @@ ROS robot_localization package provides easiest navigation integration.</p>
 <img alt="_images/example_tf.svg" src="_images/example_tf.svg" /><p class="caption"><span class="caption-text">Example of minimum required transform tree configuration.</span><a class="headerlink" href="#id1" title="Permalink to this image"></a></p>
 </div>
 </div>
+<div class="section" id="setting-up-the-thrust-curve">
+<h2>Setting up the thrust curve<a class="headerlink" href="#setting-up-the-thrust-curve" title="Permalink to this heading"></a></h2>
+<p>Some manifacturers provide thrust curve for their thrusters that represets control command and force relation.
+<code class="docutils literal notranslate"><span class="pre">mvp_control</span></code> accepts polynomails as thrust curves.
+It has a built-in polynomial solver to solve for control command.</p>
+<p>For example, if you want to use <a class="reference external" href="https://bluerobotics.com/store/thrusters/t100-t200-thrusters/t200-thruster-r2-rp/">Blue Robotics T200 thruster</a>, you can download the performance metrics from their webpage.
+Then, you can apply curve-fitting to find polynomial that represents the thrust curve.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can use either Matlab’s <a class="reference external" href="https://www.mathworks.com/help/curvefit/curve-fitting.html">curve fitting toolbox</a> or
+you can use one of the Python scientific libraries curve fitters.</p>
+</div>
+<p>In some cases, actuator performance degregades or enhances based on the power supply efficiency and one-to-one mapping of control command to force might not be feasible.
+To fix that problem, you may already have actuator controller that takes force as an input to control the actuator.
+<code class="docutils literal notranslate"><span class="pre">mvp_control</span></code> requested forces per thruster in another topic to cover this case.</p>
+</div>
 </div>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="MVP - Low Level Controller" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="parameters.html" class="btn btn-neutral float-right" title="Parameters" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Search &mdash; MVP Control  documentation</title>
+  <title>Installation &mdash; MVP Control  documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/tooltipster.custom.css" type="text/css" />
@@ -15,7 +15,6 @@
       <link rel="stylesheet" href="_static/css/tooltipster-sideTip-borderless.min.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/micromodal.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/sphinx_rtd_theme.css" type="text/css" />
-    
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -30,10 +29,10 @@
         <script src="_static/js/tooltipster.bundle.min.js"></script>
         <script src="_static/js/micromodal.min.js"></script>
     <script src="_static/js/theme.js"></script>
-    <script src="_static/searchtools.js"></script>
-    <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="#" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Configuration" href="configuration.html" />
+    <link rel="prev" title="MVP - Low Level Controller" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -44,16 +43,20 @@
             <a href="index.html" class="icon icon-home"> MVP Control
           </a>
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="#" method="get">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul>
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">MVP - Low Level Controller</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#target-system">Target system</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation-from-source">Installation from source</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
@@ -73,8 +76,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Search</li>
+      <li>Installation</li>
       <li class="wy-breadcrumbs-aside">
+            <a href="_sources/installation.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -82,22 +86,48 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <noscript>
-  <div id="fallback" class="admonition warning">
-    <p class="last">
-      Please activate JavaScript to enable the search functionality.
-    </p>
-  </div>
-  </noscript>
+  <div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h1>
+<div class="section" id="target-system">
+<h2>Target system<a class="headerlink" href="#target-system" title="Permalink to this heading"></a></h2>
+<p>ROS-MVP is only suitable for Ubuntu 20.04 and ROS Noetic as of now.
+It requires 64-bit processor.
+It has been tested on intel CPUs and Raspberry Pi 4 varians (CM4 and SBC).</p>
+</div>
+<div class="section" id="installation-from-source">
+<h2>Installation from source<a class="headerlink" href="#installation-from-source" title="Permalink to this heading"></a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>MVP is only available through source installation.</p>
+</div>
+<p>Pull the <code class="docutils literal notranslate"><span class="pre">mvp_msgs</span></code> repository if you don’t have it already</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone --single-branch --branch noetic-devel https://github.com/uri-ocean-robotics/mvp_msgs
+</pre></div>
+</div>
+<p>Pull the <code class="docutils literal notranslate"><span class="pre">mvp_control</span></code> repository</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone --sigle-branch --branch noetic-devel https://github.com/uri-ocean-robotics/mvp_control
+</pre></div>
+</div>
+<p>Install dependencies
+.. code-block:: bash</p>
+<blockquote>
+<div><p>rosdep install –from-paths src –ignore-src –rosdistro ${ROS_DISTRO} -y</p>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To execute the command above you need to be root level of your workspace.</p>
+</div>
+<p>And compile using <strong>catkin</strong>.</p>
+</div>
+</div>
 
-  
-  <div id="search-results">
-  
-  </div>
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="MVP - Low Level Controller" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="configuration.html" class="btn btn-neutral float-right" title="Configuration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 
@@ -119,14 +149,7 @@
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-  <script>
-    jQuery(function() { Search.loadIndex("searchindex.js"); });
-  </script>
-  
-  <script id="searchindexloader"></script>
-   
-
+  </script> 
 
 </body>
 </html>

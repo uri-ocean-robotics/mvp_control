@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Search &mdash; MVP Control  documentation</title>
+  <title>Contributing &mdash; MVP Control  documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/tooltipster.custom.css" type="text/css" />
@@ -15,7 +15,6 @@
       <link rel="stylesheet" href="_static/css/tooltipster-sideTip-borderless.min.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/micromodal.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/sphinx_rtd_theme.css" type="text/css" />
-    
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -30,10 +29,9 @@
         <script src="_static/js/tooltipster.bundle.min.js"></script>
         <script src="_static/js/micromodal.min.js"></script>
     <script src="_static/js/theme.js"></script>
-    <script src="_static/searchtools.js"></script>
-    <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="#" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Parameters" href="parameters.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -44,19 +42,25 @@
             <a href="index.html" class="icon icon-home"> MVP Control
           </a>
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="#" method="get">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul>
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">MVP - Low Level Controller</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#think-before-you-fork">Think Before you Fork</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fixing-a-bug-in-production-code">Fixing a Bug in Production Code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#adding-a-feature">Adding a Feature</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#additional-guidelines">Additional Guidelines</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -73,8 +77,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Search</li>
+      <li>Contributing</li>
       <li class="wy-breadcrumbs-aside">
+            <a href="_sources/contributing.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -82,22 +87,36 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <noscript>
-  <div id="fallback" class="admonition warning">
-    <p class="last">
-      Please activate JavaScript to enable the search functionality.
-    </p>
-  </div>
-  </noscript>
+  <div class="section" id="contributing">
+<h1>Contributing<a class="headerlink" href="#contributing" title="Permalink to this heading"></a></h1>
+<p>This repository follows the GitFlow Workflow.  If you are not familiar, please review [this article](<a class="reference external" href="https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow">https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow</a>).</p>
+<div class="section" id="think-before-you-fork">
+<h2>Think Before you Fork<a class="headerlink" href="#think-before-you-fork" title="Permalink to this heading"></a></h2>
+<p>Before you create a fork, it is advisable to create an issue on the github page.  That way, the maintainers can let you know if that feature or bugfix is already under development.</p>
+<p>Please consult the maintainers before you create a fork that will change existing behaviors.</p>
+</div>
+<div class="section" id="fixing-a-bug-in-production-code">
+<h2>Fixing a Bug in Production Code<a class="headerlink" href="#fixing-a-bug-in-production-code" title="Permalink to this heading"></a></h2>
+<p>To fix a bug make a create a branch from <cite>master</cite>. This branch should be labeled <cite>hotfix/x.y.z-description</cite> where x.y.z follow the [semantic versioning convention](<a class="reference external" href="https://semver.org/">https://semver.org/</a>).</p>
+<p>When the bugfix is complete, make a pull request back to <cite>master</cite> and the maintainers will review and merge it.</p>
+</div>
+<div class="section" id="adding-a-feature">
+<h2>Adding a Feature<a class="headerlink" href="#adding-a-feature" title="Permalink to this heading"></a></h2>
+<p>If you wish to add a new feature, please make a fork from the <cite>devel</cite> branch.</p>
+<p>Once your modification is completed, make a pull request back to the <cite>devel</cite> branch.  If it is accepted, your modifications will be available in the <cite>master</cite> branch (default branch) after the next release.</p>
+</div>
+<div class="section" id="additional-guidelines">
+<h2>Additional Guidelines<a class="headerlink" href="#additional-guidelines" title="Permalink to this heading"></a></h2>
+<p>Please review and adhere to the style guidelines our [Development Conventions](<a class="reference external" href="https://github.com/uri-ocean-robotics/development-conventions">https://github.com/uri-ocean-robotics/development-conventions</a>).</p>
+</div>
+</div>
 
-  
-  <div id="search-results">
-  
-  </div>
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="parameters.html" class="btn btn-neutral float-left" title="Parameters" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
 
   <hr/>
 
@@ -119,14 +138,7 @@
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-  <script>
-    jQuery(function() { Search.loadIndex("searchindex.js"); });
-  </script>
-  
-  <script id="searchindexloader"></script>
-   
-
+  </script> 
 
 </body>
 </html>
