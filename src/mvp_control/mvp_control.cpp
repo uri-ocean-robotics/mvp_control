@@ -22,9 +22,10 @@
 */
 
 #include "mvp_control.h"
-#include "ros/ros.h"
+#include "rclcpp/rclcpp.hpp"
 #include "mvp_control/dictionary.h"
 #include "exception.hpp"
+#include "functional"
 
 using namespace ctrl;
 
@@ -46,11 +47,11 @@ MvpControl::MvpControl() {
      * function that is binded to it's error function.
      */
     m_pid->set_error_function(
-        boost::bind(
+        std::bind(
             &MvpControl::f_error_function,
             this,
-            boost::placeholders::_1,
-            boost::placeholders::_2
+            std::placeholders::_1,
+            std::placeholders::_2
         )
     );
 
@@ -123,7 +124,7 @@ bool MvpControl::calculate_needed_forces(Eigen::VectorXd *f, double dt) {
     if(f_optimize_thrust(f, u)) {
         return true;
     } else {
-        ROS_WARN_STREAM("Optimum solution can not be found");
+        // todo: create a warning
     }
 
     return false;
@@ -228,37 +229,26 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
             break;
         }
         case osqp::OsqpExitCode::kPrimalInfeasible:
-            ROS_WARN_STREAM("kPrimalInfeasible");
             break;
         case osqp::OsqpExitCode::kDualInfeasible:
-            ROS_WARN_STREAM("kDualInfeasible");
             break;
         case osqp::OsqpExitCode::kOptimalInaccurate:
-            ROS_WARN_STREAM("kOptimalInaccurate");
             break;
         case osqp::OsqpExitCode::kPrimalInfeasibleInaccurate:
-            ROS_WARN_STREAM("kPrimalInfeasibleInaccurate");
             break;
         case osqp::OsqpExitCode::kDualInfeasibleInaccurate:
-            ROS_WARN_STREAM("kDualInfeasibleInaccurate");
             break;
         case osqp::OsqpExitCode::kMaxIterations:
-            ROS_WARN_STREAM("kMaxIterations");
             break;
         case osqp::OsqpExitCode::kInterrupted:
-            ROS_WARN_STREAM("kInterrupted");
             break;
         case osqp::OsqpExitCode::kTimeLimitReached:
-            ROS_WARN_STREAM("kTimeLimitReached");
             break;
         case osqp::OsqpExitCode::kNonConvex:
-            ROS_WARN_STREAM("kNonConvex");
             break;
         case osqp::OsqpExitCode::kUnknown:
-            ROS_WARN_STREAM("kUnknown");
             break;
         default:
-            ROS_WARN_STREAM("something went wrong");
             break;
     }
 
