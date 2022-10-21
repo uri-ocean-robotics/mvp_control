@@ -2,6 +2,18 @@
 
 This repository contains low-level controller for marine vehicles.
 
+## Overview
+
+`mvp_control` is the low level vehicle controller of the MVP framework.
+It uses control allocation matrix with quadratic programming optimization.
+It highly relies on ROS and ROS transform tree.
+
+![diagram](../docs/_static/diagram.svg)
+
+## Documentation
+
+The documentation for `mvp_control` package is is at https://uri-ocean-robotics.github.io/mvp_control.
+
 ## Installation
 
 Pull the `mvp_msgs` repository if you don't have it already

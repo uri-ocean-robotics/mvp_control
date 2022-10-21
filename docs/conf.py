@@ -8,6 +8,10 @@
 
 import sphinx_rtd_theme
 import myst_parser
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath('..'))
 
 project = 'MVP Control'
 copyright = '2022, URI Ocean Robotics'
