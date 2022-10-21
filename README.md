@@ -8,7 +8,7 @@ This repository contains low-level controller for marine vehicles.
 It uses control allocation matrix with quadratic programming optimization.
 It highly relies on ROS and ROS transform tree.
 
-![diagram](../docs/_static/diagram.svg)
+![diagram](https://raw.githubusercontent.com/uri-ocean-robotics/mvp_control/master/docs/_static/diagram.svg)
 
 ## Documentation
 
