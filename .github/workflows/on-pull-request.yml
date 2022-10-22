@@ -8,11 +8,9 @@ on:
   push:
     branches:
       - noetic-devel
-      - humble-devel
   pull_request:
     branches:
       - noetic-devel
-      - humble-devel
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -36,8 +34,8 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
-          repository: GSO-soslab/mvp_msgs
-          ref: master
+          repository: uri-ocean-robotics/mvp_msgs
+          ref: noetic-devel 
 
       - name: Checkout submodules
         run: git submodule update --init --recursive
