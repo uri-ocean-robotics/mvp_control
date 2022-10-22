@@ -24,7 +24,7 @@ Pull the ``mvp_control`` repository
 
 .. code-block:: bash
 
-    git clone --sigle-branch --branch noetic-devel https://github.com/uri-ocean-robotics/mvp_control
+    git clone --single-branch --branch noetic-devel https://github.com/uri-ocean-robotics/mvp_control
 
 Install dependencies
 .. code-block:: bash
