@@ -1,4 +1,5 @@
 ```{toctree}
+:hidden:
 self
 installation.rst
 configuration.rst

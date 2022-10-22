@@ -2,8 +2,8 @@ name: Pages
 on:
   push:
     branches:
-      - master
-      - main
+      - noetic-devel
+
 jobs:
   build:
     runs-on: ubuntu-latest
