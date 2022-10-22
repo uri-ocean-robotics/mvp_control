@@ -32,22 +32,25 @@
 /*******************************************************************************
  * ROS
  */
-#include "rclcpp/rclcpp.hpp"
+#include "ros/ros.h"
 
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2_eigen/tf2_eigen.h"
 #include "tf2_ros/transform_listener.h"
 
-#include "std_msgs/msg/float32.hpp"
-#include "std_srvs/srv/empty.hpp"
-#include "nav_msgs/msg/odometry.hpp"
+#include "std_msgs/Float32.h"
+#include "std_srvs/Empty.h"
+#include "nav_msgs/Odometry.h"
+#include "dynamic_reconfigure/server.h"
 
-#include "mvp_msgs/msg/pid_gains.hpp"
-#include "mvp_msgs/msg/control_process.hpp"
-#include "mvp_msgs/msg/control_modes.hpp"
-#include "mvp_msgs/srv/get_control_mode.hpp"
-#include "mvp_msgs/srv/get_control_modes.hpp"
-#include "mvp_msgs/srv/set_control_point.hpp"
+#include "mvp_control/PIDConfig.h"
+
+#include "mvp_msgs/PIDgains.h"
+#include "mvp_msgs/ControlProcess.h"
+#include "mvp_msgs/ControlModes.h"
+#include "mvp_msgs/GetControlMode.h"
+#include "mvp_msgs/GetControlModes.h"
+#include "mvp_msgs/SetControlPoint.h"
 
 /*******************************************************************************
  * MVP
@@ -162,13 +165,13 @@ namespace ctrl {
         ros::Publisher m_process_error_publisher;
 
         //! @brief Holder for latest odometry msg
-        nav_msgs::msg::Odometry m_odometry_msg;
+        nav_msgs::Odometry m_odometry_msg;
 
         //! @brief Control modes stored as ros message
-        mvp_msgs::msg::ControlModes m_control_modes;
+        mvp_msgs::ControlModes m_control_modes;
 
         //! @brief Desired state of the system, set point of the controller
-        mvp_msgs::msg::ControlProcess m_set_point_msg;
+        mvp_msgs::ControlProcess m_set_point_msg;
 
         //! @brief Current control mode
         std::string m_control_mode;
@@ -263,20 +266,20 @@ namespace ctrl {
          * @param set_point
          * @return
          */
-        bool f_amend_set_point(const mvp_msgs::msg::ControlProcess &set_point);
+        bool f_amend_set_point(const mvp_msgs::ControlProcess &set_point);
 
         /** @brief Trivial subscriber
          *
          * @param msg
          */
-        void f_cb_msg_odometry(const nav_msgs::msg::Odometry::ConstPtr &msg);
+        void f_cb_msg_odometry(const nav_msgs::Odometry::ConstPtr &msg);
 
         /** @brief Trivial set point callback
          *
          * @param msg
          */
         void f_cb_srv_set_point(
-            const mvp_msgs::msg::ControlProcess::ConstPtr &msg);
+            const mvp_msgs::ControlProcess::ConstPtr &msg);
 
         /** @brief Dynamic reconfigure server callback
          *
@@ -294,8 +297,8 @@ namespace ctrl {
          * @return Success of the operation
          */
         bool f_cb_srv_get_control_modes(
-            mvp_msgs::srv::GetControlModes::Request &req,
-            mvp_msgs::srv::GetControlModes::Response &resp);
+            mvp_msgs::GetControlModes::Request &req,
+            mvp_msgs::GetControlModes::Response &resp);
 
         /** @brief Trivial ros service server callback for set control point
          *
@@ -304,8 +307,8 @@ namespace ctrl {
          * @return Success of the operation
          */
         bool f_cb_srv_set_control_point(
-            mvp_msgs::srv::SetControlPoint::Request req,
-            mvp_msgs::srv::SetControlPoint::Response resp);
+            mvp_msgs::SetControlPoint::Request req,
+            mvp_msgs::SetControlPoint::Response resp);
 
         /**
          * @brief Enables the controller
@@ -316,8 +319,8 @@ namespace ctrl {
          * @return false
          */
         bool f_cb_srv_enable(
-            std_srvs::srv::Empty::Request req,
-            std_srvs::srv::Empty::Response resp);
+            std_srvs::Empty::Request req,
+            std_srvs::Empty::Response resp);
 
         /**
          * @brief disable the controller
@@ -328,8 +331,8 @@ namespace ctrl {
          * @return false
          */
         bool f_cb_srv_disable(
-            std_srvs::srv::Empty::Request req,
-            std_srvs::srv::Empty::Response resp);
+            std_srvs::Empty::Request req,
+            std_srvs::Empty::Response resp);
 
         /**
          * @brief Get active control mode
@@ -338,8 +341,8 @@ namespace ctrl {
          * @return true Always returns true
          */
         bool f_cb_srv_get_active_mode(
-            mvp_msgs::srv::GetControlMode::Request &req,
-            mvp_msgs::srv::GetControlMode::Response &resp);
+            mvp_msgs::GetControlMode::Request &req,
+            mvp_msgs::GetControlMode::Response &resp);
 
     public:
 
