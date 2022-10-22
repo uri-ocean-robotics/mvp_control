@@ -14,25 +14,6 @@ It highly relies on ROS and ROS transform tree.
 
 The documentation for `mvp_control` package is is at https://uri-ocean-robotics.github.io/mvp_control.
 
-## Installation
-
-Pull the `mvp_msgs` repository if you don't have it already
-```bash
-git clone https://github.com/GSO-soslab/mvp_mission
-```
-
-Pull the repository
-```bash
-git clone https://github.com/GSO-soslab/mvp_control
-```
-
-Install dependencies
-```bash
-rosdep install --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} -y
-```
-
-Compile using `catkin_make`.
-
 ## Citation
 
 If you find this software useful in your research, please cite:
