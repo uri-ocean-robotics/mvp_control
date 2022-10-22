@@ -27,6 +27,7 @@ Pull the ``mvp_control`` repository
     git clone --single-branch --branch noetic-devel https://github.com/uri-ocean-robotics/mvp_control
 
 Install dependencies
+
 .. code-block:: bash
 
     rosdep install --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} -y
