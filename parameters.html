@@ -212,7 +212,7 @@ vectors are so-called <em>contribution vectors</em>.</p>
 </dd>
 </dl>
 <div class="math">
-<p><img src="_images/math/ff4dda8a8e841f133abdd600df253b01fcdd65e2.png" alt="\texttt{&lt;actuator\_name&gt;} \leftarrow [\phi, \theta, \psi, u, v, w]"/></p>
+<p><span class="math">\texttt{&lt;actuator\_name&gt;} \leftarrow [\phi, \theta, \psi, u, v, w]</span></p>
 </div></dd></dl>
 
 <div class="literal-block-wrapper docutils container" id="id1">
@@ -358,7 +358,7 @@ The topic will publish the control command in <cite>std_msgs/Float64</cite> form
 </dl>
 <p>Control allocation computes the demanded force from each actuator.
 Thrust curves help converting force into control command.
-This could be a <img class="math" src="_images/math/d8c54fc099cc7e79237f432ae6994030431a0409.png" alt="[1100,1900]"/> PWM value or simple <img class="math" src="_images/math/79688c8230c11b4686e4ca04cd04f9e084e045a8.png" alt="[-1.0,1.0]"/> value.</p>
+This could be a <span class="math">[1100,1900]</span> PWM value or simple <span class="math">[-1.0,1.0]</span> value.</p>
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N20thruster_polynomialsUt8_thrusterE">
 <span id="_CPPv3N20thruster_polynomialsUt8_thrusterE"></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">float</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">[anonymous]</span></span></span><a class="headerlink" href="#_CPPv4N20thruster_polynomialsUt8_thrusterE" title="Permalink to this definition"></a><br /></dt>
@@ -367,10 +367,10 @@ This could be a <img class="math" src="_images/math/d8c54fc099cc7e79237f432ae699
 <dd class="field-odd"><p>Thrust curve for thruster defined</p>
 </dd>
 </dl>
-<p>For given thrust curve, <img class="math" src="_images/math/95aabe3d9002fe03d54b9b9d9fbfc27c0eaeb56f.png" alt="f(x)"/>, thrust polynomial is set as follows.</p>
+<p>For given thrust curve, <span class="math">f(x)</span>, thrust polynomial is set as follows.</p>
 <div class="math">
-<p><img src="_images/math/2b945e69b5f663b1a172a6dca891b47f1d8c64fb.png" alt="f(x) = a_n x^n + a_{n-1} x^{n-1} + ... + a_1 x + a_0 \\
-\text{Thruster Polynomial} \leftarrow [a_0, a_1, ... ,a_{n-1}, a_n]"/></p>
+<p><span class="math">f(x) = a_n x^n + a_{n-1} x^{n-1} + ... + a_1 x + a_0 \\
+\text{Thruster Polynomial} \leftarrow [a_0, a_1, ... ,a_{n-1}, a_n]</span></p>
 </div></dd></dl>
 
 <div class="literal-block-wrapper docutils container" id="id6">
@@ -497,51 +497,51 @@ Each ‘member’ of this complex object contains PID gains.</p>
 <tbody>
 <tr class="row-even"><td><p>Position in X axis</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">x</span></code></p></td>
-<td><p><img class="math" src="_images/math/888f7c323ac0341871e867220ae2d76467d74d6e.png" alt="x"/></p></td>
+<td><p><span class="math">x</span></p></td>
 </tr>
 <tr class="row-odd"><td><p>Position in Y axis</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">y</span></code></p></td>
-<td><p><img class="math" src="_images/math/1b5e577d6216dca3af7d87aa122a0b9b360d6cb3.png" alt="y"/></p></td>
+<td><p><span class="math">y</span></p></td>
 </tr>
 <tr class="row-even"><td><p>Position in Z axis</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">z</span></code></p></td>
-<td><p><img class="math" src="_images/math/8d051150f8669295ecdbe92367941012175a824d.png" alt="z"/></p></td>
+<td><p><span class="math">z</span></p></td>
 </tr>
 <tr class="row-odd"><td><p>Orientation around X axis</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">roll</span></code></p></td>
-<td><p><img class="math" src="_images/math/fffd2357ee88a9c50ba9e831ed64c39c73d54a07.png" alt="\phi"/></p></td>
+<td><p><span class="math">\phi</span></p></td>
 </tr>
 <tr class="row-even"><td><p>Orientation around Y axis</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">pitch</span></code></p></td>
-<td><p><img class="math" src="_images/math/8a87f04e7d7cca18343c084cceca5237fae62491.png" alt="\theta"/></p></td>
+<td><p><span class="math">\theta</span></p></td>
 </tr>
 <tr class="row-odd"><td><p>Orientation around Z axis</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">yaw</span></code></p></td>
-<td><p><img class="math" src="_images/math/b6c245d487949782a89cab9ee83504a62fdc2337.png" alt="\psi"/></p></td>
+<td><p><span class="math">\psi</span></p></td>
 </tr>
 <tr class="row-even"><td><p>Linear speed on X axis</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">surge</span></code></p></td>
-<td><p><img class="math" src="_images/math/9b444cf6329a14140aee8ff5a06ff30772cc1c2f.png" alt="u"/></p></td>
+<td><p><span class="math">u</span></p></td>
 </tr>
 <tr class="row-odd"><td><p>Linear speed on Y axis</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">sway</span></code></p></td>
-<td><p><img class="math" src="_images/math/02d98909b5d6acd6a7ff927d4d42790bdd407d58.png" alt="v"/></p></td>
+<td><p><span class="math">v</span></p></td>
 </tr>
 <tr class="row-even"><td><p>Linear speed on Z axis</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">heave</span></code></p></td>
-<td><p><img class="math" src="_images/math/cc87ee665749db882f94e0d3707eb23e39638650.png" alt="w"/></p></td>
+<td><p><span class="math">w</span></p></td>
 </tr>
 <tr class="row-odd"><td><p>Angular speed around X</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">roll_rate</span></code></p></td>
-<td><p><img class="math" src="_images/math/1e544ae8d07793ab978422c34bcbb2e86789f947.png" alt="\dot{\phi}"/></p></td>
+<td><p><span class="math">\dot{\phi}</span></p></td>
 </tr>
 <tr class="row-even"><td><p>Angular speed around Y</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">pitch_rate</span></code></p></td>
-<td><p><img class="math" src="_images/math/156be057a637fe3140b40c304b4c9a44631b057b.png" alt="\dot{\theta}"/></p></td>
+<td><p><span class="math">\dot{\theta}</span></p></td>
 </tr>
 <tr class="row-odd"><td><p>Angular speed around  Z</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">yaw_rate</span></code></p></td>
-<td><p><img class="math" src="_images/math/e5f76ce0ecd90188e4897714e9eafd5214c136de.png" alt="\dot{\psi}"/></p></td>
+<td><p><span class="math">\dot{\psi}</span></p></td>
 </tr>
 </tbody>
 </table>
@@ -582,7 +582,7 @@ Each ‘member’ of this complex object contains PID gains.</p>
 <p>Example configuration is given in the code snippet below.
 In the code snippet three control modes are configured.
 The first control mode is <code class="docutils literal notranslate"><span class="pre">flight</span></code> mode that controls pitch, yaw and surge.
-Second control mode is <code class="docutils literal notranslate"><span class="pre">hold</span></code> that controls <img class="math" src="_images/math/888f7c323ac0341871e867220ae2d76467d74d6e.png" alt="x"/> and <img class="math" src="_images/math/1b5e577d6216dca3af7d87aa122a0b9b360d6cb3.png" alt="y"/>.
+Second control mode is <code class="docutils literal notranslate"><span class="pre">hold</span></code> that controls <span class="math">x</span> and <span class="math">y</span>.
 The third and the last contol mode is <code class="docutils literal notranslate"><span class="pre">kill</span></code>.
 This is a special setting that allows user to create control modes that doesn’t control any degree of freedoms.
 It is particularly useful when creating safety behaviors.</p>

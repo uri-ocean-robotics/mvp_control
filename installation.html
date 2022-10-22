@@ -105,14 +105,13 @@ It has been tested on intel CPUs and Raspberry Pi 4 varians (CM4 and SBC).</p>
 </pre></div>
 </div>
 <p>Pull the <code class="docutils literal notranslate"><span class="pre">mvp_control</span></code> repository</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone --sigle-branch --branch noetic-devel https://github.com/uri-ocean-robotics/mvp_control
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone --single-branch --branch noetic-devel https://github.com/uri-ocean-robotics/mvp_control
 </pre></div>
 </div>
-<p>Install dependencies
-.. code-block:: bash</p>
-<blockquote>
-<div><p>rosdep install –from-paths src –ignore-src –rosdistro ${ROS_DISTRO} -y</p>
-</div></blockquote>
+<p>Install dependencies</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rosdep install --from-paths src --ignore-src --rosdistro <span class="si">${</span><span class="nv">ROS_DISTRO</span><span class="si">}</span> -y
+</pre></div>
+</div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>To execute the command above you need to be root level of your workspace.</p>

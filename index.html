@@ -82,33 +82,6 @@
            <div itemprop="articleBody">
              
   <div class="toctree-wrapper compound">
-<ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">MVP - Low Level Controller</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#target-system">Target system</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#installation-from-source">Installation from source</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuring-the-transform-tree">Configuring the Transform Tree</a></li>
-<li class="toctree-l2"><a class="reference internal" href="configuration.html#setting-up-the-thrust-curve">Setting up the thrust curve</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="parameters.html#basic-parameters">Basic Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="parameters.html#control-allocation-parameters">Control Allocation Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="parameters.html#actuator-parameters">Actuator Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="parameters.html#control-law-parameters">Control Law Parameters</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#think-before-you-fork">Think Before you Fork</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#fixing-a-bug-in-production-code">Fixing a Bug in Production Code</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#adding-a-feature">Adding a Feature</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#additional-guidelines">Additional Guidelines</a></li>
-</ul>
-</li>
-</ul>
 </div>
 <div class="tex2jax_ignore mathjax_ignore section" id="mvp-low-level-controller">
 <h1>MVP - Low Level Controller<a class="headerlink" href="#mvp-low-level-controller" title="Permalink to this heading"></a></h1>
@@ -123,6 +96,22 @@ It highly relies on ROS and ROS transform tree.</p>
 <div class="section" id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this heading"></a></h2>
 <p>The documentation for <code class="docutils literal notranslate"><span class="pre">mvp_control</span></code> package is is at https://uri-ocean-robotics.github.io/mvp_control.</p>
+</div>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h2>
+<p>Pull the <code class="docutils literal notranslate"><span class="pre">mvp_msgs</span></code> repository if you don’t have it already</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/GSO-soslab/mvp_mission
+</pre></div>
+</div>
+<p>Pull the repository</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/GSO-soslab/mvp_control
+</pre></div>
+</div>
+<p>Install dependencies</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rosdep install --from-paths src --ignore-src --rosdistro <span class="si">${</span><span class="nv">ROS_DISTRO</span><span class="si">}</span> -y
+</pre></div>
+</div>
+<p>Compile using <code class="docutils literal notranslate"><span class="pre">catkin_make</span></code>.</p>
 </div>
 <div class="section" id="citation">
 <h2>Citation<a class="headerlink" href="#citation" title="Permalink to this heading"></a></h2>
