@@ -5,9 +5,11 @@
 
     <arg name="node_name" default="mvp_control"/>
 
-    <rosparam command="load" ns="$(arg node_name)" file="$(find mvp_control)/config/allocation_auto.yaml"/>
-    <rosparam command="load" ns="$(arg node_name)" file="$(find mvp_control)/config/mappings.yaml"/>
-    <rosparam command="load" ns="$(arg node_name)" file="$(find mvp_control)/config/thrusters.yaml"/>
-    <rosparam command="load" ns="$(arg node_name)" file="$(find mvp_control)/config/modes.yaml"/>
+<!--    <rosparam command="load" ns="$(arg node_name)" file="$(find mvp_control)/config/allocation_auto.yaml"/>-->
+<!--    <rosparam command="load" ns="$(arg node_name)" file="$(find mvp_control)/config/mappings.yaml"/>-->
+<!--    <rosparam command="load" ns="$(arg node_name)" file="$(find mvp_control)/config/thrusters_new.yaml"/>-->
+<!--    <rosparam command="load" ns="$(arg node_name)" file="$(find mvp_control)/config/modes.yaml"/>-->
+<!--    -->
+        <rosparam command="load" ns="$(arg node_name)" file="$(find alpha_img_config)/config/control.yaml"/>
 
 </launch>

@@ -21,10 +21,10 @@
     Copyright (C) 2022 Smart Ocean Systems Laboratory
 */
 
-#include "mimo_pid.h"
+#include "mimo_pid.hpp"
 #include "exception.hpp"
 
-using namespace ctrl;
+using namespace mvp;
 
 MimoPID::MimoPID() : m_error_function(nullptr) , m_dt_i(10000){
 

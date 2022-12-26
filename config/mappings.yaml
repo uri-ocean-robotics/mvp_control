@@ -21,3 +21,5 @@ world_link: world_ned
 # There is no default for parameter below.
 ##
 odometry_source: /odometry/filtered
+
+robot_name: alpha

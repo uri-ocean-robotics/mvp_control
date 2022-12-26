@@ -27,12 +27,8 @@
 /*******************************************************************************
  * Eigen
  */
-#include "Eigen/Dense"
 
-/*******************************************************************************
- * Quadratic Solver
- */
-#include "osqp++.h"
+#include "Eigen/Dense"
 
 /*******************************************************************************
  * STL
@@ -44,20 +40,28 @@
 /*******************************************************************************
  * MVP
  */
-#include "mimo_pid.h"
+#include "mimo_pid.hpp"
+#include "actuator.hpp"
 
-namespace ctrl {
+
+namespace mvp {
 /** @brief MvpControl Class
  *
  */
-    class MvpControl {
+    class ControlAllocation {
     private:
 
         //! @brief Control allocation matrix
         Eigen::MatrixXd m_control_allocation_matrix;
 
+        Eigen::MatrixXd m_control_constraints_matrix;
+
+        Eigen::VectorXd m_upper_limit;
+
+        Eigen::VectorXd m_lower_limit;
+
         //! @brief MIMO PID Controller
-        MimoPID::Ptr m_pid;
+        std::shared_ptr<MimoPID> m_pid;
 
         //! @brief System State
         Eigen::VectorXd m_system_state;
@@ -70,10 +74,6 @@ namespace ctrl {
 
         //! @brief Controlled freedoms
         std::vector<int> m_controlled_freedoms;
-
-        Eigen::VectorXd m_upper_limit;
-
-        Eigen::VectorXd m_lower_limit;
 
         /** @brief Calculates PID using #MimoPID
          *
@@ -89,11 +89,11 @@ namespace ctrl {
 
         /** @brief Optimize thrust for given control input
          *
-         * @param t Optimized forces for each thruster. This is the return value.
-         * @param u Control input
+         * @param u Optimized forces for each thruster. This is the return value.
+         * @param tau Control input
          * @return
          */
-        bool f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u);
+        bool f_solve(Eigen::VectorXd *cmd, const Eigen::VectorXd &desired);
 
         /** @brief Error function for #MvpControl::m_pid object
          *
@@ -116,93 +116,96 @@ namespace ctrl {
         std::recursive_mutex m_desired_state_lock;
 
     public:
-        /**ns="alpha_control" @brief Mvp Control default constructor
+        /** @brief Control Allocation default constructor
          *
          */
-        MvpControl();
-
+        ControlAllocation();
 
         /** @brief Trivial Setter for control allocation matrix
          *
          * @param matrix
          */
         void set_control_allocation_matrix(
-            const decltype(m_control_allocation_matrix) &matrix);
+            const decltype(m_control_allocation_matrix) &val) {
+            m_control_allocation_matrix = val;
+        }
 
-
-        /** @brief Trivial getter for thruster id
-         *
-         * @return #MvpControl::m_control_allocation_matrix
-         */
-        auto get_control_allocation_matrix() ->
-        decltype(m_control_allocation_matrix);
-
-        //! @brief Standard shared pointer type
-        typedef std::shared_ptr<MvpControl> Ptr;
+        void set_control_constraints_matrix(
+            const decltype(m_control_constraints_matrix)& val) {
+            m_control_constraints_matrix = val;
+        }
 
         /** @brief Trivial getter for pid controller
          *
          * @return #MvpControl::m_pid
          */
-        auto get_pid() -> decltype(m_pid);
+        auto get_pid() -> decltype(m_pid) {
+            return m_pid;
+        }
 
         /** @brief Trivial setter for pid controller
          *
          * @param pid
          */
-        void set_pid(const decltype(m_pid) &pid);
+        void set_pid(const decltype(m_pid) &val) {
+            m_pid = val;
+        }
 
         /** @brief Trivial getter for system state
          *
          * @return #MvpControl::m_system_state
          */
-        auto get_system_state() -> decltype(m_system_state);
+        auto get_system_state() -> decltype(m_system_state) {
+            return m_system_state;
+        }
 
         /** @brief Trivial setter for system state
          *
          * @param system_state
          */
-        void set_system_state(const decltype(m_system_state) &system_state);
+        void set_system_state(const decltype(m_system_state) &val) {
+            m_system_state = val;
+        }
 
         /** @brief Trivial getter for desired state
          *
          * @return #MvpControl::m_desired_state
          */
-        auto get_desired_state() -> decltype(m_desired_state);
+        auto get_desired_state() -> decltype(m_desired_state) {
+            return m_desired_state;
+        }
 
         /** @brief Trivial setter for desired state
          *
          * @param desired_state
          */
-        void set_desired_state(const decltype(m_desired_state) &desired_state);
-
-        /** @brief Calculates needed forces from thrusters
-         *
-         * @param f     Force in body frame
-         * @param dt    Time difference in seconds
-         * @return      status of the operation.
-         */
-        bool calculate_needed_forces(Eigen::VectorXd *f, double dt);
+        void set_desired_state(const decltype(m_desired_state) &val) {
+            m_desired_state = val;
+        }
 
         /** @brief Sets controlled freedoms
          *
          * @param f Degrees of freedom. See #MvpControlRos::m_controlled_freedoms
          */
-        void set_controlled_freedoms(decltype(m_controlled_freedoms) f);
+        void set_controlled_freedoms(decltype(m_controlled_freedoms) f) {
+            m_controlled_freedoms = std::move(f);
+        }
 
         /** @brief Get state error
          *
          * @return #MvpControlROS::m_error_state
          */
-        auto get_state_error() -> decltype(m_error_state);
+        auto get_state_error() -> decltype(m_error_state) {
+            return m_error_state;
+        }
 
-        /** @brief Update control allocation matrix
+        /** @brief Calculates needed forces from thrusters
          *
-         * Thread safe operation for updating control allocation matrix.
-         * @param m Updated control allocation matrix
+         * @param cmd     Force in body frame
+         * @param dt    Time difference in seconds
+         * @return      status of the operation.
          */
-        void update_control_allocation_matrix(
-            const decltype(m_control_allocation_matrix) &m);
+        bool calculate_forces(Eigen::VectorXd *cmd, double dt);
 
         /** @brief Update degrees of freedom
          *
@@ -216,12 +219,13 @@ namespace ctrl {
          * Thread safe operation for updating desired state
          * @param desired_state
          */
-        void
-        update_desired_state(const decltype(m_desired_state) &desired_state);
+        void update_desired_state(
+            const decltype(m_desired_state) &desired_state);
 
-        void set_lower_limit(const decltype(m_lower_limit) &lower_limit);
+        void update_for_pose(const Eigen::Isometry3d& t);
 
-        void set_upper_limit(const decltype(m_upper_limit) &upper_limit);
+        void compose_matrices(
+            const std::vector<std::shared_ptr<Actuator>> &actuators);
 
     };
 

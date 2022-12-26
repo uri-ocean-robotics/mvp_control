@@ -21,17 +21,28 @@
     Copyright (C) 2022 Smart Ocean Systems Laboratory
 */
 
-#include "mvp_control/mvp_control_ros.hpp"
+#pragma once
 
-int main(int argc, char* argv[]) {
+#include "vector"
+#include "complex"
 
-    ros::init(argc, argv, "mvp_control");
+namespace mvp {
+    /** @brief Polynomial Solver
+     *
+     * Take a polynomial defined as
+     *   f(x) = a_n x^n + a_(n-1) x^(n-1) + ... + a_1 x + a_0
+     * std::vector<double>{-1, 0, 0, 0, 1} Represents f(x) = x^4 - 1
+     * Class #PolynomialSolver finds the roots of that polynomial
+     */
+    class PolynomialSolver {
+    public:
 
-    mvp::MvpControlROS control_ros;
+        /** @brief Trivial constructor
+         *
+         */
+        PolynomialSolver() = default;
 
-    control_ros.initialize();
+        static bool solve(std::vector<double> coefficients, std::vector<std::complex<double>>* roots, double* solution, double y = 0);
 
-    control_ros.run();
-
-    return 0;
+    };
 }

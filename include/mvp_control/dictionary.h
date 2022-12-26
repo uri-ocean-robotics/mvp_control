@@ -29,7 +29,7 @@
 
 #include "mvp_msgs/ControlModes.h"
 
-namespace ctrl {
+namespace mvp {
 
     static constexpr const char * CONF_DOF_X = "x";
     static constexpr const char * CONF_DOF_Y = "y";
@@ -44,6 +44,13 @@ namespace ctrl {
     static constexpr const char * CONF_DOF_PITCH_RATE = "pitch_rate";
     static constexpr const char * CONF_DOF_YAW_RATE = "yaw_rate";
 
+    static constexpr const char * CONF_ACTUATORS = "actuators";
+    static constexpr const char * CONF_ACTUATOR_TYPE_THRUSTER = "thruster";
+    static constexpr const char * CONF_ACTUATOR_TYPE_AZIMUTH_THRUSTER = "azimuth_thruster";
+    static constexpr const char * CONF_ACTUATOR_TYPE_RUDDER = "rudder";
+
+
+
     static constexpr const char * CONF_THRUSTER_POLY = "thruster_polynomials";
     static constexpr const char * CONF_THRUST_COMMAND_TOPICS = "thruster_command_topics";
     static constexpr const char * CONF_THRUSTER_FORCE_TOPICS = "thruster_force_topics";
@@ -52,10 +59,6 @@ namespace ctrl {
     static constexpr const char * CONF_THRUSTER_LIMITS = "thruster_limits";
     static constexpr const char * CONF_THRUSTER_MAX = "max";
     static constexpr const char * CONF_THRUSTER_MIN = "min";
-
-    static constexpr const char * CONF_GENERATOR_TYPE = "generator_type";
-    static constexpr const char * CONF_GENERATOR_TYPE_OPT_TF = "tf";
-    static constexpr const char * CONF_GENERATOR_TYPE_OPT_USER = "user";
 
     static constexpr const char * CONF_TF_PREFIX = "tf_prefix";
     static constexpr const char * CONF_TF_PREFIX_DEFAULT = "";
@@ -89,8 +92,10 @@ namespace ctrl {
     static constexpr const char * SERVICE_SET_CONTROL_POINT = "controller/set_point";
     static constexpr const char * SERVICE_GET_ACTIVE_MODE = "controller/active_mode";
 
+
     struct DOF {
         enum IDX : int {
+            // DO NOT TOUCH THE ORDER OF THE ENUM BELOW!
             X =             mvp_msgs::ControlMode::DOF_X,
             Y =             mvp_msgs::ControlMode::DOF_Y,
             Z =             mvp_msgs::ControlMode::DOF_Z,
@@ -136,6 +141,10 @@ namespace ctrl {
         CONF_DOF_YAW_RATE,
         nullptr
     };
+
+    static const int MAX = 1;
+
+    static const int MIN = 0;
 
     static constexpr int CONTROLLABLE_DOF_LENGTH = 12;
 }

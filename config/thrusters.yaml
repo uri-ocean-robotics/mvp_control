@@ -7,9 +7,10 @@
 # There are no defaults for parameters below.
 ##
 thruster_ids:
-  - main
-  - horizontal
-  - vertical
+  - surge_port
+  - surge_starboard
+  - heave_bow
+  - sway_bow
 
 ##
 # Thruster thrust command topic names.
@@ -20,17 +21,19 @@ thruster_ids:
 # There are no defaults for parameters below.
 ##
 thruster_command_topics:
-  main: control/thruster/main
-  horizontal: control/thruster/horizontal
-  vertical: control/thruster/vertical
+  surge_port: control/thruster/surge_port
+  surge_starboard: control/thruster/surge_starboard
+  heave_bow: control/thruster/heave_bow
+  sway_bow: control/thruster/sway_bow
 
 ##
 # Force from each thruster
 ##
 thruster_force_topics:
-  main: control/force/main
-  horizontal: control/force/horizontal
-  vertical: control/force/vertical
+  surge_port: control/force/surge_port
+  surge_starboard: control/force/surge_starboard
+  heave_bow: control/force/heave_bow
+  sway_bow: control/force/sway_bow
 
 
 ##
@@ -59,18 +62,38 @@ thruster_force_topics:
 #   a5 =      -74.1
 ##
 thruster_polynomials:
-  main:       [0.06165, 20.32, 9.632, 93.05, -2.856, -74.1]
-  horizontal: [0.06165, 20.32, 9.632, 93.05, -2.856, -74.1]
-  vertical:   [0.06165, 20.32, 9.632, 93.05, -2.856, -74.1]
+  surge_port:       [0.06165, 20.32, 9.632, 93.05, -2.856, -74.1]
+  surge_starboard: [0.06165, 20.32, 9.632, 93.05, -2.856, -74.1]
+  heave_bow: [0.06165, 20.32, 9.632, 93.05, -2.856, -74.1]
+  sway_bow: [0.06165, 20.32, 9.632, 93.05, -2.856, -74.1]
 
 ## Force limits
 thruster_limits:
-  main:
+  surge_port:
     max: 40
     min: -30
-  horizontal:
+  surge_starboard:
     max: 20
     min: -20
-  vertical:
+  heave_bow:
     max: 20
     min: -20
+  sway_bow:
+    max: 20
+    min: -20
+
+servos:
+  surge_port:
+    joint_controller_name: "alpha/ThrusterSurgePort"
+    y:
+      limits:
+        max: 1.5708
+        min: -1.5708
+  surge_starboard:
+    joint_controller_name: "alpha/ThrusterSurgeStarboard"
+    y:
+      limits:
+        max: 1.5708
+        min: -1.5708
+
+

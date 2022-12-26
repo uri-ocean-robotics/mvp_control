@@ -28,7 +28,7 @@
 #include "functional"
 #include "memory"
 
-namespace ctrl {
+namespace mvp {
 
     class MimoPID {
     private:
@@ -94,9 +94,6 @@ namespace ctrl {
         bool calculate(Eigen::VectorXd *u, const Eigen::ArrayXd &desired,
                        const Eigen::ArrayXd &current, double dt);
 
-        //! @brief Generic shared pointer
-        typedef std::shared_ptr<MimoPID> Ptr;
-
         //! @brief Default getter for proportional gain
         auto get_kp() -> decltype(m_kp);
 
@@ -125,6 +122,7 @@ namespace ctrl {
         void set_kd(const decltype(m_kd) &gain);
 
         //! @brief Default getter for delta time
+        [[nodiscard]]
         auto get_dt() const -> decltype(m_dt);
 
         /*! @brief Default setter for delta time
@@ -134,6 +132,7 @@ namespace ctrl {
         void set_dt(const decltype(m_dt) &gain);
 
         //! @brief Default getter for integral time window
+        [[nodiscard]]
         auto get_dt_i() const -> decltype(m_dt_i);
 
         /*! @brief Default setter for integral time window

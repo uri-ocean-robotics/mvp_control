@@ -25,15 +25,7 @@
 
 #include "stdexcept"
 
-namespace ctrl {
-    /** @brief Exception class for Alpha ROS class
-     *
-     */
-    class control_ros_exception : public std::runtime_error {
-    public:
-        explicit control_ros_exception(const std::string &message)
-            : std::runtime_error(message) {}
-    };
+namespace mvp {
 
     /** @brief Exception class for Alpha Control
      *

@@ -21,57 +21,56 @@
     Copyright (C) 2022 Smart Ocean Systems Laboratory
 */
 
-#include "polynomial_solver.h"
-#include "utility"
+#include "polynomial_solver.hpp"
+#include "gsl/gsl_poly.h"
 #include "cstring"
 
-using namespace ctrl;
+using namespace mvp;
 
-PolynomialSolver::PolynomialSolver(std::vector<double> coeff) : m_coeff(std::move(coeff)){
+bool PolynomialSolver::solve(std::vector<double> coefficients,
+                             std::vector<std::complex<double>> *roots,
+                             double* solution,
+                             double y) {
 
-}
-
-auto PolynomialSolver::get_coeff() -> decltype(this->m_coeff) {
-    return m_coeff;
-}
-
-void PolynomialSolver::set_coeff(decltype(m_coeff) coeff) {
-    m_coeff = std::move(coeff);
-}
-
-bool PolynomialSolver::solve_for_y(std::vector<std::complex<double>> &roots, double y) {
-
+    // Check if the Y value is a "number"
     if(std::isnan(y)){
         return false;
     }
 
-    std::vector<double> coeff = m_coeff;
-    coeff.front() -= y;
-    {
-        auto n = (int)coeff.size();
-        auto n_z = (n-1) *2;
+    bool ifreal = false;
 
-        auto a = new double[n];
-        auto z = new double[n_z];
+    // Move the polynomial by "y"
+    coefficients.front() -= y;
 
-        memcpy(a, coeff.data(), sizeof(double) * coeff.size());
+    // apply it to GSL poly solver
+    auto n = (int)coefficients.size();
+    auto n_z = (n-1) *2;
+    auto a = new double[n];
+    auto z = new double[n_z];
+    std::memcpy(a, coefficients.data(), sizeof(double) * coefficients.size());
 
-        gsl_poly_complex_workspace * w = gsl_poly_complex_workspace_alloc (n);
-        gsl_poly_complex_solve (a, n, w, z);
-        gsl_poly_complex_workspace_free (w);
+    gsl_poly_complex_workspace * w = gsl_poly_complex_workspace_alloc(n);
+    gsl_poly_complex_solve(a, n, w, z);
+    gsl_poly_complex_workspace_free(w);
 
-        for(int i = 0; i < n_z * 2; i += 2) {
-            roots.emplace_back(std::complex<double>(z[i],z[i+1]));
+    // Save the roots to vector and find the real solution
+    for(int i = 0; i < n_z * 2; i += 2) {
+        if(roots != nullptr) {
+            roots->emplace_back(std::complex<double>(z[i], z[i + 1]));
         }
 
-        delete[] a;
-        delete[] z;
+        if(solution != nullptr) {
+            if(z[i + 1] == 0) {
+                *solution = z[i];
+                ifreal = true;
+            }
+        }
+
     }
 
-    return true;
-}
+    delete[] a;
+    delete[] z;
 
-bool PolynomialSolver::solve(std::vector<std::complex<double>>& roots) {
-    return solve_for_y(roots, 0);
+    return ifreal;
 }
 

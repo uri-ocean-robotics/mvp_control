@@ -1,0 +1,40 @@
+actuators:
+  surge_port:
+    type: thruster
+    link_name: surge_port_link
+    command_topic: control/servos
+    force_topic: control/force/surge_port
+    force_limits: [-30, 30]
+    control_curve: [0.06165, 20.32, 9.632, 93.05, -2.856, -74.1]
+    joint:
+      y:
+        limits: [-1.5708, 1.5708]
+        joint_name: "{{ robot_name }}/surge_port_joint"
+
+  surge_starboard:
+    type: thruster
+    link_name: surge_starboard_link
+    command_topic: control/servos
+    force_topic: control/force/surge_starboard
+    force_limits: [-30, 30]
+    control_curve: [0.06165, 20.32, 9.632, 93.05, -2.856, -74.1]
+    joint:
+      y:
+        limits: [-1.5708, 1.5708]
+        joint_name: "{{ robot_name }}/surge_starboard_joint"
+
+  heave_bow:
+    type: thruster
+    link_name: heave_link
+    command_topic: control/thruster/heave_bow
+    force_topic: control/force/heave_bow
+    force_limits: [-30, 30]
+    control_curve: [0.06165, 20.32, 9.632, 93.05, -2.856, -74.1]
+
+  sway_bow:
+    type: thruster
+    link_name: sway_link
+    command_topic: control/thruster/sway_bow
+    force_topic: control/force/sway_bow
+    force_limits: [-30, 30]
+    control_curve: [0.06165, 20.32, 9.632, 93.05, -2.856, -74.1]

@@ -21,80 +21,106 @@
     Copyright (C) 2022 Smart Ocean Systems Laboratory
 */
 
-#include "mvp_control_ros.h"
+#include "mvp_control_ros.hpp"
 #include "exception.hpp"
 #include "tf2_eigen/tf2_eigen.h"
 
 #include "mvp_control/dictionary.h"
-
+#include "regex"
 #include "boost/regex.hpp"
 
-using namespace ctrl;
+using namespace mvp;
 
-MvpControlROS::MvpControlROS()
-        : m_nh(),
-        m_pnh("~"),
-        m_transform_listener(m_transform_buffer),
-        m_generator_type(MvpControlROS::GeneratorType::UNKNOWN)
-{
+MvpControlROS::MvpControlROS() {
+
+    m_nh = ros::NodeHandle();
+
+    m_pnh = ros::NodeHandle("~");
+
+    m_transform_listener.reset(new tf2_ros::TransformListener(m_transform_buffer));
 
     m_process_values = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
 
     m_set_point = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
 
+    f_read_configuration();
+
+    f_initialize_ros_interface();
+
     /**
-     * Read basic configuration. Configuration regarding to thruster allocation
-     * will be read later.
+     * Initialize the actual controller
      */
+    m_control_allocation.reset(new ControlAllocation());
+
+}
+
+void MvpControlROS::f_read_configuration() {
+    /**
+      * Read basic configuration. Configuration regarding to thruster allocation
+      * will be read later.
+      */
 
     // Read configuration: enabled
-    m_pnh.param<bool>(CONF_ENABLED, m_enabled, false);
+    m_pnh.param<bool>(CONF_ENABLED, m_config.enabled, false);
 
     // Read configuration: tf prefix
-    std::string tf_prefix;
-    m_pnh.param<std::string>(CONF_TF_PREFIX, tf_prefix, CONF_TF_PREFIX_DEFAULT);
-    m_tf_prefix = tf_prefix.empty() ? CONF_TF_PREFIX_DEFAULT : tf_prefix + "/";
+    m_pnh.param<std::string>(CONF_TF_PREFIX, m_config.tf_prefix, CONF_TF_PREFIX_DEFAULT);
+    m_config.tf_prefix = m_config.tf_prefix.empty() ? CONF_TF_PREFIX_DEFAULT : m_config.tf_prefix + "/";
 
     // Read configuration: center of gravity link
-    std::string cg_link_id;
-    m_pnh.param<std::string>(CONF_CG_LINK, cg_link_id, CONF_CG_LINK_DEFAULT);
-    m_cg_link_id = m_tf_prefix + cg_link_id;
+    m_pnh.param<std::string>(CONF_CG_LINK, m_config.cg_link_id, CONF_CG_LINK_DEFAULT);
+    m_config.cg_link_id = m_config.tf_prefix + m_config.cg_link_id;
 
     // Read configuration: world link
     m_pnh.param<std::string>(
-            CONF_WORLD_LINK,
-            m_world_link_id,
-            CONF_WORLD_LINK_DEFAULT
+        CONF_WORLD_LINK,
+        m_config.world_link,
+        CONF_WORLD_LINK_DEFAULT
     );
 
     // Read configuration: odometry topic id
-    std::string odometry_topic;
     m_pnh.param<std::string>(
-            CONF_ODOMETRY_SOURCE,
-            odometry_topic,
-            CONF_ODOMETRY_SOURCE_DEFAULT
+        CONF_ODOMETRY_SOURCE,
+        m_config.odom_topic_id,
+        CONF_ODOMETRY_SOURCE_DEFAULT
     );
 
     m_pnh.param<double>(
         CONF_CONTROLLER_FREQUENCY,
-        m_controller_frequency,
+        m_config.frequency,
         10.0
     );
 
+    m_pnh.param<bool>(
+        "periodic_control_allocation_update",
+        m_config.period_control_allocation_update,
+        false
+    );
+}
+
+void MvpControlROS::f_check_configuration() {
+
+    // Conduct some checks to see if everything is ready to be initialized
+    if(m_actuators.empty()) {
+        throw control_exception("no thruster specified");
+    }
+}
+
+void MvpControlROS::f_initialize_ros_interface() {
     /**
      * Initialize Subscribers
      */
     m_odometry_subscriber = m_nh.subscribe(
-            odometry_topic,
-            100,
-            &MvpControlROS::f_cb_msg_odometry,
-            this
+        m_config.odom_topic_id,
+        100,
+        &MvpControlROS::f_cb_msg_odometry,
+        this
     );
 
     m_set_point_subscriber = m_nh.subscribe(
         TOPIC_CONTROL_PROCESS_SET_POINT,
         100,
-        &MvpControlROS::f_cb_srv_set_point,
+        &MvpControlROS::f_cb_set_point,
         this
     );
 
@@ -110,74 +136,60 @@ MvpControlROS::MvpControlROS()
         TOPIC_CONTROL_PROCESS_ERROR,
         100
     );
-
     /**
      * Initialize services
      */
     m_get_control_modes_server = m_nh.advertiseService
         <mvp_msgs::GetControlModes::Request,
-        mvp_msgs::GetControlModes::Response>
-    (
-        SERVICE_GET_CONTROL_MODES,
-        std::bind(
-            &MvpControlROS::f_cb_srv_get_control_modes,
-            this,
-            std::placeholders::_1,
-            std::placeholders::_2
-        )
-    );
-
-    m_set_control_point_server = m_nh.advertiseService
-        <mvp_msgs::SetControlPoint::Request,
-        mvp_msgs::SetControlPoint::Response>
-    (
-        SERVICE_SET_CONTROL_POINT,
-        std::bind(
-            &MvpControlROS::f_cb_srv_set_control_point,
-            this,
-            std::placeholders::_1,
-            std::placeholders::_2
-        )
-    );
+            mvp_msgs::GetControlModes::Response>
+        (
+            SERVICE_GET_CONTROL_MODES,
+            std::bind(
+                &MvpControlROS::f_cb_srv_get_control_modes,
+                this,
+                std::placeholders::_1,
+                std::placeholders::_2
+            )
+        );
 
     m_enable_controller_server = m_nh.advertiseService
         <std_srvs::Empty::Request,
-        std_srvs::Empty::Response>
-    (
-        SERVICE_CONTROL_ENABLE,
-        std::bind(
-            &MvpControlROS::f_cb_srv_enable,
-            this,
-            std::placeholders::_1,
-            std::placeholders::_2
-        )
-    );
+            std_srvs::Empty::Response>
+        (
+            SERVICE_CONTROL_ENABLE,
+            std::bind(
+                &MvpControlROS::f_cb_srv_enable,
+                this,
+                std::placeholders::_1,
+                std::placeholders::_2
+            )
+        );
 
     m_disable_controller_server = m_nh.advertiseService
         <std_srvs::Empty::Request,
-        std_srvs::Empty::Response>
-    (
-        SERVICE_CONTROL_DISABLE,
-        std::bind(
-            &MvpControlROS::f_cb_srv_disable,
-            this,
-            std::placeholders::_1,
-            std::placeholders::_2
-        )
-    );
+            std_srvs::Empty::Response>
+        (
+            SERVICE_CONTROL_DISABLE,
+            std::bind(
+                &MvpControlROS::f_cb_srv_disable,
+                this,
+                std::placeholders::_1,
+                std::placeholders::_2
+            )
+        );
 
     m_get_active_mode_server = m_nh.advertiseService
         <mvp_msgs::GetControlMode::Request,
-        mvp_msgs::GetControlMode::Response>
-    (
-        SERVICE_GET_ACTIVE_MODE,
-        std::bind(
-            &MvpControlROS::f_cb_srv_get_active_mode,
-            this,
-            std::placeholders::_1,
-            std::placeholders::_2
-        )
-    );
+            mvp_msgs::GetControlMode::Response>
+        (
+            SERVICE_GET_ACTIVE_MODE,
+            std::bind(
+                &MvpControlROS::f_cb_srv_get_active_mode,
+                this,
+                std::placeholders::_1,
+                std::placeholders::_2
+            )
+        );
 
     /**
      * Initialize dynamic reconfigure server
@@ -185,151 +197,24 @@ MvpControlROS::MvpControlROS()
     m_dynconf_pid_server.reset(
         new dynamic_reconfigure::Server<mvp_control::PIDConfig>(
             m_config_lock)
-        );
-
-    /**
-     * Initialize the actual controller
-     */
-    m_mvp_control.reset(new MvpControl());
-
+    );
 }
 
 void MvpControlROS::f_generate_control_allocation_matrix() {
 
-    // Read generator type
-    std::string generator_type;
-    m_pnh.param<std::string>(
-            CONF_GENERATOR_TYPE,
-            generator_type,
-            CONF_GENERATOR_TYPE_OPT_TF
-    );
-
-    // Parse the control allocation generator type and save it as enum type
-    if(generator_type == CONF_GENERATOR_TYPE_OPT_TF) {
-        m_generator_type = GeneratorType::TF;
-    } else if (generator_type == CONF_GENERATOR_TYPE_OPT_USER) {
-        m_generator_type = GeneratorType::USER;
-    } else {
-        m_generator_type = GeneratorType::UNKNOWN;
-    }
-
-    // Generate the control allocation matrix
-    if(m_generator_type == GeneratorType::USER) {
-        f_generate_control_allocation_from_user();
-    } else if (m_generator_type == GeneratorType::TF) {
-        f_generate_control_allocation_from_tf();
-    } else {
-        throw control_ros_exception(
-            "control allocation generation method unspecified"
-        );
-    }
-
-    // Conduct some checks to see if everything is ready to be initialized
-    if(m_thrusters.empty()) {
-        throw control_ros_exception("no thruster specified");
-    }
-
-    // Control allocation matrix is generated based on each thruster. Each
-    // thruster must have equal number of elements in their contribution matrix.
-    // Code below checks the validity of the contribution vectors for each
-    // thruster.
-    for(int i = 0 ; i < m_thrusters.size() - 1 ; i++ ) {
-        if (m_thrusters[i]->get_contribution_vector().size() !=
-            m_thrusters[i + 1]->get_contribution_vector().size()) {
-            throw control_ros_exception(
-                "contribution vector sizes doesn't match"
-            );
-        }
-    }
+    f_generate_control_allocation_from_tf(false);
 
     // Initialize the control allocation matrix based on zero matrix.
     // M by N matrix. M -> number of all controllable DOF, N -> number of
-    // thrusters
-    m_control_allocation_matrix = Eigen::MatrixXd::Zero(
-        CONTROLLABLE_DOF_LENGTH, (int) m_thrusters.size()
-    );
-
-    // Until this point, all the allocation matrix related issued must be
-    // solved or exceptions thrown.
-
-
-    // Acquire DOF per actuator. Register it to control allocation matrix.
-    // Only DOF::X, DOF::Y and DOF::Z are left unregistered. They are computed
-    // online after each iteration.
-    for (int i = 0; i < m_thrusters.size(); i++) {
-        for(const auto& j :
-            {DOF::ROLL, DOF::PITCH, DOF::YAW,
-             DOF::SURGE, DOF::SWAY, DOF::HEAVE,
-             DOF::ROLL_RATE, DOF::PITCH_RATE, DOF::YAW_RATE
-             })
-        {
-            m_control_allocation_matrix(j, i) =
-                m_thrusters[i]->get_contribution_vector()(j);
-        }
+    // thrusters times 3. This is because, control allocation matrix will take
+    // thrusters contribution to the motion in all 3 axis.
+    Eigen::MatrixXd T(CONTROLLABLE_DOF_LENGTH, 3 * m_actuators.size());
+    for(const auto& i : m_actuators) {
+        T << i->get_contribution_matrix();
     }
 
     // Finally, set the control allocation matrix for the controller object.
-    m_mvp_control->set_control_allocation_matrix(m_control_allocation_matrix);
-
-}
-
-void MvpControlROS::f_generate_thrusters() {
-    // Read all the configuration file to get all the listed thrusters
-
-
-    if(!m_pnh.hasParam(CONF_THRUSTER_IDS)) {
-        throw control_ros_exception("thruster_ids empty");
-    }
-
-    std::vector<std::string> thruster_id_list;
-    m_pnh.getParam(CONF_THRUSTER_IDS, thruster_id_list);
-
-    // create thruster objects
-    for(const auto& id : thruster_id_list) {
-        ThrusterROS::Ptr t(new ThrusterROS());
-        t->set_id(std::string(id));
-        m_thrusters.emplace_back(t);
-    }
-
-    // initialize thrust command publishers
-    for(const auto& t : m_thrusters) {
-
-        // read topic id config for thruster
-        std::string thrust_command_topic_id;
-        m_pnh.param<std::string>(std::string()
-                + CONF_THRUST_COMMAND_TOPICS + "/" + t->m_id,
-                thrust_command_topic_id,
-                "control/thruster/" + t->m_id + "/command");
-        t->set_thrust_command_topic_id(thrust_command_topic_id);
-
-        // read topic id config for thruster
-        std::string thrust_force_topic_id;
-        m_pnh.param<std::string>(std::string()
-                + CONF_THRUSTER_FORCE_TOPICS + "/" + t->m_id,
-                thrust_force_topic_id,
-                "control/thruster/" + t->m_id + "/force"
-        );
-        t->set_thrust_force_topic_id(thrust_force_topic_id);
-
-        // read polynomials for thruster
-        std::vector<double> poly;
-        m_pnh.param<std::vector<double>>(std::string()
-                + CONF_THRUSTER_POLY + "/" + t->m_id,
-                poly,
-                std::vector<double>()
-        );
-        t->get_poly_solver()->set_coeff(poly);
-
-        m_pnh.param<double>(std::string() +
-            CONF_THRUSTER_LIMITS + "/" + t->get_id() + "/" + CONF_THRUSTER_MAX,
-            t->m_force_max,
-            10.0);
-
-        m_pnh.param<double>(std::string() +
-            CONF_THRUSTER_LIMITS + "/" + t->get_id() + "/" + CONF_THRUSTER_MIN,
-            t->m_force_min,
-            -10.0);
-    }
+    m_control_allocation->set_control_allocation_matrix(T);
 
 }
 
@@ -339,21 +224,23 @@ void MvpControlROS::initialize() {
     f_read_control_modes();
 
     // Generate thrusters with the given configuration
-    f_generate_thrusters();
+    f_read_actuators();
+
+    std::exit(EXIT_SUCCESS);
 
     // Generate control allocation matrix with defined method
     f_generate_control_allocation_matrix();
 
     // Initialize thruster objects.
-    std::for_each(m_thrusters.begin(),m_thrusters.end(),
-        [](const ThrusterROS::Ptr& t){
+    std::for_each(m_actuators.begin(),m_actuators.end(),
+        [](const auto& t){
             t->initialize();
         }
     );
 
-    m_mvp_control->set_desired_state(m_set_point);
+    m_control_allocation->set_desired_state(m_set_point);
 
-    m_mvp_control->set_system_state(m_process_values);
+    m_control_allocation->set_system_state(m_process_values);
 
     m_controller_worker = std::thread([this] { f_control_loop(); });
 
@@ -370,124 +257,62 @@ void MvpControlROS::initialize() {
 
 }
 
-void MvpControlROS::f_generate_control_allocation_from_user() {
-    for(const auto& t : m_thrusters) {
-
-        Eigen::VectorXd contribution_vector;
-
-        std::vector<double> v;
-
-        m_pnh.param<decltype(v)>(
-            std::string() + CONF_CONTROL_ALLOCATION_MATRIX + "/" + t->get_id(),
-            v,
-            decltype(v)()
-        );
-
-        contribution_vector =
-            Eigen::Map<Eigen::VectorXd>(&v[0], (int) v.size());
-
-        t->set_contribution_vector(contribution_vector);
-    }
-}
-
-void MvpControlROS::f_generate_control_allocation_from_tf() {
-
-    for(const auto& t : m_thrusters) {
-        std::string link_id;
-        m_pnh.param<std::string>(
-            std::string() + CONF_CONTROL_TF + "/" + t->get_id(),
-            link_id,
-            t->get_id() + "_thruster_link"
-        );
-
-        t->set_link_id(m_tf_prefix + link_id);
-    }
+void MvpControlROS::f_generate_control_allocation_from_tf(bool update) {
 
     // For each thruster look up transformation
-    for(const auto& t : m_thrusters) {
+    for(const auto& i : m_actuators) {
 
+        // loop up for the transformation
         auto tf = m_transform_buffer.lookupTransform(
-            m_cg_link_id,
-            t->get_link_id(),
+            m_config.cg_link_id,
+            i->get_config().link_id,
             ros::Time::now(),
             ros::Duration(10.0)
         );
 
+        // change type to Eigen::Isometry3D
         auto eigen_tf = tf2::transformToEigen(tf);
 
-        Eigen::VectorXd contribution_vector(CONTROLLABLE_DOF_LENGTH);
+        // compute contributions
+        i->compute_contribution(eigen_tf);
 
-        double Fx = eigen_tf.rotation()(0, 0);
-        double Fy = eigen_tf.rotation()(1, 0);
-        double Fz = eigen_tf.rotation()(2, 0);
-
-        auto trans_xyz = eigen_tf.translation();
-
-        auto rpy = trans_xyz.cross(Eigen::Vector3d{Fx, Fy, Fz});
-
-        contribution_vector(DOF::SURGE) = Fx;
-        contribution_vector(DOF::SWAY) = Fy;
-        contribution_vector(DOF::HEAVE) = Fz;
-        contribution_vector(DOF::ROLL) = rpy(0);
-        contribution_vector(DOF::PITCH) = rpy(1);
-        contribution_vector(DOF::YAW) = rpy(2);
-        contribution_vector(DOF::ROLL_RATE) = rpy(0);
-        contribution_vector(DOF::PITCH_RATE) = rpy(1);
-        contribution_vector(DOF::YAW_RATE) = rpy(2);
-
-        t->set_contribution_vector(contribution_vector);
+        // compute constraint matrix
+        i->compute_constraints();
     }
+
+    // compose constraint matrix, allocation matrix, and bound vectors
+    if(not update) {
+        m_control_allocation->compose_matrices(m_actuators);
+    }
+
 }
 
 bool MvpControlROS::f_update_control_allocation_matrix() {
 
-    // update control allocation based on actuators as well
+    if(m_config.period_control_allocation_update) {
+        f_generate_control_allocation_from_tf(true);
+    }
 
     try {
+
         // Transform center of gravity to world
         auto cg_world = m_transform_buffer.lookupTransform(
-            m_world_link_id,
-            m_cg_link_id,
+            m_config.world_link,
+            m_config.cg_link_id,
             ros::Time::now(),
-            ros::Duration(15.0)
+            ros::Duration(5.0)
         );
 
-        auto tf_eigen = tf2::transformToEigen(cg_world);
+        // get tf2 transform to eigen transform
+        auto pose_transform = tf2::transformToEigen(cg_world);
 
-        // for each thruster compute contribution in earth frame
-        for(int j = 0 ; j < m_control_allocation_matrix.cols() ; j++){
-            Eigen::Vector3d uvw;
-            uvw <<
-                m_control_allocation_matrix(DOF::SURGE, j),
-                m_control_allocation_matrix(DOF::SWAY, j),
-                m_control_allocation_matrix(DOF::HEAVE, j);
-
-            Eigen::Vector3d xyz = tf_eigen.rotation() * uvw;
-
-            m_control_allocation_matrix(DOF::X, j) = xyz(0);
-            m_control_allocation_matrix(DOF::Y, j) = xyz(1);
-            m_control_allocation_matrix(DOF::Z, j) = xyz(2);
-        }
+        m_control_allocation->update_for_pose(pose_transform);
 
     } catch(tf2::TransformException& e) {
-        ROS_WARN_STREAM_THROTTLE(10, std::string("Can't update control allocation matrix ") + e.what());
+        ROS_WARN_STREAM_THROTTLE(10, std::string(
+            "Can't update control allocation matrix ") + e.what());
         return false;
     }
-    m_mvp_control->update_control_allocation_matrix(
-        m_control_allocation_matrix
-    );
-
-    Eigen::VectorXd upper_limit(m_thrusters.size());
-    Eigen::VectorXd lower_limit(m_thrusters.size());
-
-    for(int i = 0 ; i < m_thrusters.size() ; i++) {
-        upper_limit[i] = m_thrusters[i]->m_force_max;
-        lower_limit[i] = m_thrusters[i]->m_force_min;
-    }
-
-    m_mvp_control->set_lower_limit(lower_limit);
-
-    m_mvp_control->set_upper_limit(upper_limit);
 
     return true;
 }
@@ -499,8 +324,8 @@ bool MvpControlROS::f_compute_process_values() {
     try {
         // Transform center of gravity to world
         auto cg_world = m_transform_buffer.lookupTransform(
-            m_world_link_id,
-            m_cg_link_id,
+            m_config.world_link,
+            m_config.cg_link_id,
             ros::Time::now(),
             ros::Duration(10.0)
         );
@@ -530,7 +355,7 @@ bool MvpControlROS::f_compute_process_values() {
         std::scoped_lock lock(m_odom_lock);
 
         auto cg_odom = m_transform_buffer.lookupTransform(
-                m_cg_link_id,
+                m_config.cg_link_id,
                 m_odometry_msg.child_frame_id,
                 ros::Time::now(),
                 ros::Duration(10)
@@ -567,7 +392,7 @@ bool MvpControlROS::f_compute_process_values() {
 
     mvp_msgs::ControlProcess s;
     s.header.stamp = ros::Time::now();
-    s.header.frame_id = m_world_link_id;
+    s.header.frame_id = m_config.world_link;
     s.control_mode = m_control_mode;
     s.position.x = m_process_values(DOF::X);
     s.position.y = m_process_values(DOF::Y);
@@ -582,15 +407,15 @@ bool MvpControlROS::f_compute_process_values() {
     s.angular_rate.y = m_process_values(DOF::PITCH_RATE);
     s.angular_rate.z = m_process_values(DOF::YAW_RATE);
 
-    m_mvp_control->set_system_state(m_process_values);
+    m_control_allocation->set_system_state(m_process_values);
 
     m_process_value_publisher.publish(s);
 
     mvp_msgs::ControlProcess e;
 
-    Eigen::VectorXd error_state = m_mvp_control->get_state_error();
+    Eigen::VectorXd error_state = m_control_allocation->get_state_error();
     e.header.stamp = ros::Time::now();
-    e.header.frame_id = m_world_link_id;
+    e.header.frame_id = m_config.world_link;
     e.control_mode = m_control_mode;
     e.position.x = error_state(DOF::X);
     e.position.y = error_state(DOF::Y);
@@ -613,9 +438,7 @@ bool MvpControlROS::f_compute_process_values() {
 
 void MvpControlROS::f_control_loop() {
 
-    double pt = ros::Time::now().toSec();
-
-    auto r = ros::Rate(m_controller_frequency);
+    auto r = ros::Rate(m_config.frequency);
 
     while(ros::ok()) {
 
@@ -630,7 +453,7 @@ void MvpControlROS::f_control_loop() {
         /**
          * Check if controller is enabled or not.
          */
-        if(!m_enabled) {
+        if(!m_config.enabled) {
             continue;
         }
 
@@ -642,30 +465,19 @@ void MvpControlROS::f_control_loop() {
             continue;
         }
 
-        Eigen::VectorXd needed_forces;
-
-        /**
-         * Get time difference to feed PID controller
-         */
-        double dt = ros::Time::now().toSec() - pt;
-
         /**
          * Calculate forces to be requested from thrusters. If operation fails,
          * do not send commands to thrusters.
          */
-        if(m_mvp_control->calculate_needed_forces(&needed_forces, dt)) {
-
-            for(int i = 0 ; i < m_thrusters.size() ; i++) {
-                m_thrusters.at(i)->request_force(needed_forces(i));
+        Eigen::VectorXd needed_forces;
+        if(m_control_allocation->calculate_forces(&needed_forces, r.cycleTime().toSec())) {
+            for(int i = 0 ; i < m_actuators.size() ; i++) {
+                m_actuators.at(i)->command(
+                    // read forces as Eigen::Vector3d
+                    needed_forces.segment(3 * i, 3)
+                );
             }
-
         }
-
-        /**
-         * Record the time that loop ends. Later, it will feed the PID
-         * controller.
-         */
-        pt = ros::Time::now().toSec();
     }
 }
 
@@ -675,7 +487,7 @@ void MvpControlROS::f_cb_msg_odometry(
     m_odometry_msg = *msg;
 }
 
-void MvpControlROS::f_cb_srv_set_point(
+void MvpControlROS::f_cb_set_point(
         const mvp_msgs::ControlProcess::ConstPtr &msg) {
     f_amend_set_point(*msg);
 }
@@ -760,11 +572,11 @@ void MvpControlROS::f_cb_dynconf_pid(
             config.pitch_rate_i_min,
             config.yaw_rate_i_min;
 
-    m_mvp_control->get_pid()->set_kp(p);
-    m_mvp_control->get_pid()->set_ki(i);
-    m_mvp_control->get_pid()->set_kd(d);
-    m_mvp_control->get_pid()->set_i_max(i_max);
-    m_mvp_control->get_pid()->set_i_min(i_min);
+    m_control_allocation->get_pid()->set_kp(p);
+    m_control_allocation->get_pid()->set_ki(i);
+    m_control_allocation->get_pid()->set_kd(d);
+    m_control_allocation->get_pid()->set_i_max(i_max);
+    m_control_allocation->get_pid()->set_i_min(i_min);
 
 }
 
@@ -772,7 +584,7 @@ void MvpControlROS::f_amend_dynconf() {
 
     std::scoped_lock lock(m_config_lock);
 
-    auto pid = m_mvp_control->get_pid();
+    auto pid = m_control_allocation->get_pid();
 
     mvp_control::PIDConfig conf;
 
@@ -845,6 +657,117 @@ void MvpControlROS::f_amend_dynconf() {
 
 }
 
+void MvpControlROS::f_prep_parameter(std::string *param) {
+
+}
+
+void MvpControlROS::f_read_actuators() {
+    std::vector<std::string> params;
+
+    m_pnh.getParamNames(params);
+
+    // Get the list of thrusters
+    std::set<std::string> actuators;
+    for (const auto &i: params) {
+        boost::regex e{
+            std::string() + "(?<=" + CONF_ACTUATORS + "/)(\\w+)"};
+        boost::smatch w;
+        if (boost::regex_search(i, w, e)) {
+            actuators.insert(w[0]);
+        }
+    }
+
+    // create a vector to hold the actuator options
+    std::vector<ActuatorConfig> actuator_config;
+
+    // read & write the options
+    for(const auto&i : actuators) {
+        ActuatorConfig config;
+
+        config.name = i;
+
+        std::string sopt;
+        std::string param;
+
+        // Read actuator type
+        param = std::string(CONF_ACTUATORS) + "/" + i + "/type";
+        if(!m_pnh.getParam(param, sopt) ) {
+            throw control_exception("actuator without type!");
+        }
+        if(sopt == CONF_ACTUATOR_TYPE_THRUSTER) {
+            config.type = ActuatorType::THRUSTER;
+        } else if (sopt == CONF_ACTUATOR_TYPE_AZIMUTH_THRUSTER) {
+            config.type = ActuatorType::AZIMUTH_THRUSTER;
+        } else if (sopt == CONF_ACTUATOR_TYPE_RUDDER) {
+            config.type = ActuatorType::RUDDER;
+        } else {
+            config.type = ActuatorType::UNDEFINED;
+            std::cerr << "Actuator type " << sopt << " for "
+                      << config.name << " is not valid" << std::endl;
+            continue;
+        }
+
+        param = std::string(std::string(CONF_ACTUATORS) + "/" + i + "/link_name");
+        if(!m_pnh.getParam(param, config.link_id)) {
+            throw control_exception("actuator without link name!");
+        }
+
+        param = std::string(CONF_ACTUATORS) + "/" + i + "/force_topic";
+        m_pnh.param(param, config.force_topic, i + "/force");
+
+        param = std::string(CONF_ACTUATORS) + "/" + i + "/control_curve";
+        m_pnh.param(param, config.control_curve, std::vector<double>());
+
+        std::vector<double> vopt;
+        param = std::string(CONF_ACTUATORS) + "/" + i + "/force_limits";
+        if(m_pnh.hasParam(param)) {
+            m_pnh.param(param, vopt, std::vector<double>());
+            config.force_limits[0] = *std::min_element(vopt.begin(), vopt.end());
+            config.force_limits[1] = *std::max_element(vopt.begin(), vopt.end());
+        }
+
+
+        param = std::string(CONF_ACTUATORS) + "/" + i + "/joint/y/limits";
+        if(m_pnh.hasParam(param)){
+            std::vector<double> limits;
+            m_pnh.getParam(param, limits);
+            std::sort(limits.begin(), limits.end());
+            config.joint_y_limits = limits;
+        }
+
+        param = std::string(CONF_ACTUATORS) + "/" + i + "/joint/z/limits";
+        if(m_pnh.hasParam(param)){
+            std::vector<double> limits;
+            m_pnh.getParam(param, limits);
+            std::sort(limits.begin(), limits.end());
+            config.joint_z_limits = limits;
+        }
+
+        param = std::string(CONF_ACTUATORS) + "/" + i + "/joint/y/joint_name";
+        this->param(param, config.joint_y_name, i + "/joint/y");
+
+        param = std::string(CONF_ACTUATORS) + "/" + i + "/joint/z/joint_name";
+        this->param(param, config.joint_z_name, i + "/joint/z");
+
+        actuator_config.push_back(config);
+    }
+
+    for(const auto& i : actuator_config) {
+        switch(i.type) {
+            case ActuatorType::THRUSTER:
+                m_actuators.emplace_back(std::make_shared<Thruster>(i));
+                break;
+            case ActuatorType::AZIMUTH_THRUSTER:
+                m_actuators.emplace_back(std::make_shared<AzimuthThruster>(i));
+                break;
+            default:
+                // unsupported actuator
+                break;
+        }
+    }
+
+}
+
 void MvpControlROS::f_read_control_modes() {
     std::vector<std::string> params;
     m_pnh.getParamNames(params);
@@ -866,7 +789,7 @@ void MvpControlROS::f_read_control_modes() {
         /**
          * There is no mode detected by the control mode parser.
          */
-         throw control_ros_exception(
+         throw control_exception(
              "No control mode configuration have been found."
          );
     }
@@ -898,7 +821,7 @@ void MvpControlROS::f_read_control_modes() {
             if (found != CONF_DOF_LOOKUP.end()) {
                 mode_rules[mode].insert(found->second);
             } else {
-                throw control_ros_exception(
+                throw control_exception(
                         "Unknown freedom name passed '" + dof + "'"
                         "Possible values are "
                        "'x, y, z, roll, pitch, yaw, surge, sway, heave"
@@ -1022,7 +945,7 @@ void MvpControlROS::f_read_control_modes() {
 
 bool MvpControlROS::f_cb_srv_get_control_modes(
     mvp_msgs::GetControlModes::Request &req,
-    mvp_msgs::GetControlModes::Response &resp) {
+    mvp_msgs::GetControlModes::Response &resp) const {
 
     if(!m_control_modes.modes.empty()) {
         resp.modes = m_control_modes.modes;
@@ -1033,18 +956,11 @@ bool MvpControlROS::f_cb_srv_get_control_modes(
 
 }
 
-bool MvpControlROS::f_cb_srv_set_control_point(
-        mvp_msgs::SetControlPoint::Request req,
-        mvp_msgs::SetControlPoint::Response resp) {
-
-    return f_amend_set_point(req.setpoint);
-}
-
 bool MvpControlROS::f_cb_srv_enable(
         std_srvs::Empty::Request req, std_srvs::Empty::Response res) {
 
     ROS_INFO("Controller enabled!");
-    m_enabled = true;
+    m_config.enabled = true;
 
     return true;
 }
@@ -1053,7 +969,7 @@ bool MvpControlROS::f_cb_srv_disable(
         std_srvs::Empty::Request req, std_srvs::Empty::Response res) {
 
     ROS_INFO("Controller disabled!");
-    m_enabled = false;
+    m_config.enabled = false;
 
     return true;
 }
@@ -1079,7 +995,7 @@ bool MvpControlROS::f_cb_srv_get_active_mode(
     return true;
 }
 
-bool MvpControlROS::f_amend_control_mode(std::string mode) {
+bool MvpControlROS::f_amend_control_mode(const std::string& mode) {
     if(!mode.empty()) {
         if(mode == m_control_mode) {
             // nothing should change. Operation valid
@@ -1186,7 +1102,7 @@ bool MvpControlROS::f_amend_control_mode(std::string mode) {
 
         m_control_mode = mode;
 
-        m_mvp_control->update_freedoms(found->dofs);
+        m_control_allocation->update_freedoms(found->dofs);
 
         ROS_INFO_STREAM("Controller mode changed to " << mode);
 
@@ -1203,7 +1119,7 @@ bool MvpControlROS::f_amend_control_mode(std::string mode) {
 bool MvpControlROS::f_amend_set_point(
     const mvp_msgs::ControlProcess &set_point) {
 
-    if(!f_amend_control_mode(set_point.control_mode)) {
+    if (!f_amend_control_mode(set_point.control_mode)) {
         return false;
     }
 
@@ -1232,9 +1148,64 @@ bool MvpControlROS::f_amend_set_point(
     m_set_point(mvp_msgs::ControlMode::DOF_YAW_RATE) =
         set_point.angular_rate.z;
 
-    m_mvp_control->update_desired_state(m_set_point);
+    m_control_allocation->update_desired_state(m_set_point);
 
     m_set_point_msg = set_point;
 
     return true;
+}
+
+void MvpControlROS::run() {
+
+    ros::spin();
+
+}
+
+template<class T>
+bool MvpControlROS::param(const std::string& param, T &val, const T& default_val) {
+    return m_pnh.param<T>(param, val, default_val);
+}
+
+template<>
+bool MvpControlROS::param<std::string>(const std::string& param, std::string &val, const std::string& default_val) {
+
+    if(m_pnh.param<std::string>(param, val, default_val) ) {
+        std::cout << "val: " << val << std::endl;
+
+        // find the templated values
+        std::regex template_regex("\\{\\{(.*)\\}\\}");
+        auto tparams_begin =
+            std::sregex_iterator(val.begin(), val.end(), template_regex);
+        auto tparams_end = std::sregex_iterator();
+
+        for (std::sregex_iterator i = tparams_begin; i != tparams_end; ++i) {
+            std::string m = i->str();
+
+            m.erase(std::remove(m.begin(), m.end(), '{'), m.end());
+            m.erase(std::remove(m.begin(), m.end(), '}'), m.end());
+            m.erase(std::remove(m.begin(), m.end(), ' '), m.end());
+
+            std::string p;
+            if(!m_pnh.param(std::string("template_args/") + m, p, std::string())) {
+                throw control_exception("template argument is not defined!");
+            }
+
+            size_t index = 0;
+            index = val.find(i->str(), index);
+            if (index == std::string::npos) break;
+
+            val.replace(index, i->str().length(), p);
+
+        }
+
+        std::cout << val << std::endl;
+        return true;
+    }
+
+    return false;
+
+//    std::regex long_word_regex("(\\w{7,})");
+//    std::string new_s = std::regex_replace(val, long_word_regex, "[$&]");
+
+
 }
