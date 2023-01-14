@@ -29,5 +29,4 @@ authors:
 license: GPL-3.0
 year: 2022
 proceedings: 'OCEANS 2022: Hampton Roads'
-# todo: replace it with DOI after publication
-unpublished: true
+doi: 10.1109/OCEANS47191.2022.9977346

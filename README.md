@@ -18,16 +18,16 @@ The documentation for `mvp_control` package is is at https://uri-ocean-robotics.
 
 If you find this software useful in your research, please cite:
 
-> Note, this work is published in OCEANS 2022 conference. Once the paper is publicly available, bibtex entry
-will be updated with the one from IEEExplore.
-
 ```
-@inproceedings{mvp_paper,
-    title = {Working towards the development of a generic marine vehicle framework: ROS-MVP},
-    author={Gezer, Emir Cem and Zhou, Mingxi and Zhao, Lin and McConnell, William},
-    journal = {OCEANS 2022, Hampton Road},
-    year ={2022},
-}
+@INPROCEEDINGS{9977346,
+  author={Gezer, Emir Cem and Zhou, Mingxi and Zhao, Lin and McConnell, William},
+  booktitle={OCEANS 2022, Hampton Roads},
+  title={Working toward the development of a generic marine vehicle framework: ROS-MVP},
+  year={2022},
+  volume={},
+  number={},
+  pages={1-5},
+  doi={10.1109/OCEANS47191.2022.9977346}}
 ```
 
 ## Funding
