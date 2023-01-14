@@ -101,15 +101,15 @@ It has been tested on intel CPUs and Raspberry Pi 4 varians (CM4 and SBC).</p>
 <p>MVP is only available through source installation.</p>
 </div>
 <p>Pull the <code class="docutils literal notranslate"><span class="pre">mvp_msgs</span></code> repository if you don’t have it already</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone --single-branch --branch noetic-devel https://github.com/uri-ocean-robotics/mvp_msgs
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>--single-branch<span class="w"> </span>--branch<span class="w"> </span>noetic-devel<span class="w"> </span>https://github.com/uri-ocean-robotics/mvp_msgs
 </pre></div>
 </div>
 <p>Pull the <code class="docutils literal notranslate"><span class="pre">mvp_control</span></code> repository</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone --single-branch --branch noetic-devel https://github.com/uri-ocean-robotics/mvp_control
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>--single-branch<span class="w"> </span>--branch<span class="w"> </span>noetic-devel<span class="w"> </span>https://github.com/uri-ocean-robotics/mvp_control
 </pre></div>
 </div>
 <p>Install dependencies</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rosdep install --from-paths src --ignore-src --rosdistro <span class="si">${</span><span class="nv">ROS_DISTRO</span><span class="si">}</span> -y
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rosdep<span class="w"> </span>install<span class="w"> </span>--from-paths<span class="w"> </span>src<span class="w"> </span>--ignore-src<span class="w"> </span>--rosdistro<span class="w"> </span><span class="si">${</span><span class="nv">ROS_DISTRO</span><span class="si">}</span><span class="w"> </span>-y
 </pre></div>
 </div>
 <div class="admonition note">
