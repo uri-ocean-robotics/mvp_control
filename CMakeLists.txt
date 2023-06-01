@@ -48,8 +48,8 @@ if (NOT TARGET osqp-cpp)
   message(STATUS "${PROJECT_NAME}: `osqp-cpp` targets not found. Attempting to fetch contents...")
   FetchContent_Declare(
     osqp-cpp
-    GIT_REPOSITORY https://github.com/google/osqp-cpp/
-    GIT_TAG        origin/master
+    GIT_REPOSITORY https://github.com/GSO-soslab/osqp-cpp
+    GIT_TAG        stable
   )
   FetchContent_MakeAvailable(osqp-cpp)
 else()
