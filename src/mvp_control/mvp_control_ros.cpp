@@ -441,7 +441,7 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
             quat.setY(tf_torque.transform.rotation.y);
             quat.setZ(tf_torque.transform.rotation.z);
 
-            Eigen::VectorXd process_values;
+            Eigen::VectorXd process_values = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
             tf2::Matrix3x3(quat).getRPY(
                 process_values(DOF::ROLL),
                 process_values(DOF::PITCH),
@@ -494,7 +494,7 @@ bool MvpControlROS::f_update_control_allocation_matrix() {
         quat.setY(cg_world.transform.rotation.y);
         quat.setZ(cg_world.transform.rotation.z);
 
-        Eigen::VectorXd orientation;
+        Eigen::VectorXd orientation = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
         tf2::Matrix3x3(quat).getRPY(
             orientation(DOF::ROLL),
             orientation(DOF::PITCH),
@@ -610,7 +610,7 @@ bool MvpControlROS::f_compute_process_values() {
         quat.setY(cg_odom.transform.rotation.y);
         quat.setZ(cg_odom.transform.rotation.z);
 
-        Eigen::Vector3d orientation;
+        Eigen::Vector3d orientation = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
         tf2::Matrix3x3(quat).getRPY(
             orientation(DOF::ROLL),
             orientation(DOF::PITCH),
