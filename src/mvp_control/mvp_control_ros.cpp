@@ -610,7 +610,7 @@ bool MvpControlROS::f_compute_process_values() {
         quat.setY(cg_odom.transform.rotation.y);
         quat.setZ(cg_odom.transform.rotation.z);
 
-        Eigen::Vector3d orientation = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
+        Eigen::VectorXd orientation = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
         tf2::Matrix3x3(quat).getRPY(
             orientation(DOF::ROLL),
             orientation(DOF::PITCH),
