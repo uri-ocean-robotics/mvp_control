@@ -417,33 +417,57 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
 
         Eigen::VectorXd contribution_vector(CONTROLLABLE_DOF_LENGTH);
 
+        // thruster onlu use a axis (e.g., X-axis) for forece
         double Fx = eigen_tf.rotation()(0, 0);
         double Fy = eigen_tf.rotation()(1, 0);
         double Fz = eigen_tf.rotation()(2, 0);
 
         auto trans_xyz = eigen_tf.translation();
-        
-        //torque needs to be converted into m_world_link as well
-        auto tf_torque = m_transform_buffer.lookupTransform(
-            m_world_link_id,
-            m_cg_link_id,
-            ros::Time::now(),
-            ros::Duration(10.0)
-        );
 
-        auto eigen_tf_torque = tf2::transformToEigen(tf_torque);
+        //! Eq.(2.12), Eq.(2.14) from Thor I. Fossen, Guidance and Control of Ocean Vehicles, Page 10
+        Eigen::Matrix3d ang_vel_tranform = Eigen::Matrix3d::Identity();
+        try {
+            // Transform center of gravity to world
+            auto tf_torque = m_transform_buffer.lookupTransform(
+                m_world_link_id,
+                m_cg_link_id,
+                ros::Time::now(),
+                ros::Duration(10.0)
+            );
 
-        auto rpy = eigen_tf_torque.rotation() * trans_xyz.cross(Eigen::Vector3d{Fx, Fy, Fz});
+            tf2::Quaternion quat;
+            quat.setW(tf_torque.transform.rotation.w);
+            quat.setX(tf_torque.transform.rotation.x);
+            quat.setY(tf_torque.transform.rotation.y);
+            quat.setZ(tf_torque.transform.rotation.z);
+
+            Eigen::VectorXd process_values;
+            tf2::Matrix3x3(quat).getRPY(
+                process_values(DOF::ROLL),
+                process_values(DOF::PITCH),
+                process_values(DOF::YAW)
+            );
+
+            ang_vel_tranform = f_angular_velocity_transform(process_values);
+        } catch(tf2::TransformException &e) {
+            ROS_WARN_STREAM_THROTTLE(10, std::string("Can't compute thruster tf: ") + e.what());
+            return;
+        }
+
+        auto torque_rpy = ang_vel_tranform * trans_xyz.cross(Eigen::Vector3d{Fx, Fy, Fz});
+        auto torque_pqr = trans_xyz.cross(Eigen::Vector3d{Fx, Fy, Fz});
+
         //
         contribution_vector(DOF::SURGE) = Fx;
         contribution_vector(DOF::SWAY) = Fy;
         contribution_vector(DOF::HEAVE) = Fz;
-        contribution_vector(DOF::ROLL) = rpy(0);
-        contribution_vector(DOF::PITCH) = rpy(1);
-        contribution_vector(DOF::YAW) = rpy(2);
-        contribution_vector(DOF::ROLL_RATE) = rpy(0);
-        contribution_vector(DOF::PITCH_RATE) = rpy(1);
-        contribution_vector(DOF::YAW_RATE) = rpy(2);
+        contribution_vector(DOF::ROLL) = torque_rpy(0);
+        contribution_vector(DOF::PITCH) = torque_rpy(1);
+        contribution_vector(DOF::YAW) = torque_rpy(2);
+        // body frame p,q,r
+        contribution_vector(DOF::ROLL_RATE) = torque_pqr(0);
+        contribution_vector(DOF::PITCH_RATE) = torque_pqr(1);
+        contribution_vector(DOF::YAW_RATE) = torque_pqr(2);
 
         t->set_contribution_vector(contribution_vector);
     }
@@ -464,6 +488,21 @@ bool MvpControlROS::f_update_control_allocation_matrix() {
 
         auto tf_eigen = tf2::transformToEigen(cg_world);
 
+        tf2::Quaternion quat;
+        quat.setW(cg_world.transform.rotation.w);
+        quat.setX(cg_world.transform.rotation.x);
+        quat.setY(cg_world.transform.rotation.y);
+        quat.setZ(cg_world.transform.rotation.z);
+
+        Eigen::VectorXd orientation;
+        tf2::Matrix3x3(quat).getRPY(
+            orientation(DOF::ROLL),
+            orientation(DOF::PITCH),
+            orientation(DOF::YAW)
+        );
+
+        Eigen::Matrix3d ang_vel_tranform = Eigen::Matrix3d::Identity();
+
         // for each thruster compute contribution in earth frame
         for(int j = 0 ; j < m_control_allocation_matrix.cols() ; j++){
             Eigen::Vector3d uvw;
@@ -477,12 +516,28 @@ bool MvpControlROS::f_update_control_allocation_matrix() {
             m_control_allocation_matrix(DOF::X, j) = xyz(0);
             m_control_allocation_matrix(DOF::Y, j) = xyz(1);
             m_control_allocation_matrix(DOF::Z, j) = xyz(2);
+            
+            // Convert prq to world_frame angular rate:
+            //  Eq.(2.12), Eq.(2.14) from Thor I. Fossen, Guidance and Control of Ocean Vehicles, Page 10
+            Eigen::Vector3d pqr;
+            pqr <<
+                m_control_allocation_matrix(DOF::ROLL_RATE, j),
+                m_control_allocation_matrix(DOF::PITCH_RATE, j),
+                m_control_allocation_matrix(DOF::YAW_RATE, j);                
+
+            ang_vel_tranform = f_angular_velocity_transform(orientation);
+
+            auto rpy = ang_vel_tranform * pqr;
+            m_control_allocation_matrix(DOF::ROLL, j) = rpy(0);
+            m_control_allocation_matrix(DOF::PITCH, j) = rpy(1);
+            m_control_allocation_matrix(DOF::YAW, j) = rpy(2);             
         }
 
     } catch(tf2::TransformException& e) {
         ROS_WARN_STREAM_THROTTLE(10, std::string("Can't update control allocation matrix ") + e.what());
         return false;
     }
+
     m_mvp_control->update_control_allocation_matrix(
         m_control_allocation_matrix
     );
@@ -548,6 +603,21 @@ bool MvpControlROS::f_compute_process_values() {
 
         auto cg_odom_eigen = tf2::transformToEigen(cg_odom);
 
+        // angular velocity from odomteyr_child_frame to cd_link
+        tf2::Quaternion quat;
+        quat.setW(cg_odom.transform.rotation.w);
+        quat.setX(cg_odom.transform.rotation.x);
+        quat.setY(cg_odom.transform.rotation.y);
+        quat.setZ(cg_odom.transform.rotation.z);
+
+        Eigen::Vector3d orientation;
+        tf2::Matrix3x3(quat).getRPY(
+            orientation(DOF::ROLL),
+            orientation(DOF::PITCH),
+            orientation(DOF::YAW)
+        );
+
+        // convert linear velocity from odomtery to cg_link
         Eigen::Vector3d uvw;
         uvw(0) = m_odometry_msg.twist.twist.linear.x;
         uvw(1) = m_odometry_msg.twist.twist.linear.y;
@@ -559,19 +629,15 @@ bool MvpControlROS::f_compute_process_values() {
         m_process_values(DOF::SWAY) = uvw(1);
         m_process_values(DOF::HEAVE) = uvw(2);
 
+        // convert angular velocity from odom_child_link to cg_link
+        Eigen::Matrix3d ang_vel_transform = f_angular_velocity_transform(orientation);
+
         Eigen::Vector3d angular_rate;
         angular_rate(0) = m_odometry_msg.twist.twist.angular.x;
         angular_rate(1) = m_odometry_msg.twist.twist.angular.y;
         angular_rate(2) = m_odometry_msg.twist.twist.angular.z;
 
-    //    angular_rate = cg_odom_eigen.rotation() * angular_rate;
-        Eigen::Matrix3d matrix = Eigen::Matrix3d::Identity();
-        matrix(0,2) = - sin(m_process_values(DOF::PITCH));
-        matrix(1,1) = cos(m_process_values(DOF::ROLL));
-        matrix(1,2) = cos(m_process_values(DOF::PITCH)) * sin(m_process_values(DOF::ROLL));
-        matrix(2,1) = - sin(m_process_values(DOF::ROLL));
-        matrix(2,2) = cos(m_process_values(DOF::PITCH)) * cos(m_process_values(DOF::ROLL));
-        angular_rate = matrix * angular_rate;
+        angular_rate = ang_vel_transform * angular_rate;
 
         m_process_values(DOF::ROLL_RATE) = angular_rate(0);
         m_process_values(DOF::PITCH_RATE) = angular_rate(1);
@@ -595,6 +661,7 @@ bool MvpControlROS::f_compute_process_values() {
     s.velocity.x = m_process_values(DOF::SURGE);
     s.velocity.y = m_process_values(DOF::SWAY);
     s.velocity.z = m_process_values(DOF::HEAVE);
+    // body frame angular velocity pqr
     s.angular_rate.x = m_process_values(DOF::ROLL_RATE);
     s.angular_rate.y = m_process_values(DOF::PITCH_RATE);
     s.angular_rate.z = m_process_values(DOF::YAW_RATE);
@@ -1096,6 +1163,37 @@ bool MvpControlROS::f_cb_srv_get_active_mode(
     return true;
 }
 
+Eigen::MatrixXd MvpControlROS::f_angular_velocity_transform(const Eigen::VectorXd& orientation) {
+    Eigen::Matrix3d transform = Eigen::Matrix3d::Zero();
+
+    // 85 < pitch < 95, -95 < pitch < -85 
+    if( (orientation(DOF::PITCH) >  1.483529839 && orientation(DOF::PITCH) <  1.658062761) ||
+        (orientation(DOF::PITCH) > -1.658062761 && orientation(DOF::PITCH) < -1.483529839) ) {
+        transform(0,0) = 1.0;
+        transform(0,1) = 0.0;
+        transform(0,2) = 0.0;
+        transform(1,0) = 0.0;
+        transform(1,1) = cos(orientation(DOF::ROLL));
+        transform(1,2) = -sin(orientation(DOF::ROLL));
+        transform(2,0) = 0.0;
+        transform(2,1) = 0.0;
+        transform(2,2) = 0.0;
+    }
+    else {
+        transform(0,0) = 1.0;
+        transform(0,1) = sin(orientation(DOF::ROLL)) * tan(orientation(DOF::PITCH));
+        transform(0,2) = cos(orientation(DOF::ROLL)) * tan(orientation(DOF::PITCH));
+        transform(1,0) = 0.0;
+        transform(1,1) = cos(orientation(DOF::ROLL));
+        transform(1,2) = -sin(orientation(DOF::ROLL));
+        transform(2,0) = 0.0;
+        transform(2,1) = sin(orientation(DOF::ROLL)) / cos(orientation(DOF::PITCH));
+        transform(2,2) = cos(orientation(DOF::ROLL)) / cos(orientation(DOF::PITCH));
+    }    
+
+    return transform;
+}
+
 bool MvpControlROS::f_amend_control_mode(std::string mode) {
     if(!mode.empty()) {
         if(mode == m_control_mode) {
@@ -1224,18 +1322,49 @@ bool MvpControlROS::f_amend_set_point(
         return false;
     }
 
+    if( set_point.header.frame_id.empty()) {
+        // no decision can be made
+        ROS_WARN_STREAM("no frame id provided for the setpoint!");
+        return false;
+    }
+
+    Eigen::Vector3d p_world, rpy_world;
+    try {
+        // Transform the position of setpoint frame_id to world_link
+        auto tf_world_setpoint = m_transform_buffer.lookupTransform(
+            m_world_link_id,
+            set_point.header.frame_id,
+            ros::Time::now(),
+            ros::Duration(10.0)
+        );
+
+        auto tf_eigen = tf2::transformToEigen(tf_world_setpoint);
+
+        p_world = tf_eigen.rotation() * 
+                                  Eigen::Vector3d(set_point.position.x, set_point.position.y, set_point.position.z)
+                                  + tf_eigen.translation();
+        rpy_world = tf_eigen.rotation() * 
+                                    Eigen::Vector3d(set_point.orientation.x, set_point.orientation.y, set_point.orientation.z);
+
+        //assume the set point uvw and pqr are in the m_cg_link_id
+
+    } catch(tf2::TransformException &e) {
+        ROS_WARN_STREAM_THROTTLE(10, std::string("Can't ???: ") + e.what());
+        return false;
+    }
+
     m_set_point(mvp_msgs::ControlMode::DOF_X) =
-        set_point.position.x;
+        p_world.x();
     m_set_point(mvp_msgs::ControlMode::DOF_Y) =
-        set_point.position.y;
+        p_world.y();
     m_set_point(mvp_msgs::ControlMode::DOF_Z) =
-        set_point.position.z;
+        p_world.z();
     m_set_point(mvp_msgs::ControlMode::DOF_ROLL) =
-        set_point.orientation.x;
+        rpy_world.x();
     m_set_point(mvp_msgs::ControlMode::DOF_PITCH) =
-        set_point.orientation.y;
+        rpy_world.y();
     m_set_point(mvp_msgs::ControlMode::DOF_YAW) =
-        set_point.orientation.z;
+        rpy_world.z();
     m_set_point(mvp_msgs::ControlMode::DOF_SURGE) =
         set_point.velocity.x;
     m_set_point(mvp_msgs::ControlMode::DOF_SWAY) =

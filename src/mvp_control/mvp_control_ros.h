@@ -241,6 +241,12 @@ namespace ctrl {
          */
         void f_control_loop();
 
+        /** @brief Convert prq to world_frame angular rate:
+         *  Eq.(2.12), Eq.(2.14) from Thor I. Fossen, Guidance and Control of Ocean Vehicles, Page 10
+         *
+         */
+        Eigen::MatrixXd f_angular_velocity_transform(const Eigen::VectorXd& orientation);
+
         /** @brief Amends changes to Dynamic reconfigure server
          *
          * After reading the static configuration file, applies configuration to
