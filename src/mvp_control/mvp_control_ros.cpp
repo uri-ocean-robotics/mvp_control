@@ -1343,8 +1343,34 @@ bool MvpControlROS::f_amend_set_point(
         p_world = tf_eigen.rotation() * 
                                   Eigen::Vector3d(set_point.position.x, set_point.position.y, set_point.position.z)
                                   + tf_eigen.translation();
-        rpy_world = tf_eigen.rotation() * 
-                                    Eigen::Vector3d(set_point.orientation.x, set_point.orientation.y, set_point.orientation.z);
+        ///convert euler angle into a different frame
+        ///find the rotation matrix from the set point frame to the desired pose.
+        Eigen::Matrix3d R;
+        R = Eigen::AngleAxisd(set_point.orientation.z, Eigen::Vector3d::UnitZ()) *
+                            Eigen::AngleAxisd(set_point.orientation.y, Eigen::Vector3d::UnitY()) *
+                            Eigen::AngleAxisd(set_point.orientation.x, Eigen::Vector3d::UnitX());
+        //find rotation matrix from the world link to the setpoint frame.
+        auto tf_1 = m_transform_buffer.lookupTransform(
+            set_point.header.frame_id,
+            m_world_link_id,
+            ros::Time::now(),
+            ros::Duration(10.0)
+        );
+        auto tf_1_eigen = tf2::transformToEigen(tf_1);
+        //find the total rotation matrix from the world link to the desired pose.
+        Eigen::Matrix3d R_set_point =  tf_1_eigen.rotation() *R;
+
+        rpy_world.y() = asin(-R_set_point(2, 0));
+
+        // Calculate yaw (rotation about Z-axis)
+        rpy_world.z() = atan2(R_set_point(1, 0), R_set_point(0, 0));
+
+        // Calculate roll (rotation about X-axis)
+        rpy_world.x() = atan2(R_set_point(2, 1), R_set_point(2, 2));
+
+
+        // rpy_world = tf_eigen.rotation() * 
+                                    // Eigen::Vector3d(set_point.orientation.x, set_point.orientation.y, set_point.orientation.z);
 
         //assume the set point uvw and pqr are in the m_cg_link_id
 
