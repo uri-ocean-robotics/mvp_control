@@ -423,17 +423,17 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
 
         auto trans_xyz = eigen_tf.translation();
         
-        //torque needs to be converted into m_world_link as well
-        auto tf_torque = m_transform_buffer.lookupTransform(
-            m_world_link_id,
-            m_cg_link_id,
-            ros::Time::now(),
-            ros::Duration(10.0)
-        );
+        // //torque needs to be converted into m_world_link as well
+        // auto tf_torque = m_transform_buffer.lookupTransform(
+        //     m_world_link_id,
+        //     m_cg_link_id,
+        //     ros::Time::now(),
+        //     ros::Duration(10.0)
+        // );
 
-        auto eigen_tf_torque = tf2::transformToEigen(tf_torque);
-
-        auto rpy = eigen_tf_torque.rotation() * trans_xyz.cross(Eigen::Vector3d{Fx, Fy, Fz});
+        // auto eigen_tf_torque = tf2::transformToEigen(tf_torque);
+        auto rpy = trans_xyz.cross(Eigen::Vector3d{Fx, Fy, Fz});
+        // auto rpy = eigen_tf_torque.rotation() * trans_xyz.cross(Eigen::Vector3d{Fx, Fy, Fz});
         //
         contribution_vector(DOF::SURGE) = Fx;
         contribution_vector(DOF::SWAY) = Fy;
@@ -564,14 +564,14 @@ bool MvpControlROS::f_compute_process_values() {
         angular_rate(1) = m_odometry_msg.twist.twist.angular.y;
         angular_rate(2) = m_odometry_msg.twist.twist.angular.z;
 
-    //    angular_rate = cg_odom_eigen.rotation() * angular_rate;
-        Eigen::Matrix3d matrix = Eigen::Matrix3d::Identity();
-        matrix(0,2) = - sin(m_process_values(DOF::PITCH));
-        matrix(1,1) = cos(m_process_values(DOF::ROLL));
-        matrix(1,2) = cos(m_process_values(DOF::PITCH)) * sin(m_process_values(DOF::ROLL));
-        matrix(2,1) = - sin(m_process_values(DOF::ROLL));
-        matrix(2,2) = cos(m_process_values(DOF::PITCH)) * cos(m_process_values(DOF::ROLL));
-        angular_rate = matrix * angular_rate;
+        angular_rate = cg_odom_eigen.rotation() * angular_rate;
+        // Eigen::Matrix3d matrix = Eigen::Matrix3d::Identity();
+        // matrix(0,2) = - sin(m_process_values(DOF::PITCH));
+        // matrix(1,1) = cos(m_process_values(DOF::ROLL));
+        // matrix(1,2) = cos(m_process_values(DOF::PITCH)) * sin(m_process_values(DOF::ROLL));
+        // matrix(2,1) = - sin(m_process_values(DOF::ROLL));
+        // matrix(2,2) = cos(m_process_values(DOF::PITCH)) * cos(m_process_values(DOF::ROLL));
+        // angular_rate = matrix * angular_rate;
 
         m_process_values(DOF::ROLL_RATE) = angular_rate(0);
         m_process_values(DOF::PITCH_RATE) = angular_rate(1);
