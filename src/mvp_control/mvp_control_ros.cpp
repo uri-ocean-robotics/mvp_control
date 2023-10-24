@@ -406,14 +406,21 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
     // For each thruster look up transformation
     for(const auto& t : m_thrusters) {
 
-        auto tf = m_transform_buffer.lookupTransform(
-            m_cg_link_id,
-            t->get_link_id(),
-            ros::Time::now(),
-            ros::Duration(10.0)
-        );
+        Eigen::Isometry3d eigen_tf;
+        try {
+            // 
+            auto tf_cg_thruster = m_transform_buffer.lookupTransform(
+                m_cg_link_id,
+                t->get_link_id(),
+                ros::Time::now(),
+                ros::Duration(10.0)
+            );
 
-        auto eigen_tf = tf2::transformToEigen(tf);
+            eigen_tf = tf2::transformToEigen(tf_cg_thruster);
+        } catch(tf2::TransformException &e) {
+            ROS_WARN_STREAM_THROTTLE(10, std::string("Can't compute thruster tf between cg-thruster: ") + e.what());
+            return;
+        }
 
         Eigen::VectorXd contribution_vector(CONTROLLABLE_DOF_LENGTH);
 
@@ -450,7 +457,7 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
 
             ang_vel_tranform = f_angular_velocity_transform(process_values);
         } catch(tf2::TransformException &e) {
-            ROS_WARN_STREAM_THROTTLE(10, std::string("Can't compute thruster tf: ") + e.what());
+            ROS_WARN_STREAM_THROTTLE(10, std::string("Can't compute thruster tf between world-cg: ") + e.what());
             return;
         }
 
@@ -1375,7 +1382,7 @@ bool MvpControlROS::f_amend_set_point(
         //assume the set point uvw and pqr are in the m_cg_link_id
 
     } catch(tf2::TransformException &e) {
-        ROS_WARN_STREAM_THROTTLE(10, std::string("Can't ???: ") + e.what());
+        ROS_WARN_STREAM_THROTTLE(10, std::string("Can't transform the p and rpy to the global!") + e.what());
         return false;
     }
 
