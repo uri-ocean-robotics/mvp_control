@@ -90,6 +90,7 @@ namespace ctrl {
     static constexpr const char * SERVICE_GET_ACTIVE_MODE = "controller/active_mode";
 
     struct DOF {
+        //! @NOTE: ROLL_RATE, PITCH_RATE, YAW_RATE are controlle in global frame
         enum IDX : int {
             X =             mvp_msgs::ControlMode::DOF_X,
             Y =             mvp_msgs::ControlMode::DOF_Y,
