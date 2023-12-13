@@ -40,10 +40,10 @@ jobs:
       - name: Checkout submodules
         run: git submodule update --init --recursive
 
-      - uses: ros-tooling/setup-ros@v0.2
+      - uses: ros-tooling/setup-ros@v0.7
         with:
           required-ros-distributions: noetic
-
+          
       - name: Install required packages
         env:
           REPO_NAME: ${{ github.event.repository.name }}
