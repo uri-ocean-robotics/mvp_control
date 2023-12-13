@@ -282,12 +282,22 @@ Eigen::ArrayXd MvpControl::f_error_function(Eigen::ArrayXd desired,
 
         // todo: wrap2pi implementation
 
-        auto d = (fmod(desired(i) + M_PI, 2*M_PI) - M_PI);
-        auto c = (fmod(current(i) + M_PI, 2*M_PI) - M_PI);
+        // auto d = (fmod(desired(i) + M_PI, 2*M_PI) - M_PI);
+        // auto c = (fmod(current(i) + M_PI, 2*M_PI) - M_PI);
 
+        // auto t = d - c;
+        // double diff = (fmod(t + M_PI, 2*M_PI) - M_PI);
+        // error(i) = diff < -M_PI ? diff + 2*M_PI : diff;
+
+        //wrap desired and current in to -pi to pi
+        auto d = (fmod(desired(i) + std::copysign(M_PI, desired(i)), 2*M_PI) 
+                - std::copysign(M_PI, desired(i)));
+        auto c = (fmod(current(i) + std::copysign(M_PI,current(i)), 2*M_PI) 
+                - std::copysign(M_PI,current(i)));
         auto t = d - c;
-        double diff = (fmod(t + M_PI, 2*M_PI) - M_PI);
-        error(i) = diff < -M_PI ? diff + 2*M_PI : diff;
+        double diff = (fmod(t + std::copysign(M_PI,t), 2*M_PI) 
+                - std::copysign(M_PI,t));
+        error(i) = diff;
     }
 
     m_error_state = error;
