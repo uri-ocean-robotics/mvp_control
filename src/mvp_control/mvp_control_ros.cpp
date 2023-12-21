@@ -722,6 +722,9 @@ void MvpControlROS::f_control_loop() {
          * Check if controller is enabled or not.
          */
         if(!m_enabled) {
+             for(int i = 0 ; i < m_thrusters.size() ; i++) {
+                m_thrusters.at(i)->command(0);
+            }
             continue;
         }
 
