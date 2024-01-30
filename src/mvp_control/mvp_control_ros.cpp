@@ -461,8 +461,8 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
             return;
         }
 
-        auto torque_rpy = ang_vel_tranform * trans_xyz.cross(Eigen::Vector3d{Fx, Fy, Fz});
         auto torque_pqr = trans_xyz.cross(Eigen::Vector3d{Fx, Fy, Fz});
+        auto torque_rpy = ang_vel_tranform * torque_pqr;
 
         //
         contribution_vector(DOF::SURGE) = Fx;
