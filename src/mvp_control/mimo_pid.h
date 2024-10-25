@@ -160,6 +160,10 @@ namespace ctrl {
          */
         void set_i_min(const decltype(m_i_min) &gain);
 
+        void reset_m_i(const decltype(m_i));
+        
+        auto get_m_i() -> decltype(m_i);
+
         //! @brief Default getter for error function
         auto get_error_function() -> decltype(m_error_function);
 

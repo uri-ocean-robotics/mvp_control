@@ -117,6 +117,13 @@ auto MimoPID::get_i_min() -> decltype(m_i_max) {
     return m_i_min;
 }
 
+void MimoPID::reset_m_i(const decltype(m_i)) {
+    m_i.setZero();
+}
+auto MimoPID::get_m_i() -> decltype(m_i) {
+    return m_i;
+}
+
 void MimoPID::set_i_min(const decltype(m_i_min) &gain) {
     m_i_min= gain;
 }
