@@ -50,14 +50,14 @@ namespace ctrl {
          *
          * This variable holds the maximum value of a gain
          */
-        Eigen::ArrayXd m_i_max;
+        Eigen::ArrayXd m_pid_max;
 
         /**
          * @brief Minimum value
          *
          * This variable holds the minimum value of a gain
          */
-        Eigen::ArrayXd m_i_min;
+        Eigen::ArrayXd m_pid_min;
 
         //! @brief Proportional gain
         Eigen::ArrayXd m_kp;
@@ -143,26 +143,27 @@ namespace ctrl {
         void set_dt_i(const decltype(m_dt_i) &gain);
 
         //! @brief Default getter for max
-        auto get_i_max() -> decltype(m_i_max);
+        auto get_pid_max() -> decltype(m_pid_max);
 
         /*! @brief Default setter for max
          *
          * @param gain
          */
-        void set_i_max(const decltype(m_i_max) &gain);
+        void set_pid_max(const decltype(m_pid_max) &gain);
 
         //! @brief Default getter for min
-        auto get_i_min() -> decltype(m_i_min);
+        auto get_pid_min() -> decltype(m_pid_min);
 
         /*! @brief Default setter for min
          *
          * @param gain
          */
-        void set_i_min(const decltype(m_i_min) &gain);
+        void set_pid_min(const decltype(m_pid_min) &gain);
 
-        void reset_m_i(const decltype(m_i));
-        
+        void set_m_i(const decltype(m_i) &new_m_i);
+
         auto get_m_i() -> decltype(m_i);
+
 
         //! @brief Default getter for error function
         auto get_error_function() -> decltype(m_error_function);

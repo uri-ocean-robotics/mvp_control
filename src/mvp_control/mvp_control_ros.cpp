@@ -199,18 +199,18 @@ MvpControlROS::MvpControlROS()
         )
     );
 
-    m_reset_integral_error_server = m_nh.advertiseService
-        <std_srvs::Empty::Request,
-        std_srvs::Empty::Response>
-    (
-        SERVICE_RESET_INTEGRAL_ERROR,
-        std::bind(
-            &MvpControlROS::f_cb_srv_reset_integral_error,
-            this,
-            std::placeholders::_1,
-            std::placeholders::_2
-        )
-    );
+    // m_reset_integral_error_server = m_nh.advertiseService
+    //     <std_srvs::Empty::Request,
+    //     std_srvs::Empty::Response>
+    // (
+    //     SERVICE_RESET_INTEGRAL_ERROR,
+    //     std::bind(
+    //         &MvpControlROS::f_cb_srv_reset_integral_error,
+    //         this,
+    //         std::placeholders::_1,
+    //         std::placeholders::_2
+    //     )
+    // );
 
     m_get_controller_state_server = m_nh.advertiseService
         <std_srvs::Trigger::Request,
@@ -250,6 +250,12 @@ MvpControlROS::MvpControlROS()
      * Initialize the actual controller
      */
     m_mvp_control.reset(new MvpControl());
+
+    //set the integral terms to zeros
+    Eigen::VectorXd m_i(CONTROLLABLE_DOF_LENGTH);
+    m_i.setZero();
+    m_mvp_control->get_pid()->set_m_i(m_i);
+    m_i = m_mvp_control->get_pid()->get_m_i();
 
     /**
      * Initialize the URDF model
@@ -1322,8 +1328,8 @@ void MvpControlROS::f_cb_dynconf_pid(
     Eigen::VectorXd p(CONTROLLABLE_DOF_LENGTH);
     Eigen::VectorXd i(CONTROLLABLE_DOF_LENGTH);
     Eigen::VectorXd d(CONTROLLABLE_DOF_LENGTH);
-    Eigen::VectorXd i_max(CONTROLLABLE_DOF_LENGTH);
-    Eigen::VectorXd i_min(CONTROLLABLE_DOF_LENGTH);
+    Eigen::VectorXd pid_max(CONTROLLABLE_DOF_LENGTH);
+    Eigen::VectorXd pid_min(CONTROLLABLE_DOF_LENGTH);
 
 
     p <<
@@ -1368,39 +1374,38 @@ void MvpControlROS::f_cb_dynconf_pid(
             config.pitch_rate_d,
             config.yaw_rate_d;
 
-    i_max <<
-            config.x_i_max,
-            config.y_i_max,
-            config.z_i_max,
-            config.roll_i_max,
-            config.pitch_i_max,
-            config.yaw_i_max,
-            config.surge_i_max,
-            config.sway_i_max,
-            config.heave_i_max,
-            config.roll_rate_i_max,
-            config.pitch_rate_i_max,
-            config.yaw_rate_i_max;
-
-    i_min <<
-            config.x_i_min,
-            config.y_i_min,
-            config.z_i_min,
-            config.roll_i_min,
-            config.pitch_i_min,
-            config.yaw_i_min,
-            config.surge_i_min,
-            config.sway_i_min,
-            config.heave_i_min,
-            config.roll_rate_i_min,
-            config.pitch_rate_i_min,
-            config.yaw_rate_i_min;
+    pid_max <<
+            config.x_pid_max,
+            config.y_pid_max,
+            config.z_pid_max,
+            config.roll_pid_max,
+            config.pitch_pid_max,
+            config.yaw_pid_max,
+            config.surge_pid_max,
+            config.sway_pid_max,
+            config.heave_pid_max,
+            config.roll_rate_pid_max,
+            config.pitch_rate_pid_max,
+            config.yaw_rate_pid_max;
+    pid_min <<
+            config.x_pid_min,
+            config.y_pid_min,
+            config.z_pid_min,
+            config.roll_pid_min,
+            config.pitch_pid_min,
+            config.yaw_pid_min,
+            config.surge_pid_min,
+            config.sway_pid_min,
+            config.heave_pid_min,
+            config.roll_rate_pid_min,
+            config.pitch_rate_pid_min,
+            config.yaw_rate_pid_min;
 
     m_mvp_control->get_pid()->set_kp(p);
     m_mvp_control->get_pid()->set_ki(i);
     m_mvp_control->get_pid()->set_kd(d);
-    m_mvp_control->get_pid()->set_i_max(i_max);
-    m_mvp_control->get_pid()->set_i_min(i_min);
+    m_mvp_control->get_pid()->set_pid_max(pid_max);
+    m_mvp_control->get_pid()->set_pid_min(pid_min);
 
 }
 
@@ -1451,31 +1456,30 @@ void MvpControlROS::f_amend_dynconf() {
     conf.pitch_rate_d = pid->get_kd()(DOF::PITCH_RATE);
     conf.yaw_rate_d = pid->get_kd()(DOF::YAW_RATE);
 
-    conf.x_i_max = pid->get_i_max()(DOF::X);
-    conf.y_i_max = pid->get_i_max()(DOF::Y);
-    conf.z_i_max = pid->get_i_max()(DOF::Z);
-    conf.roll_i_max = pid->get_i_max()(DOF::ROLL);
-    conf.pitch_i_max = pid->get_i_max()(DOF::PITCH);
-    conf.yaw_i_max = pid->get_i_max()(DOF::YAW);
-    conf.surge_i_max = pid->get_i_max()(DOF::SURGE);
-    conf.sway_i_max = pid->get_i_max()(DOF::SWAY);
-    conf.heave_i_max = pid->get_i_max()(DOF::HEAVE);
-    conf.roll_rate_i_max = pid->get_i_max()(DOF::ROLL_RATE);
-    conf.pitch_rate_i_max = pid->get_i_max()(DOF::PITCH_RATE);
-    conf.yaw_rate_i_max = pid->get_i_max()(DOF::YAW_RATE);
-
-    conf.x_i_min = pid->get_i_min()(DOF::X);
-    conf.y_i_min = pid->get_i_min()(DOF::Y);
-    conf.z_i_min = pid->get_i_min()(DOF::Z);
-    conf.roll_i_min = pid->get_i_min()(DOF::ROLL);
-    conf.pitch_i_min = pid->get_i_min()(DOF::PITCH);
-    conf.yaw_i_min = pid->get_i_min()(DOF::YAW);
-    conf.surge_i_min = pid->get_i_min()(DOF::SURGE);
-    conf.sway_i_min = pid->get_i_min()(DOF::SWAY);
-    conf.heave_i_min = pid->get_i_min()(DOF::HEAVE);
-    conf.roll_rate_i_min = pid->get_i_min()(DOF::ROLL_RATE);
-    conf.pitch_rate_i_min = pid->get_i_min()(DOF::PITCH_RATE);
-    conf.yaw_rate_i_min = pid->get_i_min()(DOF::YAW_RATE);
+    conf.x_pid_max = pid->get_pid_max()(DOF::X);
+    conf.y_pid_max = pid->get_pid_max()(DOF::Y);
+    conf.z_pid_max = pid->get_pid_max()(DOF::Z);
+    conf.roll_pid_max = pid->get_pid_max()(DOF::ROLL);
+    conf.pitch_pid_max = pid->get_pid_max()(DOF::PITCH);
+    conf.yaw_pid_max = pid->get_pid_max()(DOF::YAW);
+    conf.surge_pid_max = pid->get_pid_max()(DOF::SURGE);
+    conf.sway_pid_max = pid->get_pid_max()(DOF::SWAY);
+    conf.heave_pid_max = pid->get_pid_max()(DOF::HEAVE);
+    conf.roll_rate_pid_max = pid->get_pid_max()(DOF::ROLL_RATE);
+    conf.pitch_rate_pid_max = pid->get_pid_max()(DOF::PITCH_RATE);
+    conf.yaw_rate_pid_max = pid->get_pid_max()(DOF::YAW_RATE);
+    conf.x_pid_min = pid->get_pid_min()(DOF::X);
+    conf.y_pid_min = pid->get_pid_min()(DOF::Y);
+    conf.z_pid_min = pid->get_pid_min()(DOF::Z);
+    conf.roll_pid_min = pid->get_pid_min()(DOF::ROLL);
+    conf.pitch_pid_min = pid->get_pid_min()(DOF::PITCH);
+    conf.yaw_pid_min = pid->get_pid_min()(DOF::YAW);
+    conf.surge_pid_min = pid->get_pid_min()(DOF::SURGE);
+    conf.sway_pid_min = pid->get_pid_min()(DOF::SWAY);
+    conf.heave_pid_min = pid->get_pid_min()(DOF::HEAVE);
+    conf.roll_rate_pid_min = pid->get_pid_min()(DOF::ROLL_RATE);
+    conf.pitch_rate_pid_min = pid->get_pid_min()(DOF::PITCH_RATE);
+    conf.yaw_rate_pid_min = pid->get_pid_min()(DOF::YAW_RATE);
 
     m_dynconf_pid_server->updateConfig(conf);
 
@@ -1560,92 +1564,93 @@ void MvpControlROS::f_read_control_modes() {
                 m_pnh.param<double>(param + CONF_PID_P, m.pid_x.kp, 0);
                 m_pnh.param<double>(param + CONF_PID_I, m.pid_x.ki, 0);
                 m_pnh.param<double>(param + CONF_PID_D, m.pid_x.kd, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MAX, m.pid_x.k_i_max, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MIN, m.pid_x.k_i_min, 0);
+                m_pnh.param<double>(param + CONF_PID_MAX, m.pid_x.pid_max, 0);
+                m_pnh.param<double>(param + CONF_PID_MIN, m.pid_x.pid_min, 0);
             } else if (dof == DOF::Y) {
                 m_pnh.param<double>(param + CONF_PID_P, m.pid_y.kp, 0);
                 m_pnh.param<double>(param + CONF_PID_I, m.pid_y.ki, 0);
                 m_pnh.param<double>(param + CONF_PID_D, m.pid_y.kd, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MAX, m.pid_y.k_i_max, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MIN, m.pid_y.k_i_min, 0);
+                m_pnh.param<double>(param + CONF_PID_MAX, m.pid_y.pid_max, 0);
+                m_pnh.param<double>(param + CONF_PID_MIN, m.pid_y.pid_min, 0);
             } else if (dof == DOF::Z) {
                 m_pnh.param<double>(param + CONF_PID_P, m.pid_z.kp, 0);
                 m_pnh.param<double>(param + CONF_PID_I, m.pid_z.ki, 0);
                 m_pnh.param<double>(param + CONF_PID_D, m.pid_z.kd, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MAX, m.pid_z.k_i_max, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MIN, m.pid_z.k_i_min, 0);
+                m_pnh.param<double>(param + CONF_PID_MAX, m.pid_z.pid_max, 0);
+                m_pnh.param<double>(param + CONF_PID_MIN, m.pid_z.pid_min, 0);
             } else if (dof == DOF::ROLL) {
                 m_pnh.param<double>(param + CONF_PID_P, m.pid_roll.kp, 0);
                 m_pnh.param<double>(param + CONF_PID_I, m.pid_roll.ki, 0);
                 m_pnh.param<double>(param + CONF_PID_D, m.pid_roll.kd, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MAX, m.pid_roll.k_i_max,
+                m_pnh.param<double>(param + CONF_PID_MAX, m.pid_roll.pid_max,
                                     0);
-                m_pnh.param<double>(param + CONF_PID_I_MIN, m.pid_roll.k_i_min,
+                m_pnh.param<double>(param + CONF_PID_MIN, m.pid_roll.pid_min,
                                     0);
             } else if (dof == DOF::PITCH) {
                 m_pnh.param<double>(param + CONF_PID_P, m.pid_pitch.kp, 0);
                 m_pnh.param<double>(param + CONF_PID_I, m.pid_pitch.ki, 0);
                 m_pnh.param<double>(param + CONF_PID_D, m.pid_pitch.kd, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MAX, m.pid_pitch.k_i_max,
+                m_pnh.param<double>(param + CONF_PID_MAX, m.pid_pitch.pid_max,
                                     0);
-                m_pnh.param<double>(param + CONF_PID_I_MIN, m.pid_pitch.k_i_min,
+                m_pnh.param<double>(param + CONF_PID_MIN, m.pid_pitch.pid_min,
                                     0);
             } else if (dof == DOF::YAW) {
                 m_pnh.param<double>(param + CONF_PID_P, m.pid_yaw.kp, 0);
                 m_pnh.param<double>(param + CONF_PID_I, m.pid_yaw.ki, 0);
                 m_pnh.param<double>(param + CONF_PID_D, m.pid_yaw.kd, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MAX, m.pid_yaw.k_i_max,
+                m_pnh.param<double>(param + CONF_PID_MAX, m.pid_yaw.pid_max, 
                                     0);
-                m_pnh.param<double>(param + CONF_PID_I_MIN, m.pid_yaw.k_i_min,
+                m_pnh.param<double>(param + CONF_PID_MIN, m.pid_yaw.pid_min, 
                                     0);
+
             } else if (dof == DOF::SURGE) {
                 m_pnh.param<double>(param + CONF_PID_P, m.pid_surge.kp, 0);
                 m_pnh.param<double>(param + CONF_PID_I, m.pid_surge.ki, 0);
                 m_pnh.param<double>(param + CONF_PID_D, m.pid_surge.kd, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MAX, m.pid_surge.k_i_max,
+                m_pnh.param<double>(param + CONF_PID_MAX, m.pid_surge.pid_max,
                                     0);
-                m_pnh.param<double>(param + CONF_PID_I_MIN, m.pid_surge.k_i_min,
+                m_pnh.param<double>(param + CONF_PID_MIN, m.pid_surge.pid_min,
                                     0);
             } else if (dof == DOF::SWAY) {
                 m_pnh.param<double>(param + CONF_PID_P, m.pid_sway.kp, 0);
                 m_pnh.param<double>(param + CONF_PID_I, m.pid_sway.ki, 0);
                 m_pnh.param<double>(param + CONF_PID_D, m.pid_sway.kd, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MAX, m.pid_sway.k_i_max,
+                m_pnh.param<double>(param + CONF_PID_MAX, m.pid_sway.pid_max,
                                     0);
-                m_pnh.param<double>(param + CONF_PID_I_MIN, m.pid_sway.k_i_min,
+                m_pnh.param<double>(param + CONF_PID_MIN, m.pid_sway.pid_min,
                                     0);
             } else if (dof == DOF::HEAVE) {
                 m_pnh.param<double>(param + CONF_PID_P, m.pid_heave.kp, 0);
                 m_pnh.param<double>(param + CONF_PID_I, m.pid_heave.ki, 0);
                 m_pnh.param<double>(param + CONF_PID_D, m.pid_heave.kd, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MAX, m.pid_heave.k_i_max,
+                m_pnh.param<double>(param + CONF_PID_MAX, m.pid_heave.pid_max,
                                     0);
-                m_pnh.param<double>(param + CONF_PID_I_MIN, m.pid_heave.k_i_min,
+                m_pnh.param<double>(param + CONF_PID_MIN, m.pid_heave.pid_min,
                                     0);
             } else if (dof == DOF::ROLL_RATE) {
                 m_pnh.param<double>(param + CONF_PID_P, m.pid_roll_rate.kp, 0);
                 m_pnh.param<double>(param + CONF_PID_I, m.pid_roll_rate.ki, 0);
                 m_pnh.param<double>(param + CONF_PID_D, m.pid_roll_rate.kd, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MAX,
-                                    m.pid_roll_rate.k_i_max, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MIN,
-                                    m.pid_roll_rate.k_i_min, 0);
+                m_pnh.param<double>(param + CONF_PID_MAX,
+                                    m.pid_roll_rate.pid_max, 0);
+                m_pnh.param<double>(param + CONF_PID_MIN,
+                                    m.pid_roll_rate.pid_min, 0);
             } else if (dof == DOF::PITCH_RATE) {
                 m_pnh.param<double>(param + CONF_PID_P, m.pid_pitch_rate.kp, 0);
                 m_pnh.param<double>(param + CONF_PID_I, m.pid_pitch_rate.ki, 0);
                 m_pnh.param<double>(param + CONF_PID_D, m.pid_pitch_rate.kd, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MAX,
-                                    m.pid_pitch_rate.k_i_max, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MIN,
-                                    m.pid_pitch_rate.k_i_min, 0);
+                m_pnh.param<double>(param + CONF_PID_MAX,
+                                    m.pid_pitch_rate.pid_max, 0);
+                m_pnh.param<double>(param + CONF_PID_MIN,
+                                    m.pid_pitch_rate.pid_min, 0);
             } else if (dof == DOF::YAW_RATE) {
                 m_pnh.param<double>(param + CONF_PID_P, m.pid_yaw_rate.kp, 0);
                 m_pnh.param<double>(param + CONF_PID_I, m.pid_yaw_rate.ki, 0);
                 m_pnh.param<double>(param + CONF_PID_D, m.pid_yaw_rate.kd, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MAX,
-                                    m.pid_yaw_rate.k_i_max, 0);
-                m_pnh.param<double>(param + CONF_PID_I_MIN,
-                                    m.pid_yaw_rate.k_i_min, 0);
+                m_pnh.param<double>(param + CONF_PID_MAX,
+                                    m.pid_yaw_rate.pid_max, 0);
+                m_pnh.param<double>(param + CONF_PID_MIN,
+                                    m.pid_yaw_rate.pid_min, 0);
             }
         }
 
@@ -1676,26 +1681,10 @@ bool MvpControlROS::f_cb_srv_set_control_point(
     return f_amend_set_point(req.setpoint);
 }
 
-bool MvpControlROS::f_cb_srv_reset_integral_error(
-        std_srvs::Empty::Request req, std_srvs::Empty::Response res) {
-    Eigen::VectorXd m_i(CONTROLLABLE_DOF_LENGTH);   
-    m_i.setZero();
-    m_mvp_control->get_pid()->reset_m_i(m_i);
-    ROS_INFO("MVP_control PID integral errors are set to zero!");
-    return true;
-}
-
 bool MvpControlROS::f_cb_srv_enable(
         std_srvs::Empty::Request req, std_srvs::Empty::Response res) {
 
     ROS_INFO("Controller enabled!");
-    // m_mvp_control->m_pid->m_i.setZero();
-    Eigen::VectorXd m_i(CONTROLLABLE_DOF_LENGTH);
-    m_i.setZero();
-    m_mvp_control->get_pid()->reset_m_i(m_i);
-    // m_i = m_mvp_control->get_pid()->get_m_i();
-    
-    // std::cout << "m_i:\n" << m_i << std::endl;
     m_enabled = true;
 
     return true;
@@ -1807,74 +1796,74 @@ bool MvpControlROS::f_amend_control_mode(std::string mode) {
         pid_conf.x_p = found->pid_x.kp;
         pid_conf.x_i = found->pid_x.ki;
         pid_conf.x_d = found->pid_x.kd;
-        pid_conf.x_i_max = found->pid_x.k_i_max;
-        pid_conf.x_i_min = found->pid_x.k_i_min;
+        pid_conf.x_pid_max = found->pid_x.pid_max;
+        pid_conf.x_pid_min = found->pid_x.pid_min;
 
         pid_conf.y_p = found->pid_y.kp;
         pid_conf.y_i = found->pid_y.ki;
         pid_conf.y_d = found->pid_y.kd;
-        pid_conf.y_i_max = found->pid_y.k_i_max;
-        pid_conf.y_i_min = found->pid_y.k_i_min;
+        pid_conf.y_pid_max = found->pid_y.pid_max;
+        pid_conf.y_pid_min = found->pid_y.pid_min;
 
         pid_conf.z_p = found->pid_z.kp;
         pid_conf.z_i = found->pid_z.ki;
         pid_conf.z_d = found->pid_z.kd;
-        pid_conf.z_i_max = found->pid_z.k_i_max;
-        pid_conf.z_i_min = found->pid_z.k_i_min;
+        pid_conf.z_pid_max = found->pid_z.pid_max;
+        pid_conf.z_pid_min = found->pid_z.pid_min;
 
         pid_conf.roll_p = found->pid_roll.kp;
         pid_conf.roll_i = found->pid_roll.ki;
         pid_conf.roll_d = found->pid_roll.kd;
-        pid_conf.roll_i_max = found->pid_roll.k_i_max;
-        pid_conf.roll_i_min = found->pid_roll.k_i_min;
+        pid_conf.roll_pid_max = found->pid_roll.pid_max;
+        pid_conf.roll_pid_min = found->pid_roll.pid_min;
 
         pid_conf.pitch_p = found->pid_pitch.kp;
         pid_conf.pitch_i = found->pid_pitch.ki;
         pid_conf.pitch_d = found->pid_pitch.kd;
-        pid_conf.pitch_i_max = found->pid_pitch.k_i_max;
-        pid_conf.pitch_i_min = found->pid_pitch.k_i_min;
+        pid_conf.pitch_pid_max = found->pid_pitch.pid_max;
+        pid_conf.pitch_pid_min = found->pid_pitch.pid_min;
 
         pid_conf.yaw_p = found->pid_yaw.kp;
         pid_conf.yaw_i = found->pid_yaw.ki;
         pid_conf.yaw_d = found->pid_yaw.kd;
-        pid_conf.yaw_i_max = found->pid_yaw.k_i_max;
-        pid_conf.yaw_i_min = found->pid_yaw.k_i_min;
+        pid_conf.yaw_pid_max = found->pid_yaw.pid_max;
+        pid_conf.yaw_pid_min = found->pid_yaw.pid_min;
 
         pid_conf.surge_p = found->pid_surge.kp;
         pid_conf.surge_i = found->pid_surge.ki;
         pid_conf.surge_d = found->pid_surge.kd;
-        pid_conf.surge_i_max = found->pid_surge.k_i_max;
-        pid_conf.surge_i_min = found->pid_surge.k_i_min;
+        pid_conf.surge_pid_max = found->pid_surge.pid_max;
+        pid_conf.surge_pid_min = found->pid_surge.pid_min;
 
         pid_conf.sway_p = found->pid_sway.kp;
         pid_conf.sway_i = found->pid_sway.ki;
         pid_conf.sway_d = found->pid_sway.kd;
-        pid_conf.sway_i_max = found->pid_sway.k_i_max;
-        pid_conf.sway_i_min = found->pid_sway.k_i_min;
+        pid_conf.sway_pid_max = found->pid_sway.pid_max;
+        pid_conf.sway_pid_min = found->pid_sway.pid_min;
 
         pid_conf.heave_p = found->pid_heave.kp;
         pid_conf.heave_i = found->pid_heave.ki;
         pid_conf.heave_d = found->pid_heave.kd;
-        pid_conf.heave_i_max = found->pid_heave.k_i_max;
-        pid_conf.heave_i_min = found->pid_heave.k_i_min;
+        pid_conf.heave_pid_max = found->pid_heave.pid_max;
+        pid_conf.heave_pid_min = found->pid_heave.pid_min;
 
         pid_conf.roll_rate_p = found->pid_roll_rate.kp;
         pid_conf.roll_rate_i = found->pid_roll_rate.ki;
         pid_conf.roll_rate_d = found->pid_roll_rate.kd;
-        pid_conf.roll_rate_i_max = found->pid_roll_rate.k_i_max;
-        pid_conf.roll_rate_i_min = found->pid_roll_rate.k_i_min;
+        pid_conf.roll_rate_pid_max = found->pid_roll_rate.pid_max;
+        pid_conf.roll_rate_pid_min = found->pid_roll_rate.pid_min;
 
         pid_conf.pitch_rate_p = found->pid_pitch_rate.kp;
         pid_conf.pitch_rate_i = found->pid_pitch_rate.ki;
         pid_conf.pitch_rate_d = found->pid_pitch_rate.kd;
-        pid_conf.pitch_rate_i_max = found->pid_pitch_rate.k_i_max;
-        pid_conf.pitch_rate_i_min = found->pid_pitch_rate.k_i_min;
+        pid_conf.pitch_rate_pid_max = found->pid_pitch_rate.pid_max;
+        pid_conf.pitch_rate_pid_min = found->pid_pitch_rate.pid_min;
 
         pid_conf.yaw_rate_p = found->pid_yaw_rate.kp;
         pid_conf.yaw_rate_i = found->pid_yaw_rate.ki;
         pid_conf.yaw_rate_d = found->pid_yaw_rate.kd;
-        pid_conf.yaw_rate_i_max = found->pid_yaw_rate.k_i_max;
-        pid_conf.yaw_rate_i_min = found->pid_yaw_rate.k_i_min;
+        pid_conf.yaw_rate_pid_max = found->pid_yaw_rate.pid_max;
+        pid_conf.yaw_rate_pid_min = found->pid_yaw_rate.pid_min;
 
         f_cb_dynconf_pid(pid_conf, 0);
 
@@ -1964,66 +1953,6 @@ bool MvpControlROS::f_amend_set_point(
             return false;
         }
 
-        // if (abs(tf_world_setpoint.header.stamp.toSec() - ros::Time::now().toSec()) < 10 || tf_world_setpoint.header.stamp.toSec()==0.0) 
-        // { 
-            
-        //     auto tf_eigen = tf2::transformToEigen(tf_world_setpoint);
-
-        //     p_world2 = tf_eigen.rotation() * 
-        //                             Eigen::Vector3d(set_point.position.x, set_point.position.y, set_point.position.z)
-        //                             + tf_eigen.translation();
-        //     ///convert euler angle into a different frame
-        //     ///find the rotation matrix from the set point frame to the desired pose.
-        //     Eigen::Matrix3d R;
-        //     R = Eigen::AngleAxisd(set_point.orientation.z, Eigen::Vector3d::UnitZ()) *
-        //                         Eigen::AngleAxisd(set_point.orientation.y, Eigen::Vector3d::UnitY()) *
-        //                         Eigen::AngleAxisd(set_point.orientation.x, Eigen::Vector3d::UnitX());
-       
-        //     //find rotation matrix from the world link to the setpoint frame.
-        //     auto tf_1 = m_transform_buffer.lookupTransform(
-        //         set_point.header.frame_id,
-        //         m_world_link_id,
-        //         ros::Time(0)
-        //     );
-
-        //     if (abs(tf_1.header.stamp.toSec() - ros::Time::now().toSec()) < 10 || tf_1.header.stamp.toSec()==0.0) 
-        //     { 
-            
-        //         auto tf_1_eigen = tf2::transformToEigen(tf_1);
-        //         //find the total rotation matrix from the world link to the desired pose.
-        //         Eigen::Matrix3d R_set_point =  tf_1_eigen.rotation() *R;
-        //         // Eigen::Vector3d euler_angles = R_set_point.eulerAngles(2,1,0); // ZYX order
-        //         // rpy_world.z() = euler_angles[0];
-        //         // rpy_world.y() = euler_angles[1];
-        //         // rpy_world.x() = euler_angles[2];
-
-        //         // printf("from eigen: %lf, %lf, %lf\r\n",rpy_world.x(), rpy_world.y(), rpy_world.z());
-
-        //         //pitch angle
-        //         rpy_world2.y() = asin(-R_set_point(2, 0));
-
-        //         // Calculate yaw (rotation about Z-axis)
-        //         rpy_world2.z() = atan2(R_set_point(1, 0), R_set_point(0, 0));
-
-        //         // Calculate roll (rotation about X-axis)
-        //         rpy_world2.x() = atan2(R_set_point(2, 1), R_set_point(2, 2));
-
-        //         // printf("from code: %lf, %lf, %lf\r\n",rpy_world.x(), rpy_world.y(), rpy_world.z());
-        //         std::cout<<"original xyz =\n"<<p_world2<<std::endl;
-        //         std::cout<<"original rpy =\n"<<rpy_world2<<std::endl;
-        //     }
-        //     else
-        //     {
-        //         ROS_WARN( "%s to %s TF too old!", set_point.header.frame_id.c_str(), m_world_link_id.c_str() );
-        //         return false;
-        //     }
-        // }
-        // else
-        // {
-        //     ROS_WARN( "%s to %s TF too old!", m_world_link_id.c_str(), set_point.header.frame_id.c_str() );
-        //     return false;
-        // }
-
         //assume the set point uvw and pqr are in the m_cg_link_id
 
     } catch(tf2::TransformException &e) {
@@ -2031,31 +1960,48 @@ bool MvpControlROS::f_amend_set_point(
         return false;
     }
 
-    m_set_point(mvp_msgs::ControlMode::DOF_X) =
+    //reset integral term if there is setpoint change
+    // Eigen::VectorXd m_i;   
+    auto m_i = m_mvp_control->get_pid()->get_m_i();
+    
+    Eigen::VectorXd new_set_point(CONTROLLABLE_DOF_LENGTH);
+    new_set_point(mvp_msgs::ControlMode::DOF_X) =
         p_world.x();
-    m_set_point(mvp_msgs::ControlMode::DOF_Y) =
+    new_set_point(mvp_msgs::ControlMode::DOF_Y) =
         p_world.y();
-    m_set_point(mvp_msgs::ControlMode::DOF_Z) =
+    new_set_point(mvp_msgs::ControlMode::DOF_Z) =
         p_world.z();
-    m_set_point(mvp_msgs::ControlMode::DOF_ROLL) =
+    new_set_point(mvp_msgs::ControlMode::DOF_ROLL) =
         rpy_world.x();
-    m_set_point(mvp_msgs::ControlMode::DOF_PITCH) =
+    new_set_point(mvp_msgs::ControlMode::DOF_PITCH) =
         rpy_world.y();
-    m_set_point(mvp_msgs::ControlMode::DOF_YAW) =
+    new_set_point(mvp_msgs::ControlMode::DOF_YAW) =
         rpy_world.z();
-    m_set_point(mvp_msgs::ControlMode::DOF_SURGE) =
+    new_set_point(mvp_msgs::ControlMode::DOF_SURGE) =
         set_point.velocity.x;
-    m_set_point(mvp_msgs::ControlMode::DOF_SWAY) =
+    new_set_point(mvp_msgs::ControlMode::DOF_SWAY) =
         set_point.velocity.y;
-    m_set_point(mvp_msgs::ControlMode::DOF_HEAVE) =
+    new_set_point(mvp_msgs::ControlMode::DOF_HEAVE) =
         set_point.velocity.z;
-    m_set_point(mvp_msgs::ControlMode::DOF_ROLL_RATE) =
+    new_set_point(mvp_msgs::ControlMode::DOF_ROLL_RATE) =
         set_point.angular_rate.x;
-    m_set_point(mvp_msgs::ControlMode::DOF_PITCH_RATE) =
+    new_set_point(mvp_msgs::ControlMode::DOF_PITCH_RATE) =
         set_point.angular_rate.y;
-    m_set_point(mvp_msgs::ControlMode::DOF_YAW_RATE) =
+    new_set_point(mvp_msgs::ControlMode::DOF_YAW_RATE) =
         set_point.angular_rate.z;
 
+    // printf("setpoint size %d\r\n", new_set_point.size());
+    // printf("old setpoint size %d\r\n", m_set_point.size());
+    // printf("integral size %d\r\n", m_i.size());
+    //reset the integral for the DOF that has changed setpoint.
+    for (int i = 0; i < m_set_point.size(); ++i) {
+        if (m_set_point[i] != new_set_point[i]) {
+            m_i[i] = 0;
+        }
+    }
+    m_mvp_control->get_pid()->set_m_i(m_i);
+    m_set_point = new_set_point;
+    
     m_mvp_control->update_desired_state(m_set_point);
 
     m_set_point_msg = set_point;

@@ -27,7 +27,7 @@
 using namespace ctrl;
 
 MimoPID::MimoPID() : m_error_function(nullptr) , m_dt_i(10000){
-
+     m_i.setZero();
 }
 
 bool MimoPID::calculate(Eigen::VectorXd* u, const Eigen::ArrayXd& desired, const Eigen::ArrayXd& current, double dt) {
@@ -40,15 +40,15 @@ bool MimoPID::calculate(Eigen::VectorXd* u, const Eigen::ArrayXd& desired, const
 
     if(m_i.size() == 0) {
         m_i.resize(error.size());
+        // printf("errorsize = %d\r\n", error.size());
     }
 
     // Proportional term
     Eigen::ArrayXd p = m_kp * error;
+    
 
-    m_i += m_ki * (error * dt);
-
-    m_i = (m_i > m_i_max).select(m_i_max, m_i);
-    m_i = (m_i < m_i_min).select(m_i_min, m_i);
+    Eigen::ArrayXd delta_i;
+    delta_i = m_ki * (error * dt);
 
     // Derivation term
     if(!m_pe.data()) {
@@ -60,7 +60,23 @@ bool MimoPID::calculate(Eigen::VectorXd* u, const Eigen::ArrayXd& desired, const
 
     m_pe = error;
 
-    *u = p + m_i + d;
+    Eigen::ArrayXd pid_sum = p + m_i + d;
+    
+    //saturation
+    pid_sum = (pid_sum > m_pid_max).select(m_pid_max, pid_sum);
+    pid_sum = (pid_sum < m_pid_min).select(m_pid_min, pid_sum);
+
+    //clamping only update the integral when not saturated
+    m_i = (pid_sum.array() > m_pid_min.array() && pid_sum.array() < m_pid_max.array())
+           .select(m_i + delta_i, m_i);
+    // *u = p + m_i + d;
+    *u = pid_sum;
+
+    // for(int i = 0; i<m_i.size(); i++)
+    // {
+    //     printf("integration[%d]=%lf, total =%lf\r\n", i, m_i[i], pid_sum[i]);
+
+    // }
 
     return true;
 }
@@ -105,27 +121,29 @@ void MimoPID::set_dt_i(const decltype(m_dt_i) &gain) {
     m_dt_i = gain;
 }
 
-auto MimoPID::get_i_max() -> decltype(m_i_max) {
-    return m_i_max;
+auto MimoPID::get_pid_max() -> decltype(m_pid_max) {
+    return m_pid_max;
 }
 
-void MimoPID::set_i_max(const decltype(m_i_max) &gain) {
-    m_i_max= gain;
+void MimoPID::set_pid_max(const decltype(m_pid_max) &gain) {
+    m_pid_max= gain;
 }
 
-auto MimoPID::get_i_min() -> decltype(m_i_max) {
-    return m_i_min;
+auto MimoPID::get_pid_min() -> decltype(m_pid_min) {
+    return m_pid_min;
 }
 
-void MimoPID::reset_m_i(const decltype(m_i)) {
-    m_i.setZero();
+void MimoPID::set_pid_min(const decltype(m_pid_min) &gain) {
+    m_pid_min= gain;
 }
+
+void MimoPID::set_m_i(const decltype(m_i) &new_m_i)
+{
+    m_i = new_m_i;
+}
+
 auto MimoPID::get_m_i() -> decltype(m_i) {
     return m_i;
-}
-
-void MimoPID::set_i_min(const decltype(m_i_min) &gain) {
-    m_i_min= gain;
 }
 
 auto MimoPID::get_error_function() -> decltype(m_error_function) {
