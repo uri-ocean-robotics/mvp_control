@@ -371,15 +371,15 @@ namespace ctrl {
         bool request_force(double N);
 
         /**
-         * @brief Publishes the requested angle for a given joint name.
+         * @brief Publishes the requested angles for multiple joints.
          *
-         * This method publishes the desired joint angle to servo hardware
+         * This method publishes the desired joint angles to servo hardware for all specified joints.
          *
-         * @param joint_name The name of the joint.
-         * @param requested_angle The requested angle for the joint in radians.
-         * @return true if the joint state is successfully published
+         * @param joint_names A vector containing the names of the joints.
+         * @param requested_angles A vector containing the requested angles for each joint in radians.
+         * @return true if the joint states are successfully published.
          */
-        bool request_joint_angles(const std::string& joint_name, double requested_angle);
+        bool request_joint_angles(const std::vector<std::string>& joint_names, const std::vector<double>& requested_angles);
 
         /** @brief Normalize the angle to PWM using the servo coefficients
          *

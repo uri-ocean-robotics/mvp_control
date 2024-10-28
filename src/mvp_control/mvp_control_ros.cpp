@@ -1248,6 +1248,9 @@ bool MvpControlROS::handle_articulated_thrusters(const Eigen::VectorXd& needed_f
     }
 
     // Second pass: apply control commands for articulated thrusters
+    std::vector<std::string> joint_names;
+    std::vector<double> joint_angles;
+
     for (size_t i = 0; i < m_thrusters.size();) {
         int index = static_cast<int>(i);
         if (m_thrusters[i]->get_is_articulated() == 1 && i + 1 < m_thrusters.size()) {
@@ -1275,9 +1278,13 @@ bool MvpControlROS::handle_articulated_thrusters(const Eigen::VectorXd& needed_f
                 double calculated_angle = atan2(force_y, force_x);
                 double new_angle = calculated_angle + yaw;
                 // Normalize new_angle to range [-pi, pi]
-                new_angle = atan2(sin(new_angle), cos(new_angle));
+                new_angle = atan2(sin(new_angle), cos(new_angle)); // Normalize
 
-                m_thrusters[i]->request_joint_angles(joint_name, new_angle);
+                // m_thrusters[i]->request_joint_angles(joint_name, new_angle);
+                // Accumulate the joint name and angle for publishing later
+                joint_names.push_back(joint_name);
+                joint_angles.push_back(new_angle);
+
             } catch (tf2::TransformException& ex) {
                 ROS_WARN("Transform not available for thruster %zu: %s", i, ex.what());
                 return false;
@@ -1288,6 +1295,11 @@ bool MvpControlROS::handle_articulated_thrusters(const Eigen::VectorXd& needed_f
         } else {
             i++;  // Move to the next non-articulated thruster
         }
+    }
+
+    // Publish all joint states at once after collecting all the joint names and angles
+    if (!joint_names.empty() && !joint_angles.empty()) {
+        m_thrusters[0]->request_joint_angles(joint_names, joint_angles);
     }
 
     return true;

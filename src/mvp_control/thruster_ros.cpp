@@ -250,21 +250,46 @@ bool ThrusterROS::request_force(double N) {
     return true;
 }
 
-bool ThrusterROS::request_joint_angles(const std::string& joint_name, double requested_angle) {
+// bool ThrusterROS::request_joint_angles(const std::string& joint_name, double requested_angle) {
+
+//     if (!m_joint_state_publisher) {
+//         ROS_ERROR("Joint state publisher is not initialized!");
+//         return false;
+//     }
+
+//     sensor_msgs::JointState joint_state_msg;
+//     // joint_state_msg.header.stamp = ros::Time::now(); 
+//     joint_state_msg.name.push_back(joint_name);     
+//     joint_state_msg.position.push_back(requested_angle);
+
+//     m_joint_state_publisher.publish(joint_state_msg); 
+
+//     servo_joint_command(normalize_angle(requested_angle));
+
+//     return true;
+// }
+
+bool ThrusterROS::request_joint_angles(const std::vector<std::string>& joint_names, const std::vector<double>& requested_angles) {
 
     if (!m_joint_state_publisher) {
         ROS_ERROR("Joint state publisher is not initialized!");
         return false;
     }
 
+    if (joint_names.size() != requested_angles.size()) {
+        ROS_ERROR("Mismatch between joint names and angles size!");
+        return false;
+    }
+
     sensor_msgs::JointState joint_state_msg;
-    // joint_state_msg.header.stamp = ros::Time::now(); 
-    joint_state_msg.name.push_back(joint_name);     
-    joint_state_msg.position.push_back(requested_angle);
+    joint_state_msg.header.stamp = ros::Time::now(); 
 
-    m_joint_state_publisher.publish(joint_state_msg); 
+    // Add all joint names and positions to the message
+    joint_state_msg.name = joint_names;     
+    joint_state_msg.position = requested_angles;
 
-    servo_joint_command(normalize_angle(requested_angle));
+    // Publish all joint states at once
+    m_joint_state_publisher.publish(joint_state_msg);
 
     return true;
 }
