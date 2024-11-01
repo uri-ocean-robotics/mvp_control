@@ -221,20 +221,6 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     //     }
     // }
 
-    // if (direction_changed) {
-    //     // Pause for 2.0 seconds
-    //     std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    //     // Set the solution vector to zero
-    //     *t = Eigen::VectorXd::Zero(m_thruster_vector.size());
-    //     // Update the previous thruster directions
-    //     prev_thruster_direction_action = thruster_direction_action;
-    //     // Return true since we've provided a valid solution
-    //     return true;
-    // }
-
-    // Update the previous thruster directions
-    // prev_thruster_direction_action = thruster_direction_action;
-
     // Allocate and initialize control matrices and vectors
     Eigen::MatrixXd T(m_controlled_freedoms.size(), m_control_allocation_matrix.cols());
     Eigen::VectorXd U(m_controlled_freedoms.size());
@@ -257,13 +243,14 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     Eigen::MatrixXd Q = 2 * T.transpose() * T;
     Eigen::VectorXd c = -2 * T.transpose() * U;
 
+    // Calculate the time step
     double deltaT = 1.0 / m_controller_frequency;
 
     // Calculate the number of pairs and singles in the thruster vector
     int pair_count = 0;
     int single_count = 0;
     for (size_t i = 0; i + 1 < m_thruster_vector.size(); ++i) {
-        if (m_thruster_vector(i) == 1 && m_thruster_vector(i + 1) == 2) {
+        if (m_thruster_vector(i) == ARTICULATED_THRUSTER_X && m_thruster_vector(i + 1) == ARTICULATED_THRUSTER_Y) {
             pair_count++;
             i++; // Skip the next element since it forms a pair with the current element
         } else {
@@ -272,12 +259,13 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     }
     // Check the last element if it's not part of the last checked pair
     if (m_thruster_vector.size() > 0 &&
-        (m_thruster_vector(m_thruster_vector.size() - 1) != 2 ||
-         (m_thruster_vector.size() > 1 && m_thruster_vector(m_thruster_vector.size() - 2) != 1))) {
+        (m_thruster_vector(m_thruster_vector.size() - 1) != ARTICULATED_THRUSTER_X ||
+         (m_thruster_vector.size() > 1 && m_thruster_vector(m_thruster_vector.size() - 2) != ARTICULATED_THRUSTER_X))) {
         single_count++;
     }
 
-    int kNumConstraints = 3 * pair_count + single_count;
+    // Calculate the number of constraints 
+    int kNumConstraints = NUM_CONSTRAINTS_PER_PAIR * pair_count + NUM_CONSTRAINTS_PER_SINGLE * single_count;
     int kNumVariables = m_control_allocation_matrix.cols();
 
     // Initialize thruster direction vector
@@ -287,21 +275,21 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     if (thruster_direction_action.size() != m_thruster_vector.size()) {
         thruster_direction_action.resize(m_thruster_vector.size(), 1); // Default to 1
     }
-    // Ensure that each direction is valid, or default to 1
-    // for (size_t i = 0; i < m_thruster_vector.size(); ++i) {
-    //     if (thruster_direction_action[i] != 1 && thruster_direction_action[i] != -1) {
-    //         thruster_direction_action[i] = 1;
-    //     }
-    // }
+    // Ensure that each direction is valid, or default to Positive Force
+    for (size_t i = 0; i < m_thruster_vector.size(); ++i) {
+        if (thruster_direction_action[i] != 1 && thruster_direction_action[i] != -1) {
+            thruster_direction_action[i] = 1;
+        }
+    }
 
-   // Step 1: Calculate the total number of elements needed
+   // Step 1: Calculate the total number of elements in the bounds vectors
     int total_elements = 0;
     for (size_t i = 0; i < m_thruster_vector.size(); ++i) {
         int thruster_value = m_thruster_vector[i];
-        if (thruster_value == 0) {
+        if (thruster_value == FIXED_THRUSTER) {
             total_elements += 1;
         }
-        else if (thruster_value == 2) {
+        else if (thruster_value == ARTICULATED_THRUSTER_Y) {
             total_elements += 2;
         }
         else {
@@ -309,7 +297,7 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
         }
     }
 
-    // Step 2: Initialize Eigen vectors with the calculated size
+    // Step 2: Initialize new upper and lower limit vectors
     Eigen::VectorXi m_adjusted_upper_limit(total_elements);
     Eigen::VectorXi m_adjusted_lower_limit(total_elements);
 
@@ -320,32 +308,24 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
         int upper = m_upper_limit[i];
         int lower = m_lower_limit[i];
 
-        if (thruster_value == 0) {
+        if (thruster_value == FIXED_THRUSTER) {
             // Non-articulated thruster
             m_adjusted_upper_limit(current_index) = upper;
             m_adjusted_lower_limit(current_index) = lower;
             current_index++;
         }
-        else if (thruster_value == 2) {
-            // Articulated thruster (value 2 treated as 1)
+        else if (thruster_value == ARTICULATED_THRUSTER_X) {
             m_adjusted_upper_limit(current_index) = upper;
             m_adjusted_lower_limit(current_index) = lower;
             current_index++;
-            // m_adjusted_upper_limit(current_index) = upper;
-            // m_adjusted_lower_limit(current_index) = lower;
-            // current_index++;
         }
-        else {
-            // Other articulated thruster
+        else if (thruster_value == ARTICULATED_THRUSTER_Y) {
             m_adjusted_upper_limit(current_index) = upper;
             m_adjusted_lower_limit(current_index) = lower;
             current_index++;
             m_adjusted_upper_limit(current_index) = upper;
             m_adjusted_lower_limit(current_index) = lower;
             current_index++;
-            // m_adjusted_upper_limit(current_index) = upper;
-            // m_adjusted_lower_limit(current_index) = lower;
-            // current_index++;
         }
     }
 
@@ -366,123 +346,105 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     for (size_t i = 0; i < m_thruster_vector.size(); ++i) {
         int thruster_setting = static_cast<int>(m_thruster_vector[i]);
 
-        switch (thruster_setting) {
-            case 0:
-                // Non-articulated thruster constraints
-                A_triplets.emplace_back(j, i, 1.0);
-                qp_instance.lower_bounds[j] = m_adjusted_lower_limit[j];
-                qp_instance.upper_bounds[j] = m_adjusted_upper_limit[j];
-                j++;
-                break;
+            switch (thruster_setting) {
+                case FIXED_THRUSTER: {
+                    // Assign specific row index for thrust force constraint
+                    int thrustRow = j;
 
-            case 1:
-                // Articulated thruster constraints
-                if (thruster_direction_action[i] == 1) {
-                    // Positive thrust direction
-                    // A_triplets.emplace_back(j, i, 1.0);
-                    // A_triplets.emplace_back(j + 1, i, -m_servo_speed[i] * deltaT );
-                    // A_triplets.emplace_back(j + 2, i, m_servo_speed[i] * deltaT );          
-                    // A_triplets.emplace_back(j + 3, i, -(m_upper_angle[i] -  m_current_angles[i]  ) );
-                    // A_triplets.emplace_back(j + 4, i, -(m_lower_angle[i] -  m_current_angles[i]  ) );
-                    // A_triplets.emplace_back(j + 1, i + 1, 1.0);
-                    // A_triplets.emplace_back(j + 2, i + 1, 1.0);
-                    // A_triplets.emplace_back(j + 3, i + 1, 1.0);
-                    // A_triplets.emplace_back(j + 4, i + 1, 1.0);
-
-                    // printf("####\r\n");
-                    // printf("m_servo_speed[i]*deltaT: %f\r\n", m_servo_speed[i] * deltaT);
-                    // printf("m_upper_angle[i]: %f\n", m_upper_angle[i]);
-                    // printf("current_angles[i]: %f\n", m_current_angles[i]);
-                    // printf("tan(m_upper_angle[i] - m_current_angles[i]): %f\n", tan(m_upper_angle[i] - m_current_angles[i]));
-                    // printf("m_servo_speed[i]*deltaT: %f\r\n", m_servo_speed[i] * deltaT);
-                    // printf("m_lower_angle[i]: %f\n", m_lower_angle[i]);
-                    // printf("current_angles[i]: %f\n", m_current_angles[i]);
-                    // printf("tan(m_lowerer_angle[i] - m_current_angles[i]): %f\n", tan(m_lower_angle[i] - m_current_angles[i]));
+                    // Non-articulated thruster constraints
+                    A_triplets.emplace_back(thrustRow, i, 1.0);
+                    qp_instance.lower_bounds[thrustRow] = m_adjusted_lower_limit[thrustRow];
+                    qp_instance.upper_bounds[thrustRow] = m_adjusted_upper_limit[thrustRow];
                     
-
-
-                    // qp_instance.lower_bounds[j]     = 0.0;
-                    // qp_instance.upper_bounds[j]     = m_adjusted_upper_limit[j]  * std::cos(m_servo_speed[i] * deltaT);  
-                    // qp_instance.lower_bounds[j + 1] = -kInfinity;
-                    // qp_instance.upper_bounds[j + 1] = 0.0;
-                    // qp_instance.lower_bounds[j + 2] = 0.0;
-                    // qp_instance.upper_bounds[j + 2] = kInfinity;
-                    // qp_instance.lower_bounds[j + 3] = -kInfinity;
-                    // qp_instance.upper_bounds[j + 3] = 0.0;
-                    // qp_instance.lower_bounds[j + 4] = 0.0;
-                    // qp_instance.upper_bounds[j + 4] = kInfinity;
-                    // j += 5;
-
-                    A_triplets.emplace_back(j, i, 1.0);
-                    A_triplets.emplace_back(j + 1, i, tan(-std::min(m_servo_speed[i] * deltaT , m_upper_angle[i] - m_current_angles[i])));
-                    A_triplets.emplace_back(j + 2, i, tan(std::max(-m_servo_speed[i] * deltaT , m_lower_angle[i] - m_current_angles[i])));
-                    A_triplets.emplace_back(j + 1, i + 1, 1.0);
-                    A_triplets.emplace_back(j + 2, i + 1, -1.0);
-
-                    qp_instance.lower_bounds[j] = 0;
-                    qp_instance.upper_bounds[j] = m_adjusted_upper_limit[j] * std::cos(m_servo_speed[i] * deltaT);
-                    qp_instance.lower_bounds[j + 1] = -kInfinity;
-                    qp_instance.upper_bounds[j + 1] = 0;
-                    qp_instance.lower_bounds[j + 2] = -kInfinity;
-                    qp_instance.upper_bounds[j + 2] = 0;
-                    j += 3; //jumping the constraint rows
-
-
-                } else if (thruster_direction_action[i] == -1) {
-                    // Negative thrust direction
-                    // A_triplets.emplace_back(j, i, 1.0);
-                    // A_triplets.emplace_back(j + 1, i, -(m_servo_speed[i] * deltaT ));
-                    // A_triplets.emplace_back(j + 2, i, -(-m_servo_speed[i] * deltaT ));
-                    // A_triplets.emplace_back(j + 3, i, -(m_upper_angle[i] -  m_current_angles[i]   ));
-                    // A_triplets.emplace_back(j + 4, i, -(m_lower_angle[i] -  m_current_angles[i]   ));
-                    // // A_triplets.emplace_back(j + 3, i, -tan(fmod(m_upper_angle[i] - m_current_angles[i] + M_PI, 2 * M_PI) - M_PI));
-                    // // A_triplets.emplace_back(j + 4, i, -tan(fmod(m_lower_angle[i] - m_current_angles[i] + M_PI, 2 * M_PI) - M_PI));  
-                    // A_triplets.emplace_back(j + 1, i + 1, 1.0);
-                    // A_triplets.emplace_back(j + 2, i + 1, 1.0);
-                    // A_triplets.emplace_back(j + 3, i + 1, 1.0);
-                    // A_triplets.emplace_back(j + 4, i + 1, 1.0);
-
-                    // qp_instance.lower_bounds[j]     = m_adjusted_lower_limit[j] * std::cos(m_servo_speed[i] * deltaT); 
-                    // qp_instance.upper_bounds[j]     = 0.0;
-                    // qp_instance.lower_bounds[j + 1] = 0.0;
-                    // qp_instance.upper_bounds[j + 1] = kInfinity;
-                    // qp_instance.lower_bounds[j + 2] = -kInfinity;
-                    // qp_instance.upper_bounds[j + 2] = 0.0;
-                    // qp_instance.lower_bounds[j + 3] = 0.0;
-                    // qp_instance.upper_bounds[j + 3] = kInfinity;
-                    // qp_instance.lower_bounds[j + 4] = -kInfinity;
-                    // qp_instance.upper_bounds[j + 4] = 0.0;
-                    // j += 5;
-
-                    A_triplets.emplace_back(j, i, 1.0);
-                    A_triplets.emplace_back(j + 1, i, tan(-std::min(m_servo_speed[i] * deltaT , m_upper_angle[i] - m_current_angles[i])));
-                    A_triplets.emplace_back(j + 2, i, tan(std::max(-m_servo_speed[i] * deltaT , m_lower_angle[i] - m_current_angles[i])));
-                    A_triplets.emplace_back(j + 1, i + 1, 1.0);
-                    A_triplets.emplace_back(j + 2, i + 1, -1.0);
-
-                    qp_instance.lower_bounds[j] = m_adjusted_lower_limit[j] * std::cos(m_servo_speed[i] * deltaT);
-                    qp_instance.upper_bounds[j] = 0;
-                    qp_instance.lower_bounds[j + 1] = 0;
-                    qp_instance.upper_bounds[j + 1] = kInfinity;
-                    qp_instance.lower_bounds[j + 2] = 0;
-                    qp_instance.upper_bounds[j + 2] = kInfinity;
-                    j += 3; //jumping the constraint rows
-
-                } else {
-                    ROS_ERROR("Thruster direction is not set!");
-                    return false;
+                    j += 1; // Move to the next set of constraints
+                    break;
                 }
-                break;
 
-            case 2:
-                // Specific handling for thruster setting 2 if necessary
-                break;
+                case ARTICULATED_THRUSTER_X: {
+                    // Assign specific row indices for articulated thruster constraints
+                    int thrustRow = j;
+                    int angleUpperRow = j + 1;
+                    int angleLowerRow = j + 2;
 
-            default:
-                ROS_ERROR_STREAM("Unexpected thruster setting: " << thruster_setting);
-                return false;
-        }
-    }
+                    if (thruster_direction_action[i] == 1) {
+                        // Positive thrust direction
+                        // Define descriptive variable names for mathematical expressions
+                        double max_servo_angle_change = m_servo_speed[i] * deltaT;
+                        double angle_to_upper_limit = m_upper_angle[i] - m_current_angles[i];
+                        double angle_to_lower_limit = m_lower_angle[i] - m_current_angles[i];
+
+                        double allowable_angle_increase = std::min(max_servo_angle_change, angle_to_upper_limit);
+                        double allowable_angle_decrease = std::max(-max_servo_angle_change, angle_to_lower_limit);
+
+                        double tan_neg_allowable_increase = tan(-allowable_angle_increase);
+                        double tan_neg_allowable_decrease = tan(-allowable_angle_decrease);
+
+                        double adjusted_upper_force_limit = m_adjusted_upper_limit[thrustRow] * std::cos(max_servo_angle_change);
+
+                        // Populate the constraint matrix
+                        A_triplets.emplace_back(thrustRow, i, 1.0);
+                        A_triplets.emplace_back(angleUpperRow, i, tan_neg_allowable_increase);
+                        A_triplets.emplace_back(angleLowerRow, i, tan_neg_allowable_decrease);
+                        A_triplets.emplace_back(angleUpperRow, i + 1, 1.0);
+                        A_triplets.emplace_back(angleLowerRow, i + 1, -1.0);
+
+                        // Set bounds for positive thrust direction
+                        qp_instance.lower_bounds[thrustRow] = 0;
+                        qp_instance.upper_bounds[thrustRow] = adjusted_upper_force_limit;
+                        qp_instance.lower_bounds[angleUpperRow] = -kInfinity;
+                        qp_instance.upper_bounds[angleUpperRow] = 0;
+                        qp_instance.lower_bounds[angleLowerRow] = -kInfinity;
+                        qp_instance.upper_bounds[angleLowerRow] = 0;
+
+                        j += 3; // Move to the next set of constraints
+
+                    } else if (thruster_direction_action[i] == -1) {
+                        // Negative thrust direction
+                        double max_servo_angle_change = m_servo_speed[i] * deltaT;
+                        double angle_to_upper_limit = m_upper_angle[i] - m_current_angles[i];
+                        double angle_to_lower_limit = m_lower_angle[i] - m_current_angles[i];
+
+                        double allowable_angle_increase = std::min(max_servo_angle_change, angle_to_upper_limit);
+                        double allowable_angle_decrease = std::max(-max_servo_angle_change, angle_to_lower_limit);
+
+                        double tan_neg_allowable_increase = tan(-allowable_angle_increase);
+                        double tan_neg_allowable_decrease = tan(-allowable_angle_decrease);
+
+                        double adjusted_lower_force_limit = m_adjusted_lower_limit[thrustRow] * std::cos(max_servo_angle_change);
+
+                        // Populate the constraint matrix
+                        A_triplets.emplace_back(thrustRow, i, 1.0);
+                        A_triplets.emplace_back(angleUpperRow, i, tan_neg_allowable_increase);
+                        A_triplets.emplace_back(angleLowerRow, i, tan_neg_allowable_decrease);
+                        A_triplets.emplace_back(angleUpperRow, i + 1, 1.0);
+                        A_triplets.emplace_back(angleLowerRow, i + 1, -1.0);
+
+                        // Set bounds for negative thrust direction
+                        qp_instance.lower_bounds[thrustRow] = adjusted_lower_force_limit;
+                        qp_instance.upper_bounds[thrustRow] = 0;
+                        qp_instance.lower_bounds[angleUpperRow] = 0;
+                        qp_instance.upper_bounds[angleUpperRow] = kInfinity;
+                        qp_instance.lower_bounds[angleLowerRow] = 0;
+                        qp_instance.upper_bounds[angleLowerRow] = kInfinity;
+
+                        j += 3; // Move to the next set of constraints
+
+                    } else {
+                        ROS_ERROR("Thruster direction is not set!");
+                        return false;
+                    }
+                    break;
+                }
+
+                case ARTICULATED_THRUSTER_Y:
+                    // Specific handling for ARTICULATED_THRUSTER_Y is not required
+                    break;
+
+                default:
+                    ROS_ERROR_STREAM("Unexpected thruster setting: " << thruster_setting);
+                    return false;
+            }
+        }   
 
     // Populate constraint matrix
     A_sparse.setFromTriplets(A_triplets.begin(), A_triplets.end());

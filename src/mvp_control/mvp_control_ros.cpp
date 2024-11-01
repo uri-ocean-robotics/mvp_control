@@ -771,19 +771,19 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
         Eigen::Vector3d transformedVector;
 
         switch (t->get_is_articulated()) {
-            case 0: //Non-articulated thruster
+            case FIXED_THRUSTER: //Non-articulated thruster
                 transformedVector = eigen_tf.rotation() * Eigen::Vector3d::UnitX();
                 Fx = transformedVector.x(); 
                 Fy = transformedVector.y();
                 Fz = transformedVector.z();
                 break;
-            case 1: //Decoupled articulated thruster along X in trhuster frame
+            case ARTICULATED_THRUSTER_X: //Decoupled articulated thruster along X in trhuster frame
                 transformedVector = eigen_tf.rotation() * Eigen::Vector3d::UnitX();
                 Fx = transformedVector.x(); 
                 Fy = transformedVector.y();
                 Fz = transformedVector.z();
                 break;
-            case 2: //Decoupled articulated thruster along Y in trhuster frame
+            case ARTICULATED_THRUSTER_Y: //Decoupled articulated thruster along Y in trhuster frame
                 transformedVector = eigen_tf.rotation() * Eigen::Vector3d::UnitY();
                 Fx = transformedVector.x(); 
                 Fy = transformedVector.y();
@@ -868,19 +868,19 @@ bool MvpControlROS::f_update_control_allocation_matrix() {
                 int isArticulated = m_thrusters[j]->get_is_articulated();
 
                 switch (isArticulated) {
-                    case 0: //Non-articulated thruster
+                    case FIXED_THRUSTER: //Non-articulated thruster
                         transformedVector = eigen_tf.rotation() * Eigen::Vector3d::UnitX();
                         Fx = transformedVector.x(); 
                         Fy = transformedVector.y();
                         Fz = transformedVector.z();
                         break;
-                    case 1: //Decoupled articulated thruster along X in trhuster frame
+                    case ARTICULATED_THRUSTER_X: //Decoupled articulated thruster along X in trhuster frame
                         transformedVector = eigen_tf.rotation() * Eigen::Vector3d::UnitX();
                         Fx = transformedVector.x(); 
                         Fy = transformedVector.y();
                         Fz = transformedVector.z();
                         break;
-                    case 2: //Decoupled articulated thruster along Y in trhuster frame
+                    case ARTICULATED_THRUSTER_Y: //Decoupled articulated thruster along Y in trhuster frame
                         transformedVector = eigen_tf.rotation() * Eigen::Vector3d::UnitY();
                         Fx = transformedVector.x(); 
                         Fy = transformedVector.y();
@@ -1284,7 +1284,10 @@ bool MvpControlROS::handle_articulated_thrusters(const Eigen::VectorXd& needed_f
                 // Accumulate the joint name and angle for publishing later
                 joint_names.push_back(joint_name);
                 joint_angles.push_back(new_angle);
-
+                // Publish all joint states at once after collecting all the joint names and angles
+                if (!joint_names.empty() && !joint_angles.empty()) {
+                    m_thrusters[0]->request_joint_angles(joint_names, joint_angles);
+                }
             } catch (tf2::TransformException& ex) {
                 ROS_WARN("Transform not available for thruster %zu: %s", i, ex.what());
                 return false;
@@ -1297,10 +1300,6 @@ bool MvpControlROS::handle_articulated_thrusters(const Eigen::VectorXd& needed_f
         }
     }
 
-    // Publish all joint states at once after collecting all the joint names and angles
-    if (!joint_names.empty() && !joint_angles.empty()) {
-        m_thrusters[0]->request_joint_angles(joint_names, joint_angles);
-    }
 
     return true;
 }
