@@ -28,7 +28,6 @@
 #include "mvp_control_ros.h"
 #include "exception.hpp"
 #include "tf2_eigen/tf2_eigen.h"
-#include "mvp_control/dictionary.h"
 #include "boost/regex.hpp"
 
 using namespace ctrl;
@@ -141,6 +140,11 @@ MvpControlROS::MvpControlROS()
 
     m_process_error_publisher = m_nh.advertise<mvp_msgs::ControlProcess>(
         TOPIC_CONTROL_PROCESS_ERROR,
+        100
+    );
+
+    m_controller_state_publisher = m_nh.advertise<std_msgs::Bool>(
+        TOPIC_CONTROLLER_STATE,
         100
     );
 
@@ -1697,7 +1701,10 @@ bool MvpControlROS::f_cb_srv_enable(
 
     ROS_INFO("Controller enabled!");
     m_enabled = true;
+    std_msgs::Bool controller_state;
+    controller_state.data=m_enabled;
 
+    m_controller_state_publisher.publish(controller_state);
     return true;
 }
 
@@ -1707,6 +1714,10 @@ bool MvpControlROS::f_cb_srv_disable(
     ROS_INFO("Controller disabled!");
     m_enabled = false;
 
+    std_msgs::Bool controller_state;
+    controller_state.data=m_enabled;
+    m_controller_state_publisher.publish(controller_state);
+    
     return true;
 }
 
@@ -1976,6 +1987,7 @@ bool MvpControlROS::f_amend_set_point(
     auto m_i = m_mvp_control->get_pid()->get_m_i();
     
     Eigen::VectorXd new_set_point(CONTROLLABLE_DOF_LENGTH);
+
     new_set_point(mvp_msgs::ControlMode::DOF_X) =
         p_world.x();
     new_set_point(mvp_msgs::ControlMode::DOF_Y) =
@@ -2010,9 +2022,10 @@ bool MvpControlROS::f_amend_set_point(
             m_i[i] = 0;
         }
     }
+
     m_mvp_control->get_pid()->set_m_i(m_i);
     m_set_point = new_set_point;
-    
+
     m_mvp_control->update_desired_state(m_set_point);
 
     m_set_point_msg = set_point;
