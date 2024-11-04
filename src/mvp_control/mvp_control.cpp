@@ -367,68 +367,36 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
                     int angleLowerRow = j + 2;
 
                     if (thruster_direction_action[i] == 1) {
+
                         // Positive thrust direction
-                        // Define descriptive variable names for mathematical expressions
-                        double max_servo_angle_change = m_servo_speed[i] * deltaT;
-                        double angle_to_upper_limit = m_upper_angle[i] - m_current_angles[i];
-                        double angle_to_lower_limit = m_lower_angle[i] - m_current_angles[i];
-
-                        double allowable_angle_increase = std::min(max_servo_angle_change, angle_to_upper_limit);
-                        double allowable_angle_decrease = std::max(-max_servo_angle_change, angle_to_lower_limit);
-
-                        double tan_neg_allowable_increase = tan(-allowable_angle_increase);
-                        double tan_neg_allowable_decrease = tan(-allowable_angle_decrease);
-
-                        double adjusted_upper_force_limit = m_adjusted_upper_limit[thrustRow] * std::cos(max_servo_angle_change);
-
-                        // Populate the constraint matrix
-                        A_triplets.emplace_back(thrustRow, i, 1.0);
-                        A_triplets.emplace_back(angleUpperRow, i, tan_neg_allowable_increase);
-                        A_triplets.emplace_back(angleLowerRow, i, tan_neg_allowable_decrease);
+                        A_triplets.emplace_back(j, i, 1.0);
+                        A_triplets.emplace_back(angleUpperRow, i, tan(-std::min(m_servo_speed[i] * deltaT , m_upper_angle[i] - m_current_angles[i])));
+                        A_triplets.emplace_back(angleLowerRow, i, tan(std::max(-m_servo_speed[i] * deltaT , m_lower_angle[i] - m_current_angles[i])));
                         A_triplets.emplace_back(angleUpperRow, i + 1, 1.0);
                         A_triplets.emplace_back(angleLowerRow, i + 1, -1.0);
-
-                        // Set bounds for positive thrust direction
-                        qp_instance.lower_bounds[thrustRow] = 0;
-                        qp_instance.upper_bounds[thrustRow] = adjusted_upper_force_limit;
+                        qp_instance.lower_bounds[j] = 0;
+                        qp_instance.upper_bounds[j] = m_adjusted_upper_limit[j] * std::cos(m_servo_speed[i] * deltaT);
                         qp_instance.lower_bounds[angleUpperRow] = -kInfinity;
                         qp_instance.upper_bounds[angleUpperRow] = 0;
                         qp_instance.lower_bounds[angleLowerRow] = -kInfinity;
                         qp_instance.upper_bounds[angleLowerRow] = 0;
-
-                        j += 3; // Move to the next set of constraints
+                        j += 3; //jumping the constraint rows
 
                     } else if (thruster_direction_action[i] == -1) {
+
                         // Negative thrust direction
-                        double max_servo_angle_change = m_servo_speed[i] * deltaT;
-                        double angle_to_upper_limit = m_upper_angle[i] - m_current_angles[i];
-                        double angle_to_lower_limit = m_lower_angle[i] - m_current_angles[i];
-
-                        double allowable_angle_increase = std::min(max_servo_angle_change, angle_to_upper_limit);
-                        double allowable_angle_decrease = std::max(-max_servo_angle_change, angle_to_lower_limit);
-
-                        double tan_neg_allowable_increase = tan(-allowable_angle_increase);
-                        double tan_neg_allowable_decrease = tan(-allowable_angle_decrease);
-
-                        double adjusted_lower_force_limit = m_adjusted_lower_limit[thrustRow] * std::cos(max_servo_angle_change);
-
-                        // Populate the constraint matrix
-                        A_triplets.emplace_back(thrustRow, i, 1.0);
-                        A_triplets.emplace_back(angleUpperRow, i, tan_neg_allowable_increase);
-                        A_triplets.emplace_back(angleLowerRow, i, tan_neg_allowable_decrease);
+                        A_triplets.emplace_back(j, i, 1.0);
+                        A_triplets.emplace_back(angleUpperRow, i, tan(-std::min(m_servo_speed[i] * deltaT , m_upper_angle[i] - m_current_angles[i])));
+                        A_triplets.emplace_back(angleLowerRow, i, tan(std::max(-m_servo_speed[i] * deltaT , m_lower_angle[i] - m_current_angles[i])));
                         A_triplets.emplace_back(angleUpperRow, i + 1, 1.0);
                         A_triplets.emplace_back(angleLowerRow, i + 1, -1.0);
-
-                        // Set bounds for negative thrust direction
-                        qp_instance.lower_bounds[thrustRow] = adjusted_lower_force_limit;
-                        qp_instance.upper_bounds[thrustRow] = 0;
+                        qp_instance.lower_bounds[j] = m_adjusted_lower_limit[j] * std::cos(m_servo_speed[i] * deltaT);
+                        qp_instance.upper_bounds[j] = 0;
                         qp_instance.lower_bounds[angleUpperRow] = 0;
                         qp_instance.upper_bounds[angleUpperRow] = kInfinity;
                         qp_instance.lower_bounds[angleLowerRow] = 0;
                         qp_instance.upper_bounds[angleLowerRow] = kInfinity;
-
-                        j += 3; // Move to the next set of constraints
-
+                        j += 3; //jumping the constraint rows
                     } else {
                         ROS_ERROR("Thruster direction is not set!");
                         return false;
