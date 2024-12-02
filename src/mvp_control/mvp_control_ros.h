@@ -205,7 +205,12 @@ namespace ctrl {
         //! @brief Joint State subscriber
         ros::Subscriber m_joint_state_subscriber;
 
+        //! @brief Joint Setpoint subscriber
+        ros::Subscriber m_joint_setpoint_subscriber;
+        
         sensor_msgs::JointState m_latest_joint_state;
+
+        sensor_msgs::JointState m_latest_joint_setpoint;
 
         std::recursive_mutex m_joint_state_lock;
 
@@ -488,6 +493,8 @@ namespace ctrl {
         void initialize();
 
         void f_cb_msg_joint_state(const sensor_msgs::JointState::ConstPtr &msg);
+
+        void f_cb_msg_joint_setpoint(const sensor_msgs::JointState::ConstPtr &msg);
 
         // Declare the thruster action callback function
         void f_cb_msg_thruster_action(const std_msgs::Int32MultiArray::ConstPtr& msg);

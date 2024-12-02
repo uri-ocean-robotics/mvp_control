@@ -87,6 +87,17 @@ MvpControlROS::MvpControlROS()
         ROS_WARN("The servo_joint_topic not set! Non-Articulated Vehicle");
     }
 
+    // Read configuration: servo joint setpoint topic id
+    std::string joint_setpoint_topic;
+    m_pnh.param<std::string>(
+            CONF_SERVO_JOINT_SETPOINT_TOPIC,
+            joint_setpoint_topic, ""
+    );
+
+    if (joint_setpoint_topic.empty()) {
+        ROS_WARN("The servo_joint_setpoint_topic not set! Default behavior may be unexpected.");
+    }
+
     m_pnh.param<double>(
         CONF_CONTROLLER_FREQUENCY,
         m_controller_frequency,
@@ -114,6 +125,13 @@ MvpControlROS::MvpControlROS()
             100,
             &MvpControlROS::f_cb_msg_joint_state,
             this
+    );
+
+    m_joint_setpoint_subscriber = m_nh.subscribe<sensor_msgs::JointState>(
+                joint_setpoint_topic,
+                100,
+                &MvpControlROS::f_cb_msg_joint_setpoint,
+                this
     );
 
     m_set_point_subscriber = m_nh.subscribe(
@@ -1153,6 +1171,7 @@ bool MvpControlROS::f_compute_process_values() {
     return true;
 }
 
+
 void MvpControlROS::f_control_loop() {
     double previous_time = ros::Time::now().toSec();
     setpoint_timer = ros::Time::now().toSec();
@@ -1178,19 +1197,56 @@ void MvpControlROS::f_control_loop() {
             continue;
         }
 
+        // **Update m_current_angles**
+        {
+            std::scoped_lock lock(m_joint_state_lock);
+
+            bool all_angles_available = true;
+
+            for (size_t i = 0; i < m_thrusters.size(); ++i) {
+                if (m_thrusters[i]->get_is_articulated() == 1) {
+                    int int_index = static_cast<int>(i);
+                    std::string joint_name = m_tf_prefix + m_thrusters[i]->get_servo_joints().at(0);
+
+                    // Find the joint name in the latest joint state message
+                    auto it = std::find(m_latest_joint_setpoint.name.begin(), m_latest_joint_setpoint.name.end(), joint_name);
+                    if (it != m_latest_joint_setpoint.name.end()) {
+                        size_t index = std::distance(m_latest_joint_setpoint.name.begin(), it);
+                        double yaw = m_latest_joint_setpoint.position[index];
+
+                    m_mvp_control->set_current_angle(&int_index, yaw); 
+
+                    } else {
+                        all_angles_available = false;
+                        ROS_WARN("Joint state not available for thruster %zu: %s", i, joint_name.c_str());
+                        break;
+                    }
+                } else {
+                    // Non-articulated thruster, set angle to zero
+                    int int_index = static_cast<int>(i); 
+                     m_mvp_control->set_current_angle(&int_index, 0.0);
+                }
+            }
+
+            if (!all_angles_available) {
+                ROS_WARN("Failed to update current angles. Skipping control commands.");
+                continue;
+            }
+        }
+
         Eigen::VectorXd needed_forces;
         // Calculate time difference for PID controller
         double dt = ros::Time::now().toSec() - previous_time;
 
-        // Calculate required forces; proceed only if successful
+        // **Call calculate_needed_forces after updating angles**
         if (m_mvp_control->calculate_needed_forces(&needed_forces, dt)) {
-            // Handle the articulated thruster logic in a separate function
+            // Handle the articulated thruster logic
             if (!handle_articulated_thrusters(needed_forces)) {
                 ROS_WARN("Articulated thruster handling failed. Skipping control commands.");
                 continue;
             }
 
-            // Second pass: apply control commands for non-articulated thrusters
+            // Apply control commands for non-articulated thrusters
             for (size_t i = 0; i < m_thrusters.size();) {
                 int index = static_cast<int>(i);
                 if (m_thrusters[i]->get_is_articulated() == 1 && i + 1 < m_thrusters.size()) {
@@ -1199,8 +1255,6 @@ void MvpControlROS::f_control_loop() {
                     if (index < needed_forces.size()) {
                         m_thrusters[i]->request_force(needed_forces(index));
                     }
-                    // Set current angle to zero for non-articulated thrusters
-                    m_mvp_control->set_current_angle(&index, 0);
                     i++;  // Move to the next thruster
                 }
             }
@@ -1211,102 +1265,218 @@ void MvpControlROS::f_control_loop() {
     }
 }
 
+// void MvpControlROS::f_control_loop() {
+//     double previous_time = ros::Time::now().toSec();
+//     setpoint_timer = ros::Time::now().toSec();
+//     ros::Rate rate(m_controller_frequency);
+
+//     while (ros::ok()) {
+//         // Sleep to maintain the controller frequency; continue if sleep fails
+//         if (!rate.sleep()) {
+//             continue;
+//         }
+
+//         // Update process values; continue if update fails
+//         if (!f_compute_process_values()) {
+//             continue;
+//         }
+
+//         // Check if the controller is enabled and the setpoint is recent
+//         double time_since_last_setpoint = ros::Time::now().toSec() - setpoint_timer;
+//         if (!m_enabled || time_since_last_setpoint > m_no_setpoint_timeout) {
+//             for (auto& thruster : m_thrusters) {
+//                 thruster->command(0);
+//             }
+//             continue;
+//         }
+
+//         Eigen::VectorXd needed_forces;
+//         // Calculate time difference for PID controller
+//         double dt = ros::Time::now().toSec() - previous_time;
+
+//         // Calculate required forces; proceed only if successful
+//         if (m_mvp_control->calculate_needed_forces(&needed_forces, dt)) {
+//             // Handle the articulated thruster logic in a separate function
+//             if (!handle_articulated_thrusters(needed_forces)) {
+//                 ROS_WARN("Articulated thruster handling failed. Skipping control commands.");
+//                 continue;
+//             }
+
+//             // Second pass: apply control commands for non-articulated thrusters
+//             for (size_t i = 0; i < m_thrusters.size();) {
+//                 int index = static_cast<int>(i);
+//                 if (m_thrusters[i]->get_is_articulated() == 1 && i + 1 < m_thrusters.size()) {
+//                     i += 2;  // Skip articulated thrusters, already handled
+//                 } else {
+//                     if (index < needed_forces.size()) {
+//                         m_thrusters[i]->request_force(needed_forces(index));
+//                     }
+//                     // Set current angle to zero for non-articulated thrusters
+//                     m_mvp_control->set_current_angle(&index, 0);
+//                     i++;  // Move to the next thruster
+//                 }
+//             }
+//         }
+
+//         // Update previous time for the next iteration
+//         previous_time = ros::Time::now().toSec();
+//     }
+// }
+
 bool MvpControlROS::handle_articulated_thrusters(const Eigen::VectorXd& needed_forces) {
-    std::vector<geometry_msgs::TransformStamped> transforms(m_thrusters.size());
-    std::vector<double> current_angles(m_thrusters.size());
     bool all_transforms_available = true;
 
-    // First pass: check availability of required transforms
+    // Loop through thrusters and handle articulated ones
     for (size_t i = 0; i < m_thrusters.size();) {
         if (m_thrusters[i]->get_is_articulated() == 1 && i + 1 < m_thrusters.size()) {
             std::string thruster_link_id = m_thrusters[i]->get_link_id();
             std::string servo_link_id = m_thrusters[i]->get_servo_link_id();
-            double start_time = ros::Time::now().toSec();
+
+            geometry_msgs::TransformStamped transform_msg;
+
             try {
-                // transforms[i] = m_transform_buffer.lookupTransform(
-                //     servo_link_id, 
-                //     thruster_link_id,  
-                //     ros::Time::now(),
-                //     ros::Duration(3.0)
-                // );
-                transforms[i] = m_transform_buffer.lookupTransform(
-                        servo_link_id, 
-                        thruster_link_id,  
-                        ros::Time(0)
-                        );
+                // Lookup the transform
+                transform_msg = m_transform_buffer.lookupTransform(
+                    servo_link_id,
+                    thruster_link_id,
+                    ros::Time(0)
+                );
             } catch (tf2::TransformException& ex) {
-                all_transforms_available = false;
                 ROS_WARN("Transform not available for thruster %zu: %s", i, ex.what());
-                break;
+                return false; // Fail if a transform is not available
             }
-            double end_time = ros::Time::now().toSec();
-            i += 2;  // Move to the next pair of articulated thrusters
-        } else {
-            i++;  // Move to the next non-articulated thruster
-        }
-    }
 
-    // Skip control commands if not all transforms are available
-    if (!all_transforms_available) {
-        return false;
-    }
+            // Extract quaternion and compute yaw angle
+            tf2::Quaternion tf_quat;
+            tf2::fromMsg(transform_msg.transform.rotation, tf_quat);
 
-    // Second pass: apply control commands for articulated thrusters
-    std::vector<std::string> joint_names;
-    std::vector<double> joint_angles;
+            double roll, pitch, yaw;
+            tf2::Matrix3x3(tf_quat).getRPY(roll, pitch, yaw); // Convert to roll, pitch, yaw
 
-    for (size_t i = 0; i < m_thrusters.size();) {
-        int index = static_cast<int>(i);
-        if (m_thrusters[i]->get_is_articulated() == 1 && i + 1 < m_thrusters.size()) {
+            // Retrieve forces
+            int index = static_cast<int>(i);
             double force_x = needed_forces(index);
             double force_y = needed_forces(index + 1);
-            double combined_force = sqrt(force_x * force_x + force_y * force_y);
+            double combined_force = std::hypot(force_x, force_y);
             combined_force = std::copysign(combined_force, force_x);
 
+            // Calculate the new angle
+            double calculated_angle = atan2(force_y, force_x);
+            double new_angle = calculated_angle + yaw; 
+            new_angle = atan2(sin(new_angle), cos(new_angle)); // Normalize to [-pi, pi]
+
+            // Update the joint angle
             std::string joint_name = m_tf_prefix + m_thrusters[i]->get_servo_joints().at(0);
+            m_thrusters[i]->request_joint_angles({joint_name}, {new_angle});
 
-            try {
-                // Use the previously stored transform
-                tf2::Quaternion tf_quat;
-                tf2::fromMsg(transforms[i].transform.rotation, tf_quat);
-                double roll, pitch, yaw;
-                tf2::Matrix3x3(tf_quat).getRPY(roll, pitch, yaw);
-
-                current_angles[i] = yaw;
-                m_mvp_control->set_current_angle(&index, yaw);
-
-                if (force_x < 0) {
-                    force_x = -force_x;
-                    force_y = -force_y;
-                }
-                double calculated_angle = atan2(force_y, force_x);
-                double new_angle = calculated_angle + yaw;
-                // Normalize new_angle to range [-pi, pi]
-                new_angle = atan2(sin(new_angle), cos(new_angle)); // Normalize
-
-                // m_thrusters[i]->request_joint_angles(joint_name, new_angle);
-                // Accumulate the joint name and angle for publishing later
-                joint_names.push_back(joint_name);
-                joint_angles.push_back(new_angle);
-                // Publish all joint states at once after collecting all the joint names and angles
-                // if (!joint_names.empty() && !joint_angles.empty()) {
-                // m_thrusters[0]->request_joint_angles(joint_names, joint_angles);
-                // }
-            } catch (tf2::TransformException& ex) {
-                ROS_WARN("Transform not available for thruster %zu: %s", i, ex.what());
-                return false;
-            }
-
+            // Update the force
             m_thrusters[i]->request_force(combined_force);
-            i += 2;  // Move to the next pair of articulated thrusters
+
+            i += 2; // Move to the next pair of articulated thrusters
         } else {
-            i++;  // Move to the next non-articulated thruster
+            i++; // Move to the next thruster
         }
     }
 
-    m_thrusters[0]->request_joint_angles(joint_names, joint_angles);
     return true;
 }
+
+// bool MvpControlROS::handle_articulated_thrusters(const Eigen::VectorXd& needed_forces) {
+//     std::vector<geometry_msgs::TransformStamped> transforms(m_thrusters.size());
+//     std::vector<double> current_angles(m_thrusters.size());
+//     bool all_transforms_available = true;
+
+//     // First pass: check availability of required transforms
+//     for (size_t i = 0; i < m_thrusters.size();) {
+//         if (m_thrusters[i]->get_is_articulated() == 1 && i + 1 < m_thrusters.size()) {
+//             std::string thruster_link_id = m_thrusters[i]->get_link_id();
+//             std::string servo_link_id = m_thrusters[i]->get_servo_link_id();
+//             double start_time = ros::Time::now().toSec();
+//             try {
+//                 // transforms[i] = m_transform_buffer.lookupTransform(
+//                 //     servo_link_id, 
+//                 //     thruster_link_id,  
+//                 //     ros::Time::now(),
+//                 //     ros::Duration(3.0)
+//                 // );
+//                 transforms[i] = m_transform_buffer.lookupTransform(
+//                         servo_link_id, 
+//                         thruster_link_id,  
+//                         ros::Time(0)
+//                         );
+//             } catch (tf2::TransformException& ex) {
+//                 all_transforms_available = false;
+//                 ROS_WARN("Transform not available for thruster %zu: %s", i, ex.what());
+//                 break;
+//             }
+//             double end_time = ros::Time::now().toSec();
+//             i += 2;  // Move to the next pair of articulated thrusters
+//         } else {
+//             i++;  // Move to the next non-articulated thruster
+//         }
+//     }
+
+//     // Skip control commands if not all transforms are available
+//     if (!all_transforms_available) {
+//         return false;
+//     }
+
+//     // Second pass: apply control commands for articulated thrusters
+//     std::vector<std::string> joint_names;
+//     std::vector<double> joint_angles;
+
+//     for (size_t i = 0; i < m_thrusters.size();) {
+//         int index = static_cast<int>(i);
+//         if (m_thrusters[i]->get_is_articulated() == 1 && i + 1 < m_thrusters.size()) {
+//             double force_x = needed_forces(index);
+//             double force_y = needed_forces(index + 1);
+//             double combined_force = sqrt(force_x * force_x + force_y * force_y);
+//             combined_force = std::copysign(combined_force, force_x);
+
+//             std::string joint_name = m_tf_prefix + m_thrusters[i]->get_servo_joints().at(0);
+
+//             try {
+//                 // Use the previously stored transform
+//                 tf2::Quaternion tf_quat;
+//                 tf2::fromMsg(transforms[i].transform.rotation, tf_quat);
+//                 double roll, pitch, yaw;
+//                 tf2::Matrix3x3(tf_quat).getRPY(roll, pitch, yaw);
+
+//                 current_angles[i] = yaw;
+//                 m_mvp_control->set_current_angle(&index, yaw);
+
+//                 if (force_x < 0) {
+//                     force_x = -force_x;
+//                     force_y = -force_y;
+//                 }
+//                 double calculated_angle = atan2(force_y, force_x);
+//                 double new_angle = calculated_angle + yaw;
+//                 // Normalize new_angle to range [-pi, pi]
+//                 new_angle = atan2(sin(new_angle), cos(new_angle)); // Normalize
+
+//                 // m_thrusters[i]->request_joint_angles(joint_name, new_angle);
+//                 // Accumulate the joint name and angle for publishing later
+//                 joint_names.push_back(joint_name);
+//                 joint_angles.push_back(new_angle);
+//                 // Publish all joint states at once after collecting all the joint names and angles
+//                 // if (!joint_names.empty() && !joint_angles.empty()) {
+//                 // m_thrusters[0]->request_joint_angles(joint_names, joint_angles);
+//                 // }
+//             } catch (tf2::TransformException& ex) {
+//                 ROS_WARN("Transform not available for thruster %zu: %s", i, ex.what());
+//                 return false;
+//             }
+
+//             m_thrusters[i]->request_force(combined_force);
+//             i += 2;  // Move to the next pair of articulated thrusters
+//         } else {
+//             i++;  // Move to the next non-articulated thruster
+//         }
+//     }
+
+//     m_thrusters[0]->request_joint_angles(joint_names, joint_angles);
+//     return true;
+// }
 
 void MvpControlROS::f_cb_msg_odometry(
         const nav_msgs::Odometry::ConstPtr &msg) {
@@ -1318,6 +1488,12 @@ void MvpControlROS::f_cb_msg_joint_state(
         const sensor_msgs::JointState::ConstPtr &msg) {
     std::scoped_lock lock(m_joint_state_lock);
     m_latest_joint_state = *msg;
+}
+
+void MvpControlROS::f_cb_msg_joint_setpoint(
+        const sensor_msgs::JointState::ConstPtr &msg) {
+    std::scoped_lock lock(m_joint_state_lock);
+    m_latest_joint_setpoint = *msg; 
 }
 
 void MvpControlROS::f_cb_msg_thruster_action(const std_msgs::Int32MultiArray::ConstPtr& msg) {

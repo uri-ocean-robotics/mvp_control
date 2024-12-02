@@ -149,7 +149,7 @@ void ThrusterROS::initialize() {
 
     if (!m_joint_state_desired_topic_id.empty()) {
         m_joint_state_publisher = m_nh.advertise<sensor_msgs::JointState>(
-            m_joint_state_desired_topic_id, 20);
+            m_joint_state_desired_topic_id, 100);
     } else {
         throw control_ros_exception("empty joint state topic name");
     }    

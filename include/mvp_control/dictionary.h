@@ -55,6 +55,7 @@ namespace ctrl {
     static constexpr const char * CONF_SERVO_JOINT_TOPIC = "servo_joint_topic";
     static constexpr const char * CONF_SERVO_JOINT_TOPIC_DEFAULT = "/control/servos/joint_states";
     static constexpr const char * CONF_SERVO_JOINT_SETPOINT_TOPIC = "servo_joint_setpoint_topic";
+    static constexpr const char * CONF_SERVO_JOINT_SETPOINT_TOPIC_DEFAULT = "/control/servos/desired_joint_states";
     static constexpr const char * CONF_THRUSTER_FORCE_TOPICS = "thruster_force_topics";
     static constexpr const char * CONF_THRUSTER_IDS = "thruster_ids";
     static constexpr const char * CONF_SERVO_IDS = "servo_ids";
