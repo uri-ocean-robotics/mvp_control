@@ -178,6 +178,17 @@ namespace ctrl {
     ARTICULATED_THRUSTER_Y = 2     // Articulated thruster with Y-axis alignment
     };
 
+    /** @brief Enumeration of thruster directions.
+     *
+     * This enum defines the different directions that a thruster can apply force in.
+     * - `THRUSTER_FORCE_POSITIVE`: Thruster applies force in the positive direction.
+     * - `THRUSTER_FORCE_NEGATIVE`: Thruster applies force in the negative direction.
+     */
+    enum ThrusterDirection {
+        THRUSTER_FORCE_POSITIVE = 1,
+        THRUSTER_FORCE_NEGATIVE = -1
+    };
+
     /**
      * @brief Enumeration of constraint row identifiers.
      *

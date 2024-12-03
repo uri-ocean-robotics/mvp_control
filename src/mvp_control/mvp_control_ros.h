@@ -273,6 +273,15 @@ namespace ctrl {
          */
         bool f_initial_tf_check();
 
+        /**
+         * @brief Initializes all joint setpoints to zero.
+         * 
+         * This function clears the current joint setpoint state and sets 
+         * the position of all articulated joints to 0.0. Logs the initialization
+         * of each joint.
+         */
+        void f_initializeJointSetpointsToZero();
+
         /** @brief Generates control allocation matrix from user input
          *
          *  This method is called if generator_type is 'user'

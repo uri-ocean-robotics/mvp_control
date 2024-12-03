@@ -615,21 +615,8 @@ void MvpControlROS::initialize() {
     
     ROS_INFO("#### Thruster object created ####");
 
-    // Initialize joint setpoints to zero
-    {
-        std::scoped_lock lock(m_joint_state_setpoint_lock);
-        m_latest_joint_setpoint.name.clear();
-        m_latest_joint_setpoint.position.clear();
-
-        for (const auto& thruster : m_thrusters) {
-            if (thruster->get_is_articulated()) {
-                std::string joint_name = m_tf_prefix + thruster->get_servo_joints().at(0);
-                m_latest_joint_setpoint.name.push_back(joint_name);
-                m_latest_joint_setpoint.position.push_back(0.0);
-                ROS_INFO("Initialized joint: %s to 0.0", joint_name.c_str());
-            }
-        }
-    }
+    // Initialize and set servos to zero
+    f_initializeJointSetpointsToZero();
 
     // Generate thrusters with the given configuration
     while(!f_initial_tf_check())
@@ -663,6 +650,21 @@ void MvpControlROS::initialize() {
 
     ROS_INFO("******* MVP Controller Ready *******" );
 
+}
+
+void MvpControlROS::f_initializeJointSetpointsToZero() {
+    std::scoped_lock lock(m_joint_state_setpoint_lock);
+    m_latest_joint_setpoint.name.clear();
+    m_latest_joint_setpoint.position.clear();
+
+    for (const auto& thruster : m_thrusters) {
+        if (thruster->get_is_articulated()) {
+            std::string joint_name = m_tf_prefix + thruster->get_servo_joints().at(0);
+            m_latest_joint_setpoint.name.push_back(joint_name);
+            m_latest_joint_setpoint.position.push_back(0.0);
+            ROS_INFO("Initialized joint: %s to 0.0", joint_name.c_str());
+        }
+    }
 }
 
 void MvpControlROS::f_generate_control_allocation_from_user() {
@@ -1213,7 +1215,6 @@ void MvpControlROS::f_control_loop() {
             continue;
         }
 
-
         Eigen::VectorXd needed_forces;
         // Calculate time difference for PID controller
         double dt = ros::Time::now().toSec() - previous_time;
@@ -1244,64 +1245,6 @@ void MvpControlROS::f_control_loop() {
         previous_time = ros::Time::now().toSec();
     }
 }
-
-// void MvpControlROS::f_control_loop() {
-//     double previous_time = ros::Time::now().toSec();
-//     setpoint_timer = ros::Time::now().toSec();
-//     ros::Rate rate(m_controller_frequency);
-
-//     while (ros::ok()) {
-//         // Sleep to maintain the controller frequency; continue if sleep fails
-//         if (!rate.sleep()) {
-//             continue;
-//         }
-
-//         // Update process values; continue if update fails
-//         if (!f_compute_process_values()) {
-//             continue;
-//         }
-
-//         // Check if the controller is enabled and the setpoint is recent
-//         double time_since_last_setpoint = ros::Time::now().toSec() - setpoint_timer;
-//         if (!m_enabled || time_since_last_setpoint > m_no_setpoint_timeout) {
-//             for (auto& thruster : m_thrusters) {
-//                 thruster->command(0);
-//             }
-//             continue;
-//         }
-
-//         Eigen::VectorXd needed_forces;
-//         // Calculate time difference for PID controller
-//         double dt = ros::Time::now().toSec() - previous_time;
-
-//         // Calculate required forces; proceed only if successful
-//         if (m_mvp_control->calculate_needed_forces(&needed_forces, dt)) {
-//             // Handle the articulated thruster logic in a separate function
-//             if (!handle_articulated_thrusters(needed_forces)) {
-//                 ROS_WARN("Articulated thruster handling failed. Skipping control commands.");
-//                 continue;
-//             }
-
-//             // Second pass: apply control commands for non-articulated thrusters
-//             for (size_t i = 0; i < m_thrusters.size();) {
-//                 int index = static_cast<int>(i);
-//                 if (m_thrusters[i]->get_is_articulated() == 1 && i + 1 < m_thrusters.size()) {
-//                     i += 2;  // Skip articulated thrusters, already handled
-//                 } else {
-//                     if (index < needed_forces.size()) {
-//                         m_thrusters[i]->request_force(needed_forces(index));
-//                     }
-//                     // Set current angle to zero for non-articulated thrusters
-//                     m_mvp_control->set_current_angle(&index, 0);
-//                     i++;  // Move to the next thruster
-//                 }
-//             }
-//         }
-
-//         // Update previous time for the next iteration
-//         previous_time = ros::Time::now().toSec();
-//     }
-// }
 
 bool MvpControlROS::handle_articulated_thrusters(const Eigen::VectorXd& needed_forces) {
     bool all_transforms_available = true;
@@ -1357,9 +1300,6 @@ bool MvpControlROS::handle_articulated_thrusters(const Eigen::VectorXd& needed_f
 
             //temporarily change the desired angle to the angle
             double desired_angle = angle;
-
-
-
 
             // Add the current yaw to account for the current joint position
             double calculated_angle = desired_angle + yaw;
