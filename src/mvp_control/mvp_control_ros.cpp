@@ -1337,20 +1337,34 @@ bool MvpControlROS::handle_articulated_thrusters(const Eigen::VectorXd& needed_f
             int index = static_cast<int>(i);
             double force_x = needed_forces(index);
             double force_y = needed_forces(index + 1);
-            double combined_force = std::hypot(force_x, force_y);
+            double combined_force = std::hypot(force_x, force_y); //sqrt(force_x * force_x + force_y * force_y);
             combined_force = std::copysign(combined_force, force_x);
 
             if (force_x < 0) {
                 force_x = -force_x;
                 force_y = -force_y;
             }
+
+            const double epsilon = 1e-14; // Define a small tolerance
+            double angle;
+            if (std::abs(force_x) < epsilon && std::abs(force_y) < epsilon) {
+                angle = 0.0; // Handle the zero vector case explicitly
+            } else {
+                angle = std::atan2(force_y, force_x);
+            }
             // Calculate the desired angle from the force vector
-            double desired_angle = atan2(force_y, force_x);
+            // double desired_angle = atan2(force_y, force_x); // this is the original line
+
+            //temporarily change the desired angle to the angle
+            double desired_angle = angle;
+
+
+
 
             // Add the current yaw to account for the current joint position
             double calculated_angle = desired_angle + yaw;
-            printf("yaw: %f, desired_angle: %f, calculated_angle: %f\n", yaw, desired_angle, calculated_angle);
-            printf("force_x: %f, force_y: %f, combined_force: %f\n", force_x, force_y, combined_force);
+            printf("yaw: %4.12f, desired_angle: %4.12f, calculated_angle: %4.12f\n", yaw, desired_angle, calculated_angle);
+            printf("force_x: %4.12f, force_y: %4.12f, combined_force: %4.12f\n", force_x, force_y, combined_force);
 
             // Normalize calculated_angle to [-pi, pi]
             double new_angle = std::fmod(calculated_angle + M_PI, 2 * M_PI);
@@ -1359,8 +1373,14 @@ bool MvpControlROS::handle_articulated_thrusters(const Eigen::VectorXd& needed_f
             }
             new_angle -= M_PI; // Shift to [-pi, pi]
 
+            // Handle the edge case with an epsilon-based comparison
+            // const double epsilon = 1e-12; // Small tolerance for floating-point precision
+            if (std::abs(new_angle + M_PI) < epsilon) {
+                new_angle = M_PI;
+            }
+
             // Store the new angle for later use
-            new_angles_map[i] = new_angle;
+            new_angles_map[i] = new_angle; 
 
             // Batch the joint name and angle for later publishing
             joint_names.push_back(joint_name);

@@ -372,7 +372,7 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
 
                         printf("alpha_u: %f\n", alpha_u);
                         printf("alpha_l: %f\n", alpha_l);
-                        printf("m_current_angles[i]: %f\n", m_current_angles[i]);
+                        printf("m_current_angles[i]: %4.12f\n", m_current_angles[i]);
                         printf("\n");
                         // Compute force_coefficient
                         double force_coefficient = std::min(abs(std::cos(alpha_u)), abs(std::cos(alpha_l)));
@@ -439,10 +439,10 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
 
     // **Customize OSQP Settings Here**
     solver_settings.verbose = false; // Disable verbose output
-    solver_settings.eps_abs = 1e-6;  // Set absolute tolerance
-    solver_settings.eps_rel = 1e-6;  // Set relative tolerance
-    solver_settings.eps_prim_inf = 1e-4; // Primal infeasibility tolerance
-    solver_settings.eps_dual_inf = 1e-4; // Dual infeasibility tolerance
+    solver_settings.eps_abs = 1e-14;  // Set absolute tolerance
+    solver_settings.eps_rel = 1e-14;  // Set relative tolerance
+    solver_settings.eps_prim_inf = 1e-14; // Primal infeasibility tolerance
+    solver_settings.eps_dual_inf = 1e-14; // Dual infeasibility tolerance
     solver_settings.max_iter = 10000;    // Set maximum iterations
     solver_settings.scaling = false;      // Enable automatic scaling
 
