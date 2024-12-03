@@ -214,6 +214,8 @@ namespace ctrl {
 
         std::recursive_mutex m_joint_state_lock;
 
+        std::recursive_mutex m_joint_state_setpoint_lock;
+
         //! @brief Joint state publisher
         ros::Publisher m_joint_state_publisher;
 
