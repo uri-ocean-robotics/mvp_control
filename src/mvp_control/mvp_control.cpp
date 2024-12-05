@@ -271,7 +271,7 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
 
     // Defaulting all thruster forces to be positive (equals 1 here)
     if (thruster_direction_action.size() != m_thruster_vector.size()) {
-        thruster_direction_action.resize(m_thruster_vector.size(), THRUSTER_FORCE_POSITIVE); // Default to 1
+        thruster_direction_action.resize(m_thruster_vector.size(), THRUSTER_FORCE_POSITIVE); // Default to Positive
     }
 
    // Step 1: Calculate the total number of elements in the bounds vectors
@@ -381,6 +381,11 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
                         // Compute force_coefficient
                         double force_coefficient = std::min(abs(std::cos(alpha_u)), abs(std::cos(alpha_l)));
 
+                        // printf("alpha_u: %f\n", alpha_u);
+                        // printf("alpha_l: %f\n", alpha_l);
+                        // printf("m_current_angles[i]: %4.12f\n", m_current_angles[i]);
+                        // printf("\n");
+
                         // Add thrust constraint (Fx>0)
                         A_triplets.emplace_back(thrustRow, i, 1.0);
                         qp_instance.lower_bounds[thrustRow] = 0;
@@ -423,6 +428,12 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
 
                         // Compute force_coefficient
                         double force_coefficient = std::min(abs(std::cos(alpha_u)), abs(std::cos(alpha_l)));
+
+
+                        // printf("alpha_u: %f\n", alpha_u);
+                        // printf("alpha_l: %f\n", alpha_l);
+                        // printf("m_current_angles[i]: %4.12f\n", m_current_angles[i]);
+                        // printf("\n");
 
                         // Add thrust constraint (Fx<0)
                         A_triplets.emplace_back(thrustRow, i, 1.0);
@@ -474,7 +485,7 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     solver_settings.eps_abs = 1e-14;  // Set absolute tolerance
     solver_settings.eps_rel = 1e-14;  // Set relative tolerance
     solver_settings.eps_prim_inf = 1e-14; // Primal infeasibility tolerance
-    solver_settings.eps_dual_inf = 1e-14; // Dual infeasibility tolerance
+    solver_settings.eps_dual_inf = 1e-10; // Dual infeasibility tolerance
     solver_settings.max_iter = 10000;    // Set maximum iterations
     solver_settings.scaling = false;      // Enable automatic scaling
 
