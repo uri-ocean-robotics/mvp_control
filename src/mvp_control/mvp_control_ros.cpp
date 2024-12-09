@@ -1290,11 +1290,11 @@ bool MvpControlROS::handle_articulated_thrusters(const Eigen::VectorXd& needed_f
 
             const double epsilon = 1e-15; // Define a small tolerance
             double angle;
-            if (std::abs(force_x) < epsilon && std::abs(force_y) < epsilon) {
-                angle = 0.0; // Handle the zero vector case explicitly
-            } else {
+            // if (std::abs(force_x) < epsilon && std::abs(force_y) < epsilon) {
+            //     angle = 0.0; // Handle the zero vector case explicitly
+            // } else {
                 angle = std::atan2(force_y, force_x);
-            }
+            // }
             // Calculate the desired angle from the force vector
             // double desired_angle = atan2(force_y, force_x); // this is the original line
 
@@ -1305,7 +1305,7 @@ bool MvpControlROS::handle_articulated_thrusters(const Eigen::VectorXd& needed_f
             double calculated_angle = desired_angle + yaw;
             // printf("yaw: %4.12f, desired_angle: %4.12f, calculated_angle: %4.12f\n", yaw, desired_angle, calculated_angle);
             // printf("force_x: %4.12f, force_y: %4.12f, combined_force: %4.12f\n", force_x, force_y, combined_force);
-
+            // printf("\n");    
             /* Check if calculated_angle is within the range of -pi to pi
                if not, stick with the current yaw
             */

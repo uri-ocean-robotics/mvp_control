@@ -191,6 +191,10 @@ bool MvpControl::f_calculate_pid(Eigen::VectorXd *u, double dt)
 
 
 bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
+
+    // double alpha_u_global;
+    // double alpha_l_global;
+    double force_coefficient;
     // static bool is_initialized = false;
     // if (!is_initialized) {
         // Initialize current angles if not already done
@@ -375,11 +379,13 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
                     */
 
                         // Compute alpha_u and alpha_l
-                        double alpha_u = std::min(m_servo_speed[i] * deltaT + M_PI, m_upper_angle[i] + M_PI - m_current_angles[i]);
-                        double alpha_l = std::max(-m_servo_speed[i] * deltaT + M_PI , m_lower_angle[i] + M_PI - m_current_angles[i]);
-
+                        double alpha_u = std::min(m_servo_speed[i] * deltaT , m_upper_angle[i]  - m_current_angles[i]);
+                        double alpha_l = std::max(-m_servo_speed[i] * deltaT , m_lower_angle[i] - m_current_angles[i]);
+                        // alpha_l_global = alpha_l;
+                        // alpha_u_global = alpha_u;
                         // Compute force_coefficient
-                        double force_coefficient = std::min(abs(std::cos(alpha_u)), abs(std::cos(alpha_l)));
+                        force_coefficient = std::min(abs(std::cos(alpha_u)), abs(std::cos(alpha_l)));
+                        // printf("force_coefficient: %f\n", force_coefficient);
 
                         // printf("alpha_u: %f\n", alpha_u);
                         // printf("alpha_l: %f\n", alpha_l);
@@ -390,16 +396,19 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
                         A_triplets.emplace_back(thrustRow, i, 1.0);
                         qp_instance.lower_bounds[thrustRow] = 0;
                         qp_instance.upper_bounds[thrustRow] = m_adjusted_upper_limit[thrustRow] * force_coefficient;
+                        // printf("Fx upper limit * force_coeff %d\n", m_adjusted_upper_limit[thrustRow] * force_coefficient);
 
                         // Add angleUpperRow constraint
                         A_triplets.emplace_back(angleUpperRow, i, std::tan(alpha_u));
                         A_triplets.emplace_back(angleUpperRow, i + 1, -1.0);
+                        // printf("tan(alpha_u): %f\n", std::tan(alpha_u)); 
                         qp_instance.lower_bounds[angleUpperRow] = 0;
                         qp_instance.upper_bounds[angleUpperRow] = kInfinity;
 
                         // Add angleLowerRow constraint
                         A_triplets.emplace_back(angleLowerRow, i, std::tan(alpha_l));
                         A_triplets.emplace_back(angleLowerRow, i + 1, -1.0);
+                        // printf("tan(alpha_l): %f\n", std::tan(alpha_l)); 
                         qp_instance.lower_bounds[angleLowerRow] = -kInfinity;
                         qp_instance.upper_bounds[angleLowerRow] = 0;
 
@@ -427,27 +436,30 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
                         double alpha_l = std::min(m_servo_speed[i] * deltaT , m_upper_angle[i] - m_current_angles[i]);
 
                         // Compute force_coefficient
-                        double force_coefficient = std::min(abs(std::cos(alpha_u)), abs(std::cos(alpha_l)));
-
+                        force_coefficient = std::min(abs(std::cos(alpha_u)), abs(std::cos(alpha_l)));
+                        // printf("force_coefficient: %f\n", force_coefficient);
 
                         // printf("alpha_u: %f\n", alpha_u);
                         // printf("alpha_l: %f\n", alpha_l);
                         // printf("m_current_angles[i]: %4.12f\n", m_current_angles[i]);
-                        // printf("\n");
+
 
                         // Add thrust constraint (Fx<0)
                         A_triplets.emplace_back(thrustRow, i, 1.0);
                         qp_instance.lower_bounds[thrustRow] = - m_adjusted_upper_limit[thrustRow] * force_coefficient;
+                        // printf("Fx upper limit * force_coeff %d\n", m_adjusted_upper_limit[thrustRow] * force_coefficient);
                         qp_instance.upper_bounds[thrustRow] = 0;
 
                         // Add angleUpperRow constraint
                         A_triplets.emplace_back(angleUpperRow, i, std::tan(alpha_l));
+                        // printf("tan(alpha_l): %f\n", std::tan(alpha_l)); 
                         A_triplets.emplace_back(angleUpperRow, i + 1, -1.0);
-                        qp_instance.lower_bounds[angleUpperRow] = -kInfinity;
+                        qp_instance.lower_bounds[angleUpperRow] = -kInfinity; //m_adjusted_upper_limit[thrustRow] maybve later
                         qp_instance.upper_bounds[angleUpperRow] = 0;
 
                         // Add angleLowerRow constraint
                         A_triplets.emplace_back(angleLowerRow, i, std::tan(alpha_u));
+                        // printf("tan(alpha_u): %f\n", std::tan(alpha_u));
                         A_triplets.emplace_back(angleLowerRow, i + 1, -1.0);
                         qp_instance.lower_bounds[angleLowerRow] = 0;
                         qp_instance.upper_bounds[angleLowerRow] = kInfinity;
@@ -505,6 +517,25 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     switch (exitCode) {
         case osqp::OsqpExitCode::kOptimal:
             *t = solver.primal_solution();
+            // // std::cout << "optimal_solution (row): " << (*t).transpose() << std::endl;
+            // std::cout << "optimal_solution (row): " << t->transpose() << std::endl;
+            // printf("upper_limit * force_coefficient: %f\n", m_adjusted_upper_limit[0] * force_coefficient);
+            // printf("Fx Fy: %f %f\n", (*t)(0), (*t)(1));
+            // printf("Should be positive: \n");
+            // printf("tan(alpha_u) * Fx - Fy: %f\n", std::tan(alpha_u_global) * (*t)(0) - (*t)(1));
+            // printf("Should be negative: \n");
+            // printf("tan(alpha_l) * Fx - Fy: %f\n", std::tan(alpha_l_global) * (*t)(0) - (*t)(1));
+            // printf("\n");
+
+            // std::cout << "optimal_solution (row): " << t->transpose() << std::endl;
+            // printf("upper_limit * force_coefficient: %f\n", m_adjusted_upper_limit[0] * force_coefficient);
+            // printf("Fx Fy: %f %f\n", (*t)(2), (*t)(3));
+            // printf("Should be positive: \n");
+            // printf("tan(alpha_u) * Fx - Fy: %f\n", std::tan(alpha_u_global) * (*t)(2) - (*t)(3));
+            // printf("Should be negative: \n");
+            // printf("tan(alpha_l) * Fx - Fy: %f\n", std::tan(alpha_l_global) * (*t)(2) - (*t)(3));
+            // printf("\n");
+
             return true;
         case osqp::OsqpExitCode::kPrimalInfeasible:
             ROS_ERROR("The problem is primal infeasible.");
