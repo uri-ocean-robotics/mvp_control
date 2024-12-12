@@ -384,8 +384,10 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
                         // alpha_l_global = alpha_l;
                         // alpha_u_global = alpha_u;
                         // Compute force_coefficient
-                        force_coefficient = std::min(abs(std::cos(alpha_u)), abs(std::cos(alpha_l)));
-                        // printf("force_coefficient: %f\n", force_coefficient);
+                        // double force_coefficient_old = std::min(abs(std::cos(alpha_u)), abs(std::cos(alpha_l)));
+                        force_coefficient = abs(std::cos((alpha_u-alpha_l)/2));
+                        // printf("force_coefficient_old: %f\n", force_coefficient_old);
+                        // printf("force_coefficient_new: %f\n", force_coefficient);
 
                         // printf("alpha_u: %f\n", alpha_u);
                         // printf("alpha_l: %f\n", alpha_l);
