@@ -498,7 +498,7 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     solver_settings.eps_rel = 1e-14;  // Set relative tolerance
     solver_settings.eps_prim_inf = 1e-14; // Primal infeasibility tolerance
     solver_settings.eps_dual_inf = 1e-10; // Dual infeasibility tolerance
-    solver_settings.max_iter = 10000;    // Set maximum iterations
+    solver_settings.max_iter = 1e5;    // Set maximum iterations
     solver_settings.scaling = false;      // Enable automatic scaling
 
     // **End of Customized Settings**
