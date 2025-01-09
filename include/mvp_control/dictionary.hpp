@@ -67,6 +67,12 @@ namespace ctrl {
 
     static constexpr const char * CONF_WORLD_LINK = "world_link";
     static constexpr const char * CONF_WORLD_LINK_DEFAULT = "world";
+
+    static constexpr const char * CONF_WORLD_LINK_INITIAL = "world_link_initial";
+    static constexpr const char * CONF_CHILD_LINK_INITIAL = "child_link_initial";
+
+
+
     static constexpr const char * CONF_ODOMETRY_SOURCE = "odometry_source";
     static constexpr const char * CONF_ODOMETRY_SOURCE_DEFAULT = "odometry";
     static constexpr const char * CONF_CONTROL_MODES = "control_modes";

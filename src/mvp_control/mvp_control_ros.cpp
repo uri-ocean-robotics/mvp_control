@@ -72,23 +72,20 @@ MvpControlROS::MvpControlROS(std::string name) : Node(name)
     this->get_parameter(CONF_TF_PREFIX, tf_prefix);
     m_tf_prefix = tf_prefix.empty() ? CONF_TF_PREFIX_DEFAULT : tf_prefix + "/";
 
-    // Read configuration: center of gravity link
-    std::string cg_link_id;
-    this->declare_parameter(CONF_CG_LINK, "");
-    this->get_parameter(CONF_CG_LINK, cg_link_id);
-    m_cg_link_id = m_tf_prefix + cg_link_id;
+    //DEFAULT World and child frame for initial tf checking only 
+    std::string child_link_initial;
+    this->declare_parameter(CONF_CHILD_LINK_INITIAL, "");
+    this->get_parameter(CONF_CHILD_LINK_INITIAL, child_link_initial);
+    m_child_link_id_initial = m_tf_prefix + child_link_initial;
 
-    //delcare a child link for all velocity controls
-    std::string child_link_id;
-    this->declare_parameter(CONF_CHILD_LINK, CONF_CHILD_LINK_DEFAULT);
-    this->get_parameter(CONF_CHILD_LINK, child_link_id);
-    m_child_link_id = m_cg_link_id;//m_tf_prefix +s child_link_id;
-    // m_child_link_id = m_tf_prefix + child_link_id;
+    std::string world_link_initial;
+    this->declare_parameter(CONF_WORLD_LINK_INITIAL, "");
+    this->get_parameter(CONF_WORLD_LINK_INITIAL, world_link_initial);
+    m_world_link_id_initial = m_tf_prefix + world_link_initial;
 
-    // Read configuration: world link
-    this->declare_parameter(CONF_WORLD_LINK, CONF_WORLD_LINK_DEFAULT);
-    this->get_parameter(CONF_WORLD_LINK, m_world_link_id);
-    m_world_link_id = m_tf_prefix + m_world_link_id;
+    //set the defaul world link and child link used in the controller
+    m_child_link_id = m_child_link_id_initial;
+    m_world_link_id = m_world_link_id_initial;
 
     // Read configuration: odometry topic id
     std::string odometry_topic;
@@ -104,6 +101,11 @@ MvpControlROS::MvpControlROS(std::string name) : Node(name)
     //control config file location
     this->declare_parameter("config_file", "control.yaml");
     this->get_parameter("config_file", m_control_config_file);
+
+    //tf generate type
+    this->declare_parameter(CONF_GENERATOR_TYPE, CONF_GENERATOR_TYPE_OPT_TF);
+    this->get_parameter(CONF_GENERATOR_TYPE, generator_type);
+
     //End of ROS Params
 
     /**
@@ -190,12 +192,6 @@ bool MvpControlROS::f_cb_srv_get_controller_state(
 void MvpControlROS::f_generate_control_allocation_matrix() {
 
     // Read generator type
-    std::string generator_type;
-
-    this->declare_parameter(CONF_GENERATOR_TYPE, CONF_GENERATOR_TYPE_OPT_TF);
-    this->get_parameter(CONF_GENERATOR_TYPE, generator_type);
-    
-
     // Parse the control allocation generator type and save it as enum type
     if(generator_type == CONF_GENERATOR_TYPE_OPT_TF) {
         m_generator_type = GeneratorType::TF;
@@ -274,7 +270,7 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
         Eigen::Isometry3d eigen_tf;
         try {
             geometry_msgs::msg::TransformStamped tf_cg_thruster = m_transform_buffer->lookupTransform(
-                m_cg_link_id,
+                m_child_link_id,
                 t->get_link_id(),
                 tf2::TimePointZero,
                 10ms
@@ -284,7 +280,7 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
         } catch (const tf2::TransformException & e) {
             RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't compute thruster tf between cg-thruster: ") + e.what());
             RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s",
-                         t->get_link_id().c_str(), m_cg_link_id.c_str(), e.what() ); 
+                         t->get_link_id().c_str(), m_child_link_id.c_str(), e.what() ); 
           return;
 
         }
@@ -305,7 +301,7 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
 //             // Transform center of gravity to world
             geometry_msgs::msg::TransformStamped tf_torque = m_transform_buffer->lookupTransform(
                 m_world_link_id,
-                m_cg_link_id,
+                m_child_link_id,
                 tf2::TimePointZero,
                 10ms
             );
@@ -329,11 +325,9 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
             // printf("####Error frame %s to %s \r\n", m_world_link_id.c_str(), m_cg_link_id.c_str());
             return;
         }
-
+        
         auto torque_pqr = trans_xyz.cross(Eigen::Vector3d{Fx, Fy, Fz});
         auto torque_rpy = ang_vel_tranform * torque_pqr;
-        
-
         
         contribution_vector(DOF::U) = Fx;
         contribution_vector(DOF::V) = Fy;
@@ -359,8 +353,8 @@ bool MvpControlROS::f_initial_tf_check(){
     try {
             // Transform center of gravity to world
             geometry_msgs::msg::TransformStamped tf_torque = m_transform_buffer->lookupTransform(
-                m_world_link_id,
-                m_cg_link_id,
+                m_world_link_id_initial,
+                m_child_link_id_initial,
                 tf2::TimePointZero,
                 10ms
             );
@@ -369,14 +363,14 @@ bool MvpControlROS::f_initial_tf_check(){
             RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF between world and cg: ") + e.what());
             return false;
         }
-    RCLCPP_INFO_STREAM(this->get_logger(), "world_link to cg_link found");
+    RCLCPP_INFO_STREAM(this->get_logger(), "initial world_link to child_link found");
 
     //check thruster to cg_link is up.
     // For each thruster look up transformation
     for(const auto& t : m_thrusters) {
         try {
             geometry_msgs::msg::TransformStamped tf_cg_thruster = m_transform_buffer->lookupTransform(
-                m_cg_link_id,
+                m_child_link_id_initial,
                 t->get_link_id(),
                 tf2::TimePointZero,
                 10ms
@@ -385,12 +379,12 @@ bool MvpControlROS::f_initial_tf_check(){
         } catch (const tf2::TransformException & e) {
             RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF for thrusters: ") + e.what());
             RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s",
-                         t->get_link_id().c_str(), m_cg_link_id.c_str(), e.what() ); 
+                         t->get_link_id().c_str(), m_child_link_id_initial.c_str(), e.what() ); 
           return false;
         }
     }
 
-    RCLCPP_INFO_STREAM(this->get_logger(), "thrust to cg_link found");
+    RCLCPP_INFO_STREAM(this->get_logger(), "thrust to initial child_link found");
     RCLCPP_INFO_STREAM(this->get_logger(), "MVP control initialized");
     return true;
 
@@ -444,7 +438,7 @@ bool MvpControlROS::f_update_control_allocation_matrix() {
         // Transform center of gravity to world
         geometry_msgs::msg::TransformStamped cg_world = m_transform_buffer->lookupTransform(
             m_world_link_id,
-            m_cg_link_id,
+            m_child_link_id,
             tf2::TimePointZero,
             10ms
         );
@@ -528,10 +522,10 @@ bool MvpControlROS::f_compute_process_values() {
     f_update_control_allocation_matrix();
 
     try {
-        // Transform center of gravity to world
+        // Transform child frame to world
         geometry_msgs::msg::TransformStamped cg_world = m_transform_buffer->lookupTransform(
             m_world_link_id,
-            m_cg_link_id,
+            m_child_link_id,
             tf2::TimePointZero,
             10ms
         );
@@ -562,7 +556,7 @@ bool MvpControlROS::f_compute_process_values() {
         std::scoped_lock lock(m_odom_lock);
 
         geometry_msgs::msg::TransformStamped cg_odom = m_transform_buffer->lookupTransform(
-                m_cg_link_id,
+                m_child_link_id,
                 m_odometry_msg.child_frame_id,
                 tf2::TimePointZero,
                 10ms
@@ -584,7 +578,7 @@ bool MvpControlROS::f_compute_process_values() {
             orientation(DOF::YAW)
         );
 
-        // convert linear velocity from odomtery child frame to cg_link
+        // convert linear velocity from odomtery child frame to child frame
         Eigen::Vector3d uvw;
         uvw(0) = m_odometry_msg.twist.twist.linear.x;
         uvw(1) = m_odometry_msg.twist.twist.linear.y;
@@ -1228,121 +1222,38 @@ bool MvpControlROS::f_amend_set_point(
         return false;
     }
 
+    //if there is a frame id change
+    if(set_point->header.frame_id != m_world_link_id || 
+       set_point->child_frame_id != m_child_link_id )
+    {
+        m_child_link_id = set_point->child_frame_id;
+        m_world_link_id = set_point->header.frame_id;
+        f_generate_control_allocation_matrix();
+    }
+    
     Eigen::VectorXd new_set_point(CONTROLLABLE_DOF_LENGTH);
     Eigen::VectorXd m_i(CONTROLLABLE_DOF_LENGTH);
     m_i = m_mvp_control->get_pid()->get_m_i();
 
-    Eigen::Vector3d p_world, rpy_world;
-    try {
-        // Transform the position of setpoint frame_id to world_link
-        geometry_msgs::msg::TransformStamped tf_world_setpoint = m_transform_buffer->lookupTransform(
-            m_world_link_id,
-            set_point->header.frame_id,
-            tf2::TimePointZero,
-            10ms
-        );
+    new_set_point(mvp_msgs::msg::ControlMode::DOF_X) = set_point->position.x;
+    new_set_point(mvp_msgs::msg::ControlMode::DOF_Y) = set_point->position.y;
+    new_set_point(mvp_msgs::msg::ControlMode::DOF_Z) = set_point->position.z;
+    new_set_point(mvp_msgs::msg::ControlMode::DOF_ROLL) = set_point->orientation.x;
+    new_set_point(mvp_msgs::msg::ControlMode::DOF_PITCH) = set_point->orientation.y;
+    new_set_point(mvp_msgs::msg::ControlMode::DOF_YAW) = set_point->orientation.z;
+    new_set_point(mvp_msgs::msg::ControlMode::DOF_U) = set_point->velocity.x;
+    new_set_point(mvp_msgs::msg::ControlMode::DOF_V) = set_point->velocity.y;
+    new_set_point(mvp_msgs::msg::ControlMode::DOF_W) = set_point->velocity.z;
+    new_set_point(mvp_msgs::msg::ControlMode::DOF_P) = set_point->angular_rate.x;
+    new_set_point(mvp_msgs::msg::ControlMode::DOF_Q) = set_point->angular_rate.y;
+    new_set_point(mvp_msgs::msg::ControlMode::DOF_R) = set_point->angular_rate.z;
 
-        auto tf_eigen = tf2::transformToEigen(tf_world_setpoint);
-
-        p_world = tf_eigen.rotation() * 
-                                  Eigen::Vector3d(set_point->position.x, set_point->position.y, set_point->position.z)
-                                  + tf_eigen.translation();
-        ///convert euler angle into a different frame
-        ///find the rotation matrix from the set point frame to the desired pose.
-        Eigen::Matrix3d R;
-        R = Eigen::AngleAxisd(set_point->orientation.z, Eigen::Vector3d::UnitZ()) *
-                            Eigen::AngleAxisd(set_point->orientation.y, Eigen::Vector3d::UnitY()) *
-                            Eigen::AngleAxisd(set_point->orientation.x, Eigen::Vector3d::UnitX());
-        //find rotation matrix from the world link to the setpoint frame.
-        geometry_msgs::msg::TransformStamped tf_1 = m_transform_buffer->lookupTransform(
-            set_point->header.frame_id,
-            m_world_link_id,
-            tf2::TimePointZero,
-            10ms
-        );
-        auto tf_1_eigen = tf2::transformToEigen(tf_1);
-        //find the total rotation matrix from the world link to the desired pose.
-        Eigen::Matrix3d R_set_point =  tf_1_eigen.rotation() *R;
-
-        rpy_world.y() = asin(-R_set_point(2, 0));
-
-        // Calculate yaw (rotation about Z-axis)
-        rpy_world.z() = atan2(R_set_point(1, 0), R_set_point(0, 0));
-
-        // Calculate roll (rotation about X-axis)
-        rpy_world.x() = atan2(R_set_point(2, 1), R_set_point(2, 2));
-
-        //assume the set point uvw and pqr are in the m_cg_link_id
-
-    } catch(tf2::TransformException &e) {
-        RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't transform the p and rpy to the global!") + e.what());
-        return false;
-    }
-
-    new_set_point(mvp_msgs::msg::ControlMode::DOF_X) = p_world.x();
-    new_set_point(mvp_msgs::msg::ControlMode::DOF_Y) = p_world.y();
-    new_set_point(mvp_msgs::msg::ControlMode::DOF_Z) = p_world.z();
-    new_set_point(mvp_msgs::msg::ControlMode::DOF_ROLL) = rpy_world.x();
-    new_set_point(mvp_msgs::msg::ControlMode::DOF_PITCH) = rpy_world.y();
-    new_set_point(mvp_msgs::msg::ControlMode::DOF_YAW) = rpy_world.z();
-
-    Eigen::Vector3d vel_child, omega_child;
-    
-    //converts setpoint velocity into the controller child frame.
-    try {
-        // Transform the position of setpoint frame_id to world_link
-        geometry_msgs::msg::TransformStamped tf_two_childs = m_transform_buffer->lookupTransform(
-            m_child_link_id,
-            set_point->child_frame_id,
-            tf2::TimePointZero,
-            10ms
-        );
-
-        auto tf_two_child_eigen = tf2::transformToEigen(tf_two_childs);
-        //convert linear velocity
-        vel_child = tf_two_child_eigen.rotation() * 
-                                Eigen::Vector3d(set_point->velocity.x, set_point->velocity.y, set_point->velocity.z);
-
-        //convert angular velocity
-        tf2::Quaternion quat;
-            quat.setW(tf_two_childs.transform.rotation.w);
-            quat.setX(tf_two_childs.transform.rotation.x);
-            quat.setY(tf_two_childs.transform.rotation.y);
-            quat.setZ(tf_two_childs.transform.rotation.z);
-
-            Eigen::VectorXd process_values = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
-            tf2::Matrix3x3(quat).getRPY(
-                process_values(DOF::ROLL),
-                process_values(DOF::PITCH),
-                process_values(DOF::YAW)
-            );
-
-        Eigen::Matrix3d ang_vel_tranform = Eigen::Matrix3d::Identity();
-        ang_vel_tranform = f_angular_velocity_transform(process_values);
-        omega_child = ang_vel_tranform * 
-                        Eigen::Vector3d(set_point->angular_rate.x, set_point->angular_rate.y, set_point->angular_rate.z);
-
-
-    } catch(tf2::TransformException &e) {
-        RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't transform child links") + e.what());
-        return false;
-    }
-
-
-    new_set_point(mvp_msgs::msg::ControlMode::DOF_U) = vel_child.x();
-    new_set_point(mvp_msgs::msg::ControlMode::DOF_V) = vel_child.y();
-    new_set_point(mvp_msgs::msg::ControlMode::DOF_W) = vel_child.z();
-    new_set_point(mvp_msgs::msg::ControlMode::DOF_P) = omega_child.x();
-    new_set_point(mvp_msgs::msg::ControlMode::DOF_Q) = omega_child.y();
-    new_set_point(mvp_msgs::msg::ControlMode::DOF_R) = omega_child.z();
-
-    // printf("setpoint size %d\r\n", new_set_point.size());
-    // printf("old setpoint size %d\r\n", m_set_point.size());
-    // printf("integral size %d\r\n", m_i.size());
 
     for (int i = 0; i< m_set_point.size(); ++i)
     {
         if(m_set_point[i] != new_set_point[i])
+        //if the set point is not so close
+        // if( abs( m_set_point[i] - new_set_point[i] ) > 0.001) $maybe
         {
             m_i[i]=0;
         }

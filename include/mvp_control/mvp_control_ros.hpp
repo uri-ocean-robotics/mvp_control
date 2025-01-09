@@ -129,14 +129,18 @@ namespace ctrl {
          */
         Eigen::MatrixXd m_control_allocation_matrix;
 
-
+        std::string generator_type;  //tf generate type
         //! @brief Center of gravity link id
         std::string m_cg_link_id;
+
+        std::string m_child_link_id_initial;
 
         std::string m_child_link_id;
 
         //! @brief World link id
         std::string m_world_link_id;
+
+        std::string m_world_link_id_initial;
 
         //! @brief mvp_control config yaml file
         std::string m_control_config_file;
