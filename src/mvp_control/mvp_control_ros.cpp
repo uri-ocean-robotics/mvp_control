@@ -259,6 +259,7 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
 }
 
 
+//this function is called whenever the frame has changedin the setpoint.
 void MvpControlROS::f_generate_control_allocation_from_tf() {
     // double time; //used for tf lookup
     auto steady_clock = rclcpp::Clock();
@@ -267,80 +268,94 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
     // For each thruster look up transformation
     for(const auto& t : m_thrusters) {
         now = this->get_clock()->now();
-        Eigen::Isometry3d eigen_tf;
+
+        Eigen::VectorXd contribution_vector(CONTROLLABLE_DOF_LENGTH);
+        
+
         try {
+            Eigen::Isometry3d eigen_tf;
+            /////////////////////////////////////////////////////////
+            /////////////Local motion///////////////////////////////
+            /////////////////////////////////////////////////////////
+            //find the tf between thruster and the child link
             geometry_msgs::msg::TransformStamped tf_cg_thruster = m_transform_buffer->lookupTransform(
                 m_child_link_id,
                 t->get_link_id(),
                 tf2::TimePointZero,
                 10ms
                 );
-
+                
+            /////////////////////////////////////////////////////////
+            //update the contribution matrix element for U,V,W///////
+            
             eigen_tf = tf2::transformToEigen(tf_cg_thruster);
-        } catch (const tf2::TransformException & e) {
-            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't compute thruster tf between cg-thruster: ") + e.what());
-            RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s",
-                         t->get_link_id().c_str(), m_child_link_id.c_str(), e.what() ); 
-          return;
 
-        }
+            // thruster only use a axis (e.g., X-axis) for forece
+            //R*[1 0 0], so we only get the first element in each row for thrusters.
+            Eigen::Vector3d f_t(1.0, 0.0, 0.0); //thruster only generate force in x axis in thruster frame
+            // F = R*F_t
+            Eigen::Vector3d f_uvw = eigen_tf.rotation() * f_t;
+            contribution_vector(DOF::U) = f_uvw.x();
+            contribution_vector(DOF::V) = f_uvw.y();
+            contribution_vector(DOF::W) = f_uvw.z();
+            
+            /////////////////////////////////////////////////////////
+            //update the contribution matrix element for P, Q, R////
 
-        Eigen::VectorXd contribution_vector(CONTROLLABLE_DOF_LENGTH);
+            auto trans_xyz = eigen_tf.translation();
+            auto t_pqr = trans_xyz.cross(f_uvw);
+            // body frame p,q,r
+            contribution_vector(DOF::P) = t_pqr.x();
+            contribution_vector(DOF::Q) = t_pqr.y();
+            contribution_vector(DOF::R) = t_pqr.z();
 
-        // thruster onlu use a axis (e.g., X-axis) for forece
-        double Fx = eigen_tf.rotation()(0, 0);
-        double Fy = eigen_tf.rotation()(1, 0);
-        double Fz = eigen_tf.rotation()(2, 0);
-
-        auto trans_xyz = eigen_tf.translation();
-
-//         //! Eq.(2.12), Eq.(2.14) from Thor I. Fossen, Guidance and Control of Ocean Vehicles, Page 10
-        Eigen::Matrix3d ang_vel_tranform = Eigen::Matrix3d::Identity();
-        now = this->get_clock()->now();
-        try {
-//             // Transform center of gravity to world
-            geometry_msgs::msg::TransformStamped tf_torque = m_transform_buffer->lookupTransform(
+             /////////////////////////////////////////////////////////
+            /////////////world frame motion//////////////////////////
+            /////////////////////////////////////////////////////////
+            //get tf between child and world frame
+            ////////earth frame 
+            now = this->get_clock()->now();
+            geometry_msgs::msg::TransformStamped tf_child_world = m_transform_buffer->lookupTransform(
                 m_world_link_id,
                 m_child_link_id,
                 tf2::TimePointZero,
                 10ms
             );
 
-            tf2::Quaternion quat;
-            quat.setW(tf_torque.transform.rotation.w);
-            quat.setX(tf_torque.transform.rotation.x);
-            quat.setY(tf_torque.transform.rotation.y);
-            quat.setZ(tf_torque.transform.rotation.z);
+            
+            /////////////////////////////////////////////////////////
+            //update the contribution matrix element for x,y,z///////
+            ////////////////////////////////////////////////////////
+            eigen_tf = tf2::transformToEigen(tf_child_world);
+            Eigen::Vector3d f_xyz = eigen_tf.rotation() * f_uvw;
 
-            Eigen::VectorXd process_values = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
-            tf2::Matrix3x3(quat).getRPY(
-                process_values(DOF::ROLL),
-                process_values(DOF::PITCH),
-                process_values(DOF::YAW)
-            );
+            contribution_vector(DOF::X) = f_xyz.x();
+            contribution_vector(DOF::Y) = f_xyz.y();
+            contribution_vector(DOF::Z) = f_xyz.z();
 
-            ang_vel_tranform = f_angular_velocity_transform(process_values);
-        } catch(tf2::TransformException &e) {
-            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't compute thruster tf between world-cg: ") + e.what());
-            // printf("####Error frame %s to %s \r\n", m_world_link_id.c_str(), m_cg_link_id.c_str());
-            return;
+            /////////////////////////////////////////////////////////
+            //update the contribution matrix element for euler angle///////
+            ////////////////////////////////////////////////////////
+             //! Eq.(2.12), Eq.(2.14) from Thor I. Fossen, Guidance and Control of Ocean Vehicles, Page 10
+             //get relative orientation for angular transform matrix
+            Eigen::Matrix3d ang_vel_tranform = f_angular_velocity_transform(tf_child_world);
+
+            auto t_rpy = ang_vel_tranform * t_pqr;
+        
+            contribution_vector(DOF::ROLL) = t_rpy.x();
+            contribution_vector(DOF::PITCH) = t_rpy.y();
+            contribution_vector(DOF::YAW) = t_rpy.z();
+        
+
+            t->set_contribution_vector(contribution_vector);
+
+        } catch (const tf2::TransformException & e) {
+            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, 
+                                        std::string("mvp_control allocation matrix generation error:") + e.what());
+          return;
+
         }
-        
-        auto torque_pqr = trans_xyz.cross(Eigen::Vector3d{Fx, Fy, Fz});
-        auto torque_rpy = ang_vel_tranform * torque_pqr;
-        
-        contribution_vector(DOF::U) = Fx;
-        contribution_vector(DOF::V) = Fy;
-        contribution_vector(DOF::W) = Fz;
-        contribution_vector(DOF::ROLL) = torque_rpy(0);
-        contribution_vector(DOF::PITCH) = torque_rpy(1);
-        contribution_vector(DOF::YAW) = torque_rpy(2);
-        // body frame p,q,r
-        contribution_vector(DOF::P) = torque_pqr(0);
-        contribution_vector(DOF::Q) = torque_pqr(1);
-        contribution_vector(DOF::R) = torque_pqr(2);
-
-        t->set_contribution_vector(contribution_vector);
+ 
     }
 }
 
@@ -432,10 +447,12 @@ void MvpControlROS::initialize() {
 bool MvpControlROS::f_update_control_allocation_matrix() {
 
     // update control allocation based on actuators as well
+    //thruster allocation in local frame is already determined from f_generate_allocation function when the frame has changed.
+    //here we only update the earth frame related elements.
     rclcpp::Time now = this->get_clock()->now();
 
     try {
-        // Transform center of gravity to world
+        // update the thruster allocation for X,Y,Z, and U,V,W
         geometry_msgs::msg::TransformStamped cg_world = m_transform_buffer->lookupTransform(
             m_world_link_id,
             m_child_link_id,
@@ -443,51 +460,39 @@ bool MvpControlROS::f_update_control_allocation_matrix() {
             10ms
         );
 
-        auto tf_eigen = tf2::transformToEigen(cg_world);
+        auto tf_eigen = tf2::transformToEigen(cg_world); //used for rotating linear velocity
 
-        tf2::Quaternion quat;
-        quat.setW(cg_world.transform.rotation.w);
-        quat.setX(cg_world.transform.rotation.x);
-        quat.setY(cg_world.transform.rotation.y);
-        quat.setZ(cg_world.transform.rotation.z);
-
-        Eigen::VectorXd orientation = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
-        tf2::Matrix3x3(quat).getRPY(
-            orientation(DOF::ROLL),
-            orientation(DOF::PITCH),
-            orientation(DOF::YAW)
-        );
-
-        Eigen::Matrix3d ang_vel_tranform = Eigen::Matrix3d::Identity();
+        //rotation matrix for angular stuff
+        Eigen::Matrix3d ang_vel_tranform = f_angular_velocity_transform(cg_world);
 
         // for each thruster compute contribution in earth frame
         for(int j = 0 ; j < m_control_allocation_matrix.cols() ; j++){
-            Eigen::Vector3d uvw;
-            uvw <<
+            Eigen::Vector3d f_uvw;
+            f_uvw <<
                 m_control_allocation_matrix(DOF::U, j),
                 m_control_allocation_matrix(DOF::V, j),
                 m_control_allocation_matrix(DOF::W, j);
 
-            Eigen::Vector3d xyz = tf_eigen.rotation() * uvw;
+            //F_xyz = R*F_uwv
+            Eigen::Vector3d f_xyz = tf_eigen.rotation() * f_uvw;
 
-            m_control_allocation_matrix(DOF::X, j) = xyz(0);
-            m_control_allocation_matrix(DOF::Y, j) = xyz(1);
-            m_control_allocation_matrix(DOF::Z, j) = xyz(2);
+            m_control_allocation_matrix(DOF::X, j) = f_xyz.x();
+            m_control_allocation_matrix(DOF::Y, j) = f_xyz.y();
+            m_control_allocation_matrix(DOF::Z, j) = f_xyz.z();
             
             // Convert prq to world_frame angular rate:
             //  Eq.(2.12), Eq.(2.14) from Thor I. Fossen, Guidance and Control of Ocean Vehicles, Page 10
-            Eigen::Vector3d pqr;
-            pqr <<
+            Eigen::Vector3d t_pqr;
+            t_pqr <<
                 m_control_allocation_matrix(DOF::P, j),
                 m_control_allocation_matrix(DOF::Q, j),
                 m_control_allocation_matrix(DOF::R, j);                
 
-            ang_vel_tranform = f_angular_velocity_transform(orientation);
 
-            auto rpy = ang_vel_tranform * pqr;
-            m_control_allocation_matrix(DOF::ROLL, j) = rpy(0);
-            m_control_allocation_matrix(DOF::PITCH, j) = rpy(1);
-            m_control_allocation_matrix(DOF::YAW, j) = rpy(2);             
+            auto t_rpy = ang_vel_tranform * t_pqr;
+            m_control_allocation_matrix(DOF::ROLL, j) = t_rpy.x();
+            m_control_allocation_matrix(DOF::PITCH, j) = t_rpy.y();
+            m_control_allocation_matrix(DOF::YAW, j) = t_rpy.z();             
         }
 
     } catch(tf2::TransformException& e) {
@@ -564,45 +569,31 @@ bool MvpControlROS::f_compute_process_values() {
 
         auto cg_odom_eigen = tf2::transformToEigen(cg_odom);
 
-        // angular velocity from odomteyr_child_frame to cg_link
-        tf2::Quaternion quat;
-        quat.setW(cg_odom.transform.rotation.w);
-        quat.setX(cg_odom.transform.rotation.x);
-        quat.setY(cg_odom.transform.rotation.y);
-        quat.setZ(cg_odom.transform.rotation.z);
-
-        Eigen::VectorXd orientation = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
-        tf2::Matrix3x3(quat).getRPY(
-            orientation(DOF::ROLL),
-            orientation(DOF::PITCH),
-            orientation(DOF::YAW)
-        );
+        // convert angular velocity from odom_child_link to cg_link
+        Eigen::Matrix3d ang_vel_transform = f_angular_velocity_transform(cg_odom);
 
         // convert linear velocity from odomtery child frame to child frame
         Eigen::Vector3d uvw;
-        uvw(0) = m_odometry_msg.twist.twist.linear.x;
-        uvw(1) = m_odometry_msg.twist.twist.linear.y;
-        uvw(2) = m_odometry_msg.twist.twist.linear.z;
+        uvw.x() = m_odometry_msg.twist.twist.linear.x;
+        uvw.y() = m_odometry_msg.twist.twist.linear.y;
+        uvw.z() = m_odometry_msg.twist.twist.linear.z;
 
         uvw = cg_odom_eigen.rotation()  * uvw;
 
-        m_process_values(DOF::U) = uvw(0);
-        m_process_values(DOF::V) = uvw(1);
-        m_process_values(DOF::W) = uvw(2);
-
-        // convert angular velocity from odom_child_link to cg_link
-        Eigen::Matrix3d ang_vel_transform = f_angular_velocity_transform(orientation);
+        m_process_values(DOF::U) = uvw.x();
+        m_process_values(DOF::V) = uvw.y();
+        m_process_values(DOF::W) = uvw.z();
 
         Eigen::Vector3d angular_rate;
-        angular_rate(0) = m_odometry_msg.twist.twist.angular.x;
-        angular_rate(1) = m_odometry_msg.twist.twist.angular.y;
-        angular_rate(2) = m_odometry_msg.twist.twist.angular.z;
+        angular_rate.x() = m_odometry_msg.twist.twist.angular.x;
+        angular_rate.y() = m_odometry_msg.twist.twist.angular.y;
+        angular_rate.z() = m_odometry_msg.twist.twist.angular.z;
 
         angular_rate = ang_vel_transform * angular_rate;
 
-        m_process_values(DOF::P) = angular_rate(0);
-        m_process_values(DOF::Q) = angular_rate(1);
-        m_process_values(DOF::R) = angular_rate(2);
+        m_process_values(DOF::P) = angular_rate.x();
+        m_process_values(DOF::Q) = angular_rate.y();
+        m_process_values(DOF::R) = angular_rate.z();
 
     } catch(tf2::TransformException &e) {
         RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't compute process values!, check odometry!: ") + e.what());
@@ -1052,32 +1043,43 @@ bool MvpControlROS::f_cb_srv_get_active_mode(
     return true;
 }
 
-Eigen::MatrixXd MvpControlROS::f_angular_velocity_transform(const Eigen::VectorXd& orientation) {
+Eigen::MatrixXd MvpControlROS::f_angular_velocity_transform(const geometry_msgs::msg::TransformStamped& tf) 
+{
+    
+    tf2::Quaternion quat;
+    quat.setW(tf.transform.rotation.w);
+    quat.setX(tf.transform.rotation.x);
+    quat.setY(tf.transform.rotation.y);
+    quat.setZ(tf.transform.rotation.z);
+
+    Eigen::Vector3d orientation;
+    tf2::Matrix3x3(quat).getRPY(orientation.x(), orientation.y(), orientation.z());
+
     Eigen::Matrix3d transform = Eigen::Matrix3d::Zero();
 
     // 85 < pitch < 95, -95 < pitch < -85 
-    if( (orientation(DOF::PITCH) >  1.483529839 && orientation(DOF::PITCH) <  1.658062761) ||
-        (orientation(DOF::PITCH) > -1.658062761 && orientation(DOF::PITCH) < -1.483529839) ) {
+    if( (orientation.y() >  1.483529839 && orientation.y() <  1.658062761) ||
+        (orientation.y() > -1.658062761 && orientation.y() < -1.483529839) ) {
         transform(0,0) = 1.0;
         transform(0,1) = 0.0;
         transform(0,2) = 0.0;
         transform(1,0) = 0.0;
-        transform(1,1) = cos(orientation(DOF::ROLL));
-        transform(1,2) = -sin(orientation(DOF::ROLL));
+        transform(1,1) = cos(orientation.x());
+        transform(1,2) = -sin(orientation.x());
         transform(2,0) = 0.0;
         transform(2,1) = 0.0;
         transform(2,2) = 0.0;
     }
     else {
         transform(0,0) = 1.0;
-        transform(0,1) = sin(orientation(DOF::ROLL)) * tan(orientation(DOF::PITCH));
-        transform(0,2) = cos(orientation(DOF::ROLL)) * tan(orientation(DOF::PITCH));
+        transform(0,1) = sin(orientation.x()) * tan(orientation.y());
+        transform(0,2) = cos(orientation.x()) * tan(orientation.y());
         transform(1,0) = 0.0;
-        transform(1,1) = cos(orientation(DOF::ROLL));
-        transform(1,2) = -sin(orientation(DOF::ROLL));
+        transform(1,1) = cos(orientation.x());
+        transform(1,2) = -sin(orientation.x());
         transform(2,0) = 0.0;
-        transform(2,1) = sin(orientation(DOF::ROLL)) / cos(orientation(DOF::PITCH));
-        transform(2,2) = cos(orientation(DOF::ROLL)) / cos(orientation(DOF::PITCH));
+        transform(2,1) = sin(orientation.x()) / cos(orientation.y());
+        transform(2,2) = cos(orientation.x()) / cos(orientation.y());
     }    
 
     return transform;
@@ -1222,13 +1224,15 @@ bool MvpControlROS::f_amend_set_point(
         return false;
     }
 
-    //if there is a frame id change
+    //if there is a frame id change we regenerate the allocation matrix
     if(set_point->header.frame_id != m_world_link_id || 
        set_point->child_frame_id != m_child_link_id )
     {
+        RCLCPP_WARN_STREAM(this->get_logger(), "control frame changed, will regenerate allocation matrix");
         m_child_link_id = set_point->child_frame_id;
         m_world_link_id = set_point->header.frame_id;
         f_generate_control_allocation_matrix();
+
     }
     
     Eigen::VectorXd new_set_point(CONTROLLABLE_DOF_LENGTH);
@@ -1248,9 +1252,10 @@ bool MvpControlROS::f_amend_set_point(
     new_set_point(mvp_msgs::msg::ControlMode::DOF_Q) = set_point->angular_rate.y;
     new_set_point(mvp_msgs::msg::ControlMode::DOF_R) = set_point->angular_rate.z;
 
-
+    //check if set point has changed for any dof
     for (int i = 0; i< m_set_point.size(); ++i)
     {
+        //if has changed, we zero the integral term for that dof.
         if(m_set_point[i] != new_set_point[i])
         //if the set point is not so close
         // if( abs( m_set_point[i] - new_set_point[i] ) > 0.001) $maybe
@@ -1258,9 +1263,11 @@ bool MvpControlROS::f_amend_set_point(
             m_i[i]=0;
         }
     }
-
+    //set integral 
     m_mvp_control->get_pid()->set_m_i(m_i);
+    //update the setpoint
     m_set_point = new_set_point;
+    //set the desired state to the controller
     m_mvp_control->update_desired_state(m_set_point);
 
     m_set_point_msg = *set_point;
