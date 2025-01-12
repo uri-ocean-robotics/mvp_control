@@ -242,7 +242,8 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
     // online after each iteration.
     for (uint64_t i = 0; i < m_thrusters.size(); i++) {
         for(const auto& j :
-            {DOF::ROLL, DOF::PITCH, DOF::YAW,
+            {DOF::X, DOF::Y, DOF::Z, 
+             DOF::ROLL, DOF::PITCH, DOF::YAW,
              DOF::U, DOF::V, DOF::W,
              DOF::P, DOF::Q, DOF::R
              })
@@ -1057,30 +1058,17 @@ Eigen::MatrixXd MvpControlROS::f_angular_velocity_transform(const geometry_msgs:
 
     Eigen::Matrix3d transform = Eigen::Matrix3d::Zero();
 
-    // 85 < pitch < 95, -95 < pitch < -85 
-    if( (orientation.y() >  1.483529839 && orientation.y() <  1.658062761) ||
-        (orientation.y() > -1.658062761 && orientation.y() < -1.483529839) ) {
-        transform(0,0) = 1.0;
-        transform(0,1) = 0.0;
-        transform(0,2) = 0.0;
-        transform(1,0) = 0.0;
-        transform(1,1) = cos(orientation.x());
-        transform(1,2) = -sin(orientation.x());
-        transform(2,0) = 0.0;
-        transform(2,1) = 0.0;
-        transform(2,2) = 0.0;
-    }
-    else {
-        transform(0,0) = 1.0;
-        transform(0,1) = sin(orientation.x()) * tan(orientation.y());
-        transform(0,2) = cos(orientation.x()) * tan(orientation.y());
-        transform(1,0) = 0.0;
-        transform(1,1) = cos(orientation.x());
-        transform(1,2) = -sin(orientation.x());
-        transform(2,0) = 0.0;
-        transform(2,1) = sin(orientation.x()) / cos(orientation.y());
-        transform(2,2) = cos(orientation.x()) / cos(orientation.y());
-    }    
+  
+    transform(0,0) = 1.0;
+    transform(0,1) = sin(orientation.x()) * tan(orientation.y());
+    transform(0,2) = cos(orientation.x()) * tan(orientation.y());
+    transform(1,0) = 0.0;
+    transform(1,1) = cos(orientation.x());
+    transform(1,2) = -sin(orientation.x());
+    transform(2,0) = 0.0;
+    transform(2,1) = sin(orientation.x()) / (0.0001 + cos(orientation.y()) );
+    transform(2,2) = cos(orientation.x()) / (0.0001 + cos(orientation.y()) );
+
 
     return transform;
 }
