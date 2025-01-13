@@ -1058,16 +1058,24 @@ Eigen::MatrixXd MvpControlROS::f_angular_velocity_transform(const geometry_msgs:
 
     Eigen::Matrix3d transform = Eigen::Matrix3d::Zero();
 
-  
+    double cosy = cos(orientation.y());
+    double tany = tan(orientation.y());
+
+    if(cosy >-0.0001 && cosy <0.0001){
+        cosy = 0.0001;
+    }
+
+    tany = std::min(std::max(tany, -1000.0), 1000.0);
+
     transform(0,0) = 1.0;
-    transform(0,1) = sin(orientation.x()) * tan(orientation.y());
-    transform(0,2) = cos(orientation.x()) * tan(orientation.y());
+    transform(0,1) = sin(orientation.x()) * tany;
+    transform(0,2) = cos(orientation.x()) * tany;
     transform(1,0) = 0.0;
     transform(1,1) = cos(orientation.x());
     transform(1,2) = -sin(orientation.x());
     transform(2,0) = 0.0;
-    transform(2,1) = sin(orientation.x()) / (0.0001 + cos(orientation.y()) );
-    transform(2,2) = cos(orientation.x()) / (0.0001 + cos(orientation.y()) );
+    transform(2,1) = sin(orientation.x()) / cosy;
+    transform(2,2) = cos(orientation.x()) / cosy;
 
 
     return transform;
