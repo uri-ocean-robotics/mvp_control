@@ -113,22 +113,22 @@ MvpControlROS::MvpControlROS(std::string name) : Node(name)
      */
     m_odometry_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
                                 odometry_topic, 
-                                100, 
+                                10, 
                                 std::bind(&MvpControlROS::f_cb_msg_odometry, this, _1) 
                                 );
 
     m_set_point_subscriber = this->create_subscription<mvp_msgs::msg::ControlProcess>(
                                 TOPIC_CONTROL_PROCESS_SET_POINT, 
-                                100, 
+                                10, 
                                 std::bind(&MvpControlROS::f_cb_srv_set_point, this, _1) 
                                 );
 
     /**
      * Initialize publishers
      */
-    m_process_value_publisher = this->create_publisher<mvp_msgs::msg::ControlProcess>(TOPIC_CONTROL_PROCESS_VALUE, 100);
-    m_process_error_publisher = this->create_publisher<mvp_msgs::msg::ControlProcess>(TOPIC_CONTROL_PROCESS_ERROR, 100);
-    m_controller_state_publisher = this->create_publisher<std_msgs::msg::Bool>(TOPIC_CONTROLLER_STATE, 100);
+    m_process_value_publisher = this->create_publisher<mvp_msgs::msg::ControlProcess>(TOPIC_CONTROL_PROCESS_VALUE, 10);
+    m_process_error_publisher = this->create_publisher<mvp_msgs::msg::ControlProcess>(TOPIC_CONTROL_PROCESS_ERROR, 10);
+    m_controller_state_publisher = this->create_publisher<std_msgs::msg::Bool>(TOPIC_CONTROLLER_STATE, 10);
 
     /**
      * Initialize services
