@@ -115,7 +115,7 @@ MvpControlROS::MvpControlROS()
      */
     m_odometry_subscriber = m_nh.subscribe(
             odometry_topic,
-            100,
+            10,
             &MvpControlROS::f_cb_msg_odometry,
             this
     );
@@ -1914,34 +1914,56 @@ bool MvpControlROS::f_cb_srv_get_active_mode(
 }
 
 Eigen::MatrixXd MvpControlROS::f_angular_velocity_transform(const Eigen::VectorXd& orientation) {
-    Eigen::Matrix3d transform = Eigen::Matrix3d::Zero();
+    // Eigen::Matrix3d transform = Eigen::Matrix3d::Zero();
 
-    // 85 < pitch < 95, -95 < pitch < -85 
-    if( (orientation(DOF::PITCH) >  1.483529839 && orientation(DOF::PITCH) <  1.658062761) ||
-        (orientation(DOF::PITCH) > -1.658062761 && orientation(DOF::PITCH) < -1.483529839) ) {
-        transform(0,0) = 1.0;
-        transform(0,1) = 0.0;
-        transform(0,2) = 0.0;
-        transform(1,0) = 0.0;
-        transform(1,1) = cos(orientation(DOF::ROLL));
-        transform(1,2) = -sin(orientation(DOF::ROLL));
-        transform(2,0) = 0.0;
-        transform(2,1) = 0.0;
-        transform(2,2) = 0.0;
+    // // 85 < pitch < 95, -95 < pitch < -85 
+    // if( (orientation(DOF::PITCH) >  1.483529839 && orientation(DOF::PITCH) <  1.658062761) ||
+    //     (orientation(DOF::PITCH) > -1.658062761 && orientation(DOF::PITCH) < -1.483529839) ) {
+    //     transform(0,0) = 1.0;
+    //     transform(0,1) = 0.0;
+    //     transform(0,2) = 0.0;
+    //     transform(1,0) = 0.0;
+    //     transform(1,1) = cos(orientation(DOF::ROLL));
+    //     transform(1,2) = -sin(orientation(DOF::ROLL));
+    //     transform(2,0) = 0.0;
+    //     transform(2,1) = 0.0;
+    //     transform(2,2) = 0.0;
+    // }
+    // else {
+    //     transform(0,0) = 1.0;
+    //     transform(0,1) = sin(orientation(DOF::ROLL)) * tan(orientation(DOF::PITCH));
+    //     transform(0,2) = cos(orientation(DOF::ROLL)) * tan(orientation(DOF::PITCH));
+    //     transform(1,0) = 0.0;
+    //     transform(1,1) = cos(orientation(DOF::ROLL));
+    //     transform(1,2) = -sin(orientation(DOF::ROLL));
+    //     transform(2,0) = 0.0;
+    //     transform(2,1) = sin(orientation(DOF::ROLL)) / cos(orientation(DOF::PITCH));
+    //     transform(2,2) = cos(orientation(DOF::ROLL)) / cos(orientation(DOF::PITCH));
+    // }    
+
+    // return transform;
+
+    Eigen::Matrix3d transform = Eigen::Matrix3d::Zero();    
+    double cosy = cos(orientation.y());
+    double tany = tan(orientation.y());
+
+    if(cosy >-0.0001 && cosy <0.0001){
+        cosy = 0.0001;
     }
-    else {
-        transform(0,0) = 1.0;
-        transform(0,1) = sin(orientation(DOF::ROLL)) * tan(orientation(DOF::PITCH));
-        transform(0,2) = cos(orientation(DOF::ROLL)) * tan(orientation(DOF::PITCH));
-        transform(1,0) = 0.0;
-        transform(1,1) = cos(orientation(DOF::ROLL));
-        transform(1,2) = -sin(orientation(DOF::ROLL));
-        transform(2,0) = 0.0;
-        transform(2,1) = sin(orientation(DOF::ROLL)) / cos(orientation(DOF::PITCH));
-        transform(2,2) = cos(orientation(DOF::ROLL)) / cos(orientation(DOF::PITCH));
-    }    
 
-    return transform;
+    tany = std::min(std::max(tany, -1000.0), 1000.0);
+
+     transform(0,0) = 1.0;
+     transform(0,1) = sin(orientation(DOF::ROLL)) * tany;
+     transform(0,2) = cos(orientation(DOF::ROLL)) * tany;
+     transform(1,0) = 0.0;
+     transform(1,1) = cos(orientation(DOF::ROLL));
+     transform(1,2) = -sin(orientation(DOF::ROLL));
+     transform(2,0) = 0.0;
+     transform(2,1) = sin(orientation(DOF::ROLL)) / cosy;
+     transform(2,2) = cos(orientation(DOF::ROLL)) / cosy;
+
+     return transform;
 }
 
 bool MvpControlROS::f_amend_control_mode(std::string mode) {
@@ -2176,7 +2198,8 @@ bool MvpControlROS::f_amend_set_point(
     // printf("integral size %d\r\n", m_i.size());
     //reset the integral for the DOF that has changed setpoint.
     for (int i = 0; i < m_set_point.size(); ++i) {
-        if (m_set_point[i] != new_set_point[i]) {
+        if (fabs(m_set_point[i] - new_set_point[1]) > 0.0001){
+        // if (m_set_point[i] != new_set_point[i]) {
             m_i[i] = 0;
         }
     }
