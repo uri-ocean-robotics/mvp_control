@@ -313,7 +313,7 @@ namespace ctrl {
          *  Eq.(2.12), Eq.(2.14) from Thor I. Fossen, Guidance and Control of Ocean Vehicles, Page 10
          *
          */
-        Eigen::MatrixXd f_angular_velocity_transform(const Eigen::VectorXd& orientation);
+        Eigen::MatrixXd f_angular_velocity_transform(const geometry_msgs::msg::TransformStamped& tf);
 
         /** @brief Amends changes to Dynamic reconfigure server
          *
