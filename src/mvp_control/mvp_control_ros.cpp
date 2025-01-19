@@ -976,6 +976,68 @@ void MvpControlROS::f_load_control_config()
 
     }
 
+    //load vector thruster
+     if(map["vector_thruster_id"])
+    {
+        std::vector<std::string> vector_thruster_id_list;
+        // printf("#######################################################\r\n");
+        //load the thruster name
+        for(YAML::const_iterator it=map["vector_thruster_ids"].begin();it != map["vector_thruster_ids"].end(); ++it) 
+        {
+
+            std::string t_name = it->first.as<std::string>();       // thruster_name
+            // printf("###Thruster id =%s\r\n", t_name.c_str());
+            ThrusterROS::Ptr t(new ThrusterROS());
+            t->set_id(t_name);
+            
+
+            std::string param_name; 
+
+            //get thruster parameters:
+            std::string link_id;
+            param_name = map["thruster_ids"][t_name]["control_tf"].as<std::string>();
+            this->declare_parameter(std::string()+CONF_CONTROL_TF + "/" + t_name + "_thruster_link", param_name);
+            this->get_parameter(std::string()+CONF_CONTROL_TF + "/" + t_name + "_thruster_link", link_id);
+            t->set_link_id(m_tf_prefix + link_id);
+
+            param_name = map["thruster_ids"][t_name]["command_topic"].as<std::string>();
+            // printf("    command_topic: %s\r\n", topic_name.c_str());
+            this->declare_parameter(std::string()+CONF_THRUST_COMMAND_TOPICS + "/" + t_name, param_name);
+            t->set_thrust_command_topic_id(param_name);
+            t->m_thrust_publisher = this->create_publisher<std_msgs::msg::Float64>(param_name, 10);
+            printf("####Thruster: %s, topic name: %s\r\n", t_name.c_str(), param_name.c_str());
+            
+            param_name = map["thruster_ids"][t_name]["force_topic"].as<std::string>();
+            // printf("    command_topic: %s\r\n", topic_name.c_str());
+            this->declare_parameter(std::string()+CONF_THRUSTER_FORCE_TOPICS + "/" + t_name, param_name);
+            t->set_thrust_force_topic_id(param_name);
+            t->m_force_publisher= this->create_publisher<std_msgs::msg::Float64>(param_name, 10);
+            printf("####Thruster: %s, force_topic name: %s\r\n", t_name.c_str(), param_name.c_str());
+
+
+            std::vector<float> min_max;
+            min_max = map["thruster_ids"][t_name]["limits"].as<std::vector<float> >();
+            // printf("    MAX: %f to %f\r\n", min_max[0], min_max[1]);
+            this->declare_parameter(std::string()+CONF_THRUSTER_LIMITS + "/" + t_name + "/" + CONF_THRUSTER_MIN, min_max[0]);
+            this->get_parameter(std::string()+CONF_THRUSTER_LIMITS + "/" + t_name + "/" + CONF_THRUSTER_MIN, t->m_force_min);
+
+            this->declare_parameter(std::string()+CONF_THRUSTER_LIMITS + "/" + t_name + "/" + CONF_THRUSTER_MAX, min_max[1]);
+            this->get_parameter(std::string()+CONF_THRUSTER_LIMITS + "/" + t_name + "/" + CONF_THRUSTER_MAX, t->m_force_max);
+
+
+            std::vector<double> poly_coef;
+            poly_coef = map["thruster_ids"][t_name]["polynomials"].as<std::vector<double> >();
+            // std::cout<<poly_coef<<std::endl;
+            this->declare_parameter(std::string()+CONF_THRUSTER_POLY + "/" + t_name, poly_coef);
+            t->get_poly_solver()->set_coeff(poly_coef);
+ 
+            m_thrusters.emplace_back(t);
+        }
+
+
+    }
+
+
     f_amend_control_mode(*modes.begin());
 
 }

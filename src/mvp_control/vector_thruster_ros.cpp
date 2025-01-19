@@ -1,0 +1,161 @@
+/*
+    This file is part of MVP-Control program.
+
+    MVP-Control is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    MVP-Control is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with MVP-Control.  If not, see <https://www.gnu.org/licenses/>.
+
+    Author: Emir Cem Gezer
+    Email: emircem@uri.edu;emircem.gezer@gmail.com
+    Year: 2022
+
+    Copyright (C) 2022 Smart Ocean Systems Laboratory
+*/
+
+#include "mvp_control/vector_thruster_ros.hpp"
+
+#include "utility"
+#include "mvp_control/exception.hpp"
+#include "mvp_control/dictionary.hpp"
+#include "std_msgs/msg/float64.hpp"
+
+using namespace ctrl;
+
+VectorThrusterROS::VectorThrusterROS(){
+    m_poly_solver.reset(new PolynomialSolver());
+}
+
+VectorThrusterROS::VectorThrusterROS(std::string id, std::string topic_id, Eigen::VectorXd contribution_vector) :
+        m_id(std::move(id)),
+        m_thrust_command_topic_id(std::move(topic_id)),
+        m_contribution_vector(std::move(contribution_vector))
+{
+
+    // m_thrust_publisher = this->create_publisher<std_msgs::msg::Float64>(m_thrust_command_topic_id, 10);
+
+    m_poly_solver.reset(new PolynomialSolver());
+}
+
+void VectorThrusterROS::initialize() {
+    if(!m_thrust_command_topic_id.empty()) {
+        // m_thrust_publisher = this->create_publisher<std_msgs::msg::Float64>(m_thrust_command_topic_id, 100);
+    } else {
+        throw control_ros_exception("empty topic name");
+    }
+    if(!m_thrust_force_topic_id.empty()) {
+        //  m_force_publisher = this->create_publisher<std_msgs::msg::Float64>(m_thrust_force_topic_id, 100);
+    } else {
+        throw control_ros_exception("empty topic name");
+    }
+}
+
+auto VectorThrusterROS::get_thrust_command_topic_id() -> decltype(m_thrust_command_topic_id) {
+    return m_thrust_command_topic_id;
+}
+
+void VectorThrusterROS::set_thrust_command_topic_id(const decltype(m_thrust_command_topic_id) &topic_id) {
+    m_thrust_command_topic_id = topic_id;
+}
+
+auto VectorThrusterROS::get_thrust_force_topic_id() -> decltype(this->m_thrust_force_topic_id) {
+    return m_thrust_force_topic_id;
+}
+
+void VectorThrusterROS::set_thrust_force_topic_id(const decltype(m_thrust_force_topic_id) &topic_id) {
+    m_thrust_force_topic_id = topic_id;
+}
+
+auto VectorThrusterROS::get_thrust_servo_joint_id() -> decltype(this->m_thruster_servo_joint_id) {
+    return m_thruster_servo_joint_id;
+}
+
+void VectorThrusterROS::set_thrust_servo_joint_id(const decltype(m_thruster_servo_joint_id) &joint_id) {
+    m_thruster_servo_joint_id = joint_id;
+}
+
+
+auto VectorThrusterROS::get_id() -> decltype(m_id) {
+    return m_id;
+}
+
+void VectorThrusterROS::set_id(const decltype(m_id)& thruster_id) {
+    m_id = thruster_id;
+}
+
+auto VectorThrusterROS::get_contribution_vector() -> decltype(m_contribution_vector) {
+    return m_contribution_vector;
+}
+
+void VectorThrusterROS::set_contribution_vector(const decltype(m_contribution_vector)& contribution_vector) {
+    m_contribution_vector = contribution_vector;
+}
+
+auto VectorThrusterROS::get_poly_solver() -> decltype(m_poly_solver) {
+    return m_poly_solver;
+}
+
+void VectorThrusterROS::set_poly_solver(decltype(m_poly_solver) solver) {
+    m_poly_solver = std::move(solver);
+}
+
+
+
+bool VectorThrusterROS::request_command(double fx, double fy, double current_angle, double &command, double &new_angle ) {
+
+    std::vector<std::complex<double>> roots;
+    double N = std::sqrt(std::pow(fx, 2) + std::pow(fy, 2));
+
+    //solve angle
+    double delta_angle;
+    if(fx == 0)
+    {
+        if(fy > 0){
+            delta_angle = 1.5707;
+        }
+        else{
+            delta_angle = -1.5707;
+        }
+    }
+    else{
+         delta_angle = std::atan(fy/fx);
+    }
+
+    new_angle = delta_angle + current_angle;
+
+
+    //solve force
+    if(N > m_force_max) {
+        N = m_force_max;
+    } else if (N < m_force_min) {
+        N = m_force_min;
+    }
+
+    if(!m_poly_solver->solve_for_y(roots, N)) {
+        // ROS_WARN_STREAM("No feasible command found for force: " << N);
+        // RCLCPP_WARN_STREAM(this->get_logger(), "No feasible command found for force: " << N);
+        printf("####No feasible command found for force %lf\r\n", N);
+        return false;
+    }
+    
+    for(const auto& r : roots) {
+        if(r.imag() != 0){
+            continue;
+        }
+        if(r.real() >= 1 || r.real() < -1) {
+            continue;
+        }      
+        command = r.real();
+        break;
+    }
+
+    return true;
+}

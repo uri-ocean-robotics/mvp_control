@@ -63,6 +63,7 @@
 
 #include "mvp_control/mvp_control.hpp"
 #include "mvp_control/thruster_ros.hpp"
+#include "mvp_control/vector_thruster_ros.hpp"
 
 
 /*******************************************************************************

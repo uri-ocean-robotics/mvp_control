@@ -67,6 +67,7 @@ add_library(${library_name} SHARED
   src/mvp_control/polynomial_solver.cpp
   src/mvp_control/mimo_pid.cpp
   src/mvp_control/thruster_ros.cpp
+  src/mvp_control/vector_thruster_ros.cpp
   src/mvp_control/mvp_control.cpp
   src/mvp_control/mvp_control_ros.cpp
 )
