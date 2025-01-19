@@ -34,9 +34,10 @@ VectorThrusterROS::VectorThrusterROS(){
     m_poly_solver.reset(new PolynomialSolver());
 }
 
-VectorThrusterROS::VectorThrusterROS(std::string id, std::string topic_id, Eigen::VectorXd contribution_vector) :
+VectorThrusterROS::VectorThrusterROS(std::string id, std::string topic_id, std::string servo_topic_id, Eigen::VectorXd contribution_vector) :
         m_id(std::move(id)),
         m_thrust_command_topic_id(std::move(topic_id)),
+        m_thruster_servo_topic_id(std::move(servo_topic_id)),
         m_contribution_vector(std::move(contribution_vector))
 {
 
@@ -58,6 +59,14 @@ void VectorThrusterROS::initialize() {
     }
 }
 
+void VectorThrusterROS::set_link_id(const decltype(m_link_id)& link_id) {
+    m_link_id = link_id;
+}
+
+auto VectorThrusterROS::get_link_id() -> decltype(m_link_id) {
+    return m_link_id;
+}
+
 auto VectorThrusterROS::get_thrust_command_topic_id() -> decltype(m_thrust_command_topic_id) {
     return m_thrust_command_topic_id;
 }
@@ -74,12 +83,12 @@ void VectorThrusterROS::set_thrust_force_topic_id(const decltype(m_thrust_force_
     m_thrust_force_topic_id = topic_id;
 }
 
-auto VectorThrusterROS::get_thrust_servo_joint_id() -> decltype(this->m_thruster_servo_joint_id) {
-    return m_thruster_servo_joint_id;
+auto VectorThrusterROS::get_thrust_servo_topic_id() -> decltype(this->m_thruster_servo_topic_id) {
+    return m_thruster_servo_topic_id;
 }
 
-void VectorThrusterROS::set_thrust_servo_joint_id(const decltype(m_thruster_servo_joint_id) &joint_id) {
-    m_thruster_servo_joint_id = joint_id;
+void VectorThrusterROS::set_thrust_servo_topic_id(const decltype(m_thruster_servo_topic_id) &topic_id) {
+    m_thruster_servo_topic_id = topic_id;
 }
 
 

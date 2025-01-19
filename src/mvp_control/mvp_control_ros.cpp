@@ -212,7 +212,7 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
     if(m_thrusters.empty()) {
         throw control_ros_exception("no thruster specified");
     }
-
+    
     // Control allocation matrix is generated based on each thruster. Each
     // thruster must have equal number of elements in their contribution matrix.
     // Code below checks the validity of the contribution vectors for each
@@ -225,12 +225,24 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
             );
         }
     }
+    
+    //vector thruster
+    for(unsigned int i = 0 ; i < m_vector_thrusters.size() - 1 ; i++ ) {
+        if (m_thrusters[i]->get_contribution_vector().size() !=
+            m_thrusters[i + 1]->get_contribution_vector().size()) {
+            throw control_ros_exception(
+                "contribution vector sizes doesn't match"
+            );
+        }
+    }
+
 
     // Initialize the control allocation matrix based on zero matrix.
     // M by N matrix. M -> number of all controllable DOF, N -> number of
     // thrusters
+    //total column number is N_thruster + 2*N_vector_thruster
     m_control_allocation_matrix = Eigen::MatrixXd::Zero(
-        CONTROLLABLE_DOF_LENGTH, (int) m_thrusters.size()
+        CONTROLLABLE_DOF_LENGTH, (int) m_thrusters.size() + 2*(int) m_thrusters.size()
     );
 
     // Until this point, all the allocation matrix related issued must be
@@ -240,6 +252,8 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
     // Acquire DOF per actuator. Register it to control allocation matrix.
     // Only DOF::X, DOF::Y and DOF::Z are left unregistered. They are computed
     // online after each iteration.
+    int count = 0;
+
     for (uint64_t i = 0; i < m_thrusters.size(); i++) {
         for(const auto& j :
             {DOF::X, DOF::Y, DOF::Z, 
@@ -251,7 +265,28 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
             m_control_allocation_matrix(j, i) =
                 m_thrusters[i]->get_contribution_vector()(j);
         }
+        count ++;
     }
+
+    //vector thruster
+    for (uint64_t i = 0; i < m_vector_thrusters.size(); i++) {
+        for(const auto& j :
+            {DOF::X, DOF::Y, DOF::Z, 
+             DOF::ROLL, DOF::PITCH, DOF::YAW,
+             DOF::U, DOF::V, DOF::W,
+             DOF::P, DOF::Q, DOF::R
+             })
+        {
+            // each thruster has two rows
+            m_control_allocation_matrix(j, count + i) =
+                m_vector_thrusters[i]->get_contribution_vector()(j, 0);
+            m_control_allocation_matrix(j, count +i +1) =
+                m_vector_thrusters[i]->get_contribution_vector()(j, 1);
+        }
+        count ++;
+        
+    }
+
     // std::cout<< m_control_allocation_matrix<<std::endl;
 
     // Finally, set the control allocation matrix for the controller object.
@@ -310,7 +345,7 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
             contribution_vector(DOF::Q) = t_pqr.y();
             contribution_vector(DOF::R) = t_pqr.z();
 
-             /////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////
             /////////////world frame motion//////////////////////////
             /////////////////////////////////////////////////////////
             //get tf between child and world frame
@@ -358,6 +393,112 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
         }
  
     }
+
+    //vectoor thruster initial allocation matrix
+     for(const auto& t : m_vector_thrusters) {
+        now = this->get_clock()->now();
+
+        Eigen::VectorXd contribution_vector(2, CONTROLLABLE_DOF_LENGTH);
+
+        try {
+            Eigen::Isometry3d eigen_tf;
+            /////////////////////////////////////////////////////////
+            /////////////Local motion///////////////////////////////
+            /////////////////////////////////////////////////////////
+            //find the tf between thruster and the child link
+            geometry_msgs::msg::TransformStamped tf_cg_thruster = m_transform_buffer->lookupTransform(
+                m_child_link_id,
+                t->get_link_id(),
+                tf2::TimePointZero,
+                10ms
+                );
+            
+            /////////////////////////////////////////////////////////
+            //update the contribution matrix element for U,V,W///////
+            eigen_tf = tf2::transformToEigen(tf_cg_thruster);
+
+            // thruster only use a axis (e.g., X-axis) for forece
+            //for Fx 
+            Eigen::Vector3d fx(1.0, 0.0, 0.0); //thruster only generate force in x axis in thruster frame
+            Eigen::Vector3d fy(0.0, 1.0, 0.0); //thruster only generate force in x axis in thruster frame
+
+            // F = R*F_t
+            Eigen::Vector3d fx_uvw = eigen_tf.rotation() * fx;
+            Eigen::Vector3d fy_uvw = eigen_tf.rotation() * fy;
+
+            contribution_vector(DOF::U, 0) = fx_uvw.x();
+            contribution_vector(DOF::V, 0) = fx_uvw.y();
+            contribution_vector(DOF::W, 0) = fx_uvw.z();
+            contribution_vector(DOF::U, 1) = fy_uvw.x();
+            contribution_vector(DOF::V, 1) = fy_uvw.y();
+            contribution_vector(DOF::W, 1) = fy_uvw.z();
+
+            /////////////////////////////////////////////////////////
+            //update the contribution matrix element for P, Q, R////
+            auto trans_xyz = eigen_tf.translation();
+            auto tx_pqr = trans_xyz.cross(fx_uvw);
+            auto ty_pqr = trans_xyz.cross(fy_uvw);
+            // body frame p,q,r
+            contribution_vector(DOF::P, 0) = tx_pqr.x();
+            contribution_vector(DOF::Q, 0) = tx_pqr.y();
+            contribution_vector(DOF::R, 0) = tx_pqr.z();
+            contribution_vector(DOF::P, 1) = ty_pqr.x();
+            contribution_vector(DOF::Q, 1) = ty_pqr.y();
+            contribution_vector(DOF::R, 1) = ty_pqr.z();
+            
+            /////////////////////////////////////////////////////////
+            /////////////world frame motion//////////////////////////
+            /////////////////////////////////////////////////////////
+            //get tf between child and world frame
+            ////////earth frame 
+            now = this->get_clock()->now();
+            geometry_msgs::msg::TransformStamped tf_child_world = m_transform_buffer->lookupTransform(
+                m_world_link_id,
+                m_child_link_id,
+                tf2::TimePointZero,
+                10ms
+            );
+            /////////////////////////////////////////////////////////
+            //update the contribution matrix element for x,y,z///////
+            ////////////////////////////////////////////////////////
+            eigen_tf = tf2::transformToEigen(tf_child_world);
+            Eigen::Vector3d fx_xyz = eigen_tf.rotation() * fx_uvw;
+            Eigen::Vector3d fy_xyz = eigen_tf.rotation() * fy_uvw;
+            contribution_vector(DOF::X, 0) = fx_xyz.x();
+            contribution_vector(DOF::Y, 0) = fx_xyz.y();
+            contribution_vector(DOF::Z, 0) = fx_xyz.z();
+            contribution_vector(DOF::X, 1) = fy_xyz.x();
+            contribution_vector(DOF::Y, 1) = fy_xyz.y();
+            contribution_vector(DOF::Z, 2) = fy_xyz.z();
+
+            /////////////////////////////////////////////////////////
+            //update the contribution matrix element for euler angle///////
+            ////////////////////////////////////////////////////////
+             //! Eq.(2.12), Eq.(2.14) from Thor I. Fossen, Guidance and Control of Ocean Vehicles, Page 10
+             //get relative orientation for angular transform matrix
+            Eigen::Matrix3d ang_vel_tranform = f_angular_velocity_transform(tf_child_world);
+
+            auto tx_rpy = ang_vel_tranform * tx_pqr;
+            auto ty_rpy = ang_vel_tranform * ty_pqr;
+        
+            contribution_vector(DOF::ROLL, 0) = tx_rpy.x();
+            contribution_vector(DOF::PITCH, 0) = tx_rpy.y();
+            contribution_vector(DOF::YAW, 0) = tx_rpy.z();
+            contribution_vector(DOF::ROLL, 1) = ty_rpy.x();
+            contribution_vector(DOF::PITCH, 1) = ty_rpy.y();
+            contribution_vector(DOF::YAW, 1) = ty_rpy.z();
+
+            t->set_contribution_vector(contribution_vector);
+
+
+        } catch (const tf2::TransformException & e) {
+            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, 
+                                        std::string("mvp_control allocation matrix generation error:") + e.what());
+          return;
+
+        }
+     }
+
 }
 
 bool MvpControlROS::f_initial_tf_check(){
@@ -383,6 +524,7 @@ bool MvpControlROS::f_initial_tf_check(){
 
     //check thruster to cg_link is up.
     // For each thruster look up transformation
+    RCLCPP_INFO_STREAM(this->get_logger(), "checking regular thrusters");
     for(const auto& t : m_thrusters) {
         try {
             geometry_msgs::msg::TransformStamped tf_cg_thruster = m_transform_buffer->lookupTransform(
@@ -399,8 +541,28 @@ bool MvpControlROS::f_initial_tf_check(){
           return false;
         }
     }
+    
+    RCLCPP_INFO_STREAM(this->get_logger(), "checking vector thrusters");
+    //checking vector thrusters
+    for(const auto& t : m_vector_thrusters) {
+        try {
+            geometry_msgs::msg::TransformStamped tf_cg_thruster = m_transform_buffer->lookupTransform(
+                m_child_link_id_initial,
+                t->get_link_id(),
+                tf2::TimePointZero,
+                10ms
+                );
 
-    RCLCPP_INFO_STREAM(this->get_logger(), "thrust to initial child_link found");
+        } catch (const tf2::TransformException & e) {
+            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF for thrusters: ") + e.what());
+            RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s",
+                         t->get_link_id().c_str(), m_child_link_id_initial.c_str(), e.what() ); 
+          return false;
+        }
+    }
+
+    RCLCPP_INFO_STREAM(this->get_logger(), "all thrusts to initial child_link tf found");
+
     RCLCPP_INFO_STREAM(this->get_logger(), "MVP control initialized");
     return true;
 
@@ -415,6 +577,13 @@ void MvpControlROS::initialize() {
     // Initialize thruster objects.
     std::for_each(m_thrusters.begin(),m_thrusters.end(),
         [](const ThrusterROS::Ptr& t){
+            t->initialize();
+        }
+    );
+
+    //initialize vector thruster objects
+    std::for_each(m_vector_thrusters.begin(),m_vector_thrusters.end(),
+        [](const VectorThrusterROS::Ptr& t){
             t->initialize();
         }
     );
@@ -691,6 +860,13 @@ void MvpControlROS::f_control_loop() {
                 std_msgs::msg::Float64 msg;
                 msg.data = 0.0;
                 m_thrusters.at(i)->m_thrust_publisher->publish(msg);
+            }
+
+            for(uint64_t i = 0 ; i < m_vector_thrusters.size() ; i++) {
+                // m_thrusters.at(i)->command(0);
+                std_msgs::msg::Float64 msg;
+                msg.data = 0.0;
+                m_vector_thrusters.at(i)->m_thrust_publisher->publish(msg);
             }
             continue;
         }
@@ -987,32 +1163,38 @@ void MvpControlROS::f_load_control_config()
 
             std::string t_name = it->first.as<std::string>();       // thruster_name
             // printf("###Thruster id =%s\r\n", t_name.c_str());
-            ThrusterROS::Ptr t(new ThrusterROS());
+            VectorThrusterROS::Ptr t(new VectorThrusterROS());
             t->set_id(t_name);
-            
-
+        
             std::string param_name; 
 
             //get thruster parameters:
             std::string link_id;
-            param_name = map["thruster_ids"][t_name]["control_tf"].as<std::string>();
-            this->declare_parameter(std::string()+CONF_CONTROL_TF + "/" + t_name + "_thruster_link", param_name);
-            this->get_parameter(std::string()+CONF_CONTROL_TF + "/" + t_name + "_thruster_link", link_id);
+            param_name = map["vector_thruster_ids"][t_name]["control_tf"].as<std::string>();
+            this->declare_parameter(std::string()+CONF_CONTROL_TF + "/" + t_name + "vector_thruster_link", param_name);
+            this->get_parameter(std::string()+CONF_CONTROL_TF + "/" + t_name + "vector_thruster_link", link_id);
             t->set_link_id(m_tf_prefix + link_id);
 
-            param_name = map["thruster_ids"][t_name]["command_topic"].as<std::string>();
+            param_name = map["vector_thruster_ids"][t_name]["command_topic"].as<std::string>();
             // printf("    command_topic: %s\r\n", topic_name.c_str());
             this->declare_parameter(std::string()+CONF_THRUST_COMMAND_TOPICS + "/" + t_name, param_name);
             t->set_thrust_command_topic_id(param_name);
             t->m_thrust_publisher = this->create_publisher<std_msgs::msg::Float64>(param_name, 10);
-            printf("####Thruster: %s, topic name: %s\r\n", t_name.c_str(), param_name.c_str());
+            printf("####Vector Thruster: %s, topic name: %s\r\n", t_name.c_str(), param_name.c_str());
             
-            param_name = map["thruster_ids"][t_name]["force_topic"].as<std::string>();
+            param_name = map["vector_thruster_ids"][t_name]["force_topic"].as<std::string>();
             // printf("    command_topic: %s\r\n", topic_name.c_str());
             this->declare_parameter(std::string()+CONF_THRUSTER_FORCE_TOPICS + "/" + t_name, param_name);
             t->set_thrust_force_topic_id(param_name);
             t->m_force_publisher= this->create_publisher<std_msgs::msg::Float64>(param_name, 10);
-            printf("####Thruster: %s, force_topic name: %s\r\n", t_name.c_str(), param_name.c_str());
+            printf("####Vector Thruster: %s, force_topic name: %s\r\n", t_name.c_str(), param_name.c_str());
+
+            param_name = map["vector_thruster_ids"][t_name]["servo_topic"].as<std::string>();
+            // printf("    command_topic: %s\r\n", topic_name.c_str());
+            this->declare_parameter(std::string()+CONF_THRUSTER_FORCE_TOPICS + "/" + t_name, param_name);
+            t->set_thrust_servo_topic_id(param_name);
+            t->m_force_publisher= this->create_publisher<std_msgs::msg::Float64>(param_name, 10);
+            printf("####Vector Thruster: %s, servo_topic name: %s\r\n", t_name.c_str(), param_name.c_str());
 
 
             std::vector<float> min_max;
@@ -1031,12 +1213,11 @@ void MvpControlROS::f_load_control_config()
             this->declare_parameter(std::string()+CONF_THRUSTER_POLY + "/" + t_name, poly_coef);
             t->get_poly_solver()->set_coeff(poly_coef);
  
-            m_thrusters.emplace_back(t);
+            m_vector_thrusters.emplace_back(t);
         }
 
 
     }
-
 
     f_amend_control_mode(*modes.begin());
 

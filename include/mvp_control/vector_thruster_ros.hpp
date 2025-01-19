@@ -56,7 +56,7 @@ namespace ctrl {
         std::string m_thrust_force_topic_id;
 
         //! @brief Thruster_servo_joint_id
-        std::string m_thruster_servo_joint_id;
+        std::string m_thruster_servo_topic_id;
 
         //! @brief thruster link id
         std::string m_link_id;
@@ -80,6 +80,15 @@ namespace ctrl {
 
         double m_joint_angle_min;
 
+        //! @brief Thrust publisher
+        rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr m_thrust_publisher;
+        //! @brief Thrust force publisher
+        rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr m_force_publisher;
+        //! @brief Thrust angle publisher
+        rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr m_angle_publisher;
+
+
+
     public:
 
         //! @brief Default constructor
@@ -94,7 +103,7 @@ namespace ctrl {
          * @param topic_id
          * @param contribution_vector
          */
-        VectorThrusterROS(std::string id, std::string topic_id,
+        VectorThrusterROS(std::string id, std::string topic_id, std::string servo_topic_id,
                         Eigen::VectorXd contribution_vector);
         /** @brief Initializes publishers and subscribers
          *
@@ -131,13 +140,13 @@ namespace ctrl {
          *
          * @param topic_id
          */
-        auto get_thrust_servo_joint_id() -> decltype(m_thruster_servo_joint_id);
+        auto get_thrust_servo_topic_id() -> decltype(m_thruster_servo_topic_id);
 
          /** @brief Default Setter thruster servo joint id
          *
          * @param topic_id
          */
-        void set_thrust_servo_joint_id(const decltype(m_thruster_servo_joint_id) &joint_id);
+        void set_thrust_servo_topic_id(const decltype(m_thruster_servo_topic_id) &topic_id);
 
         /** @brief Trivial getter for link id
          *

@@ -123,6 +123,8 @@ namespace ctrl {
         //! @brief Thruster list
         std::vector<ThrusterROS::Ptr> m_thrusters;
 
+        std::vector<VectorThrusterROS::Ptr> m_vector_thrusters;
+
         /**! @brief Control Allocation Matrix
          *
          *  Control allocation matrix is generated from individual
