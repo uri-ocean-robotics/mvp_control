@@ -863,10 +863,10 @@ void MvpControlROS::f_control_loop() {
             }
 
             for(uint64_t i = 0 ; i < m_vector_thrusters.size() ; i++) {
-                // m_thrusters.at(i)->command(0);
                 std_msgs::msg::Float64 msg;
                 msg.data = 0.0;
                 m_vector_thrusters.at(i)->m_thrust_publisher->publish(msg);
+                m_vector_thrusters.at(i)->m_angle_publisher->publish(msg);
             }
             continue;
         }
@@ -1193,7 +1193,7 @@ void MvpControlROS::f_load_control_config()
             // printf("    command_topic: %s\r\n", topic_name.c_str());
             this->declare_parameter(std::string()+CONF_THRUSTER_FORCE_TOPICS + "/" + t_name, param_name);
             t->set_thrust_servo_topic_id(param_name);
-            t->m_force_publisher= this->create_publisher<std_msgs::msg::Float64>(param_name, 10);
+            t->m_angle_publisher= this->create_publisher<std_msgs::msg::Float64>(param_name, 10);
             printf("####Vector Thruster: %s, servo_topic name: %s\r\n", t_name.c_str(), param_name.c_str());
 
 
