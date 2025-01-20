@@ -71,7 +71,7 @@ namespace ctrl {
 
         //! @brief Thrust publisher
         rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr m_thrust_publisher;
-        //! @brief Thrust force publisher
+        //! @brief Thrust force publisherrequest_command
         rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr m_force_publisher;
 
         //! @brief Polynomial solver
@@ -182,14 +182,6 @@ namespace ctrl {
         //! @brief Generic typedef for shared pointer
         typedef std::shared_ptr<ThrusterROS> Ptr;
 
-        /** @brief Publish thruster command
-         *
-         * Thuster command should be between -1 and 1
-         *
-         * @param cmd
-         */
-        void command(double cmd);
-
         /** @brief Request force from thruster
          *
          * This method gets input \p N as Newton and applies it to a polynomial solver
@@ -198,7 +190,7 @@ namespace ctrl {
          * @param N force as newton
          * @return true if polynomial is solved, false if polynomial isn't solved.
          */
-        bool request_force(double N, std::vector<std::complex<double>> &roots );
+        bool request_command(double N, double &command);
     };
 
 }

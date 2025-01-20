@@ -58,8 +58,25 @@ namespace ctrl {
         //! @brief Thruster_servo_joint_id
         std::string m_thruster_servo_topic_id;
 
+        //! @brief Thruster_servo_joint_id
+        std::string m_thruster_servo_joint_id;
+
         //! @brief thruster link id
         std::string m_link_id;
+
+        double m_force_max;
+
+        double m_force_min;
+
+        double m_servo_angle_max;
+
+        double m_servo_angle_min;
+
+        double m_servo_angle;
+
+        double m_servo_speed;
+
+        double m_thruster_direction;
 
         /** @brief Thruster contribution vector
          *
@@ -72,13 +89,7 @@ namespace ctrl {
         //! @brief Polynomial solver
         PolynomialSolver::Ptr m_poly_solver;
 
-        double m_force_max;
-
-        double m_force_min;
-
-        double m_joint_angle_max;
-
-        double m_joint_angle_min;
+        
 
         //! @brief Thrust publisher
         rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr m_thrust_publisher;
@@ -86,8 +97,6 @@ namespace ctrl {
         rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr m_force_publisher;
         //! @brief Thrust angle publisher
         rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr m_angle_publisher;
-
-
 
     public:
 
@@ -136,17 +145,48 @@ namespace ctrl {
          */
         void set_thrust_force_topic_id(const decltype(m_thrust_force_topic_id) &topic_id);
 
-        /** @brief Default getter thruster servo joint id
+        /** @brief Default getter thruster servo topic id
          *
          * @param topic_id
          */
-        auto get_thrust_servo_topic_id() -> decltype(m_thruster_servo_topic_id);
+        auto get_thruster_servo_topic_id() -> decltype(m_thruster_servo_topic_id);
 
-         /** @brief Default Setter thruster servo joint id
+         /** @brief Default Setter thruster servo topic id
          *
          * @param topic_id
          */
-        void set_thrust_servo_topic_id(const decltype(m_thruster_servo_topic_id) &topic_id);
+        void set_thruster_servo_topic_id(const decltype(m_thruster_servo_topic_id) &topic_id);
+
+
+        /** @brief Default Setter thruster servo joint id
+         *
+         * @param joint_id
+         */
+        auto get_thruster_servo_joint_id() -> decltype(m_thruster_servo_joint_id);
+
+        void set_thruster_servo_joint_id(const decltype(m_thruster_servo_joint_id) &joint_id);
+
+        auto get_thruster_servo_speed() -> decltype(m_servo_speed);
+
+        void set_thruster_servo_speed(const decltype(m_servo_speed) &servo_speed);
+
+        auto get_thruster_direction() -> decltype(m_thruster_direction);
+
+        void set_thruster_direction(const decltype(m_thruster_direction) &thruster_direction);
+
+
+        /** @brief Default getter servo angle
+         *
+         * @param topic_id
+         */
+        auto get_thruster_servo_angle() -> decltype(m_servo_angle);
+
+         /** @brief Default Setter thruster servo angle
+         *
+         * @param topic_id
+         */
+        void set_thruster_servo_angle(const decltype(m_servo_angle) &servo_angle);
+
 
         /** @brief Trivial getter for link id
          *

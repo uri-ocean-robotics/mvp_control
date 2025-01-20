@@ -83,12 +83,51 @@ void VectorThrusterROS::set_thrust_force_topic_id(const decltype(m_thrust_force_
     m_thrust_force_topic_id = topic_id;
 }
 
-auto VectorThrusterROS::get_thrust_servo_topic_id() -> decltype(this->m_thruster_servo_topic_id) {
+auto VectorThrusterROS::get_thruster_servo_topic_id() -> decltype(this->m_thruster_servo_topic_id) {
     return m_thruster_servo_topic_id;
 }
 
-void VectorThrusterROS::set_thrust_servo_topic_id(const decltype(m_thruster_servo_topic_id) &topic_id) {
+void VectorThrusterROS::set_thruster_servo_topic_id(const decltype(m_thruster_servo_topic_id) &topic_id) {
     m_thruster_servo_topic_id = topic_id;
+}
+
+auto VectorThrusterROS::get_thruster_servo_joint_id() -> decltype(this->m_thruster_servo_joint_id) {
+    return m_thruster_servo_joint_id;
+}
+
+void VectorThrusterROS::set_thruster_servo_joint_id(const decltype(m_thruster_servo_joint_id) &joint_id) {
+    m_thruster_servo_joint_id = joint_id;
+}
+
+auto VectorThrusterROS::get_thruster_servo_angle() -> decltype(this->m_servo_angle)
+{
+return m_servo_angle;
+}
+        
+void VectorThrusterROS::set_thruster_servo_angle(const decltype(m_servo_angle) &servo_angle)
+{
+    m_servo_angle = servo_angle;
+}
+
+auto VectorThrusterROS::get_thruster_servo_speed() -> decltype(this->m_servo_speed)
+{
+return m_servo_speed;
+}
+        
+void VectorThrusterROS::set_thruster_servo_speed(const decltype(m_servo_speed) &servo_speed)
+{
+    m_servo_speed = servo_speed;
+}
+
+
+auto VectorThrusterROS::get_thruster_direction() -> decltype(this->m_thruster_direction)
+{
+return m_thruster_direction;
+}
+        
+void VectorThrusterROS::set_thruster_direction(const decltype(m_thruster_direction) &thruster_direction)
+{
+    m_thruster_direction = thruster_direction;
 }
 
 

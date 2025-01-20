@@ -98,12 +98,6 @@ void ThrusterROS::set_link_id(const decltype(m_link_id)& link_id) {
     m_link_id = link_id;
 }
 
-void ThrusterROS::command(double cmd) {
-    std_msgs::msg::Float64 msg;
-    msg.data = cmd;
-    // m_thrust_publisher->publish(msg);
-}
-
 auto ThrusterROS::get_poly_solver() -> decltype(m_poly_solver) {
     return m_poly_solver;
 }
@@ -112,13 +106,9 @@ void ThrusterROS::set_poly_solver(decltype(m_poly_solver) solver) {
     m_poly_solver = std::move(solver);
 }
 
-bool ThrusterROS::request_force(double N, std::vector<std::complex<double>> &roots ) {
+bool ThrusterROS::request_command(double N, double &command ) {
 
-    // std::vector<std::complex<double>> roots;
-
-    // std_msgs::msg::Float64 msg;
-    // msg.data = N;
-    // m_force_publisher->publish(msg);
+    std::vector<std::complex<double>> roots;
 
     if(N > m_force_max) {
         N = m_force_max;
@@ -133,19 +123,18 @@ bool ThrusterROS::request_force(double N, std::vector<std::complex<double>> &roo
         return false;
     }
 
-    // for(const auto& r : roots) {
-    //     if(r.imag() != 0){
-    //         continue;
-    //     }
+    for(const auto& r : roots) {
+        if(r.imag() != 0){
+            continue;
+        }
 
-    //     if(r.real() >= 1 || r.real() < -1) {
-    //         continue;
-    //     }
+        if(r.real() >= 1 || r.real() < -1) {
+            continue;
+        }
 
-    //     // command(r.real());
-
-    //     break;
-    // }
+        command = r.real();
+        break;
+    }
 
     return true;
 }

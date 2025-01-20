@@ -41,11 +41,13 @@
 #include "tf2_ros/static_transform_broadcaster.h"
 
 #include "std_msgs/msg/float32.hpp"
+#include "std_msgs/msg/int16_multi_array.hpp"
 #include "std_srvs/srv/empty.hpp"
 #include "std_srvs/srv/trigger.hpp"
 #include "std_srvs/srv/set_bool.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "sensor_msgs/msg/joint_state.hpp"
 // #include "dynamic_reconfigure/server.h"
 
 // #include "mvp_control/PIDConfig.h"
@@ -218,6 +220,13 @@ namespace ctrl {
         // ros::Subscriber m_set_point_subscriber;
         rclcpp::Subscription<mvp_msgs::msg::ControlProcess>::SharedPtr m_set_point_subscriber;
 
+
+        //! @brief subscribe servo joint for setting the vector thruster servo angle
+        rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr m_servo_joint_subscriber;
+
+        //! @brief subscribe thrust direction for vector thrusters
+        rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr m_vector_thruster_direction_subscriber;
+
         //! @brief Publishes process error publisher
         // ros::Publisher m_process_error_publisher;
         rclcpp::Publisher<mvp_msgs::msg::ControlProcess>::SharedPtr m_process_error_publisher;
@@ -312,6 +321,9 @@ namespace ctrl {
          */
         void f_control_loop();
 
+        void f_update_osqp_matrix();
+
+
         /** @brief Convert prq to world_frame angular rate:
          *  Eq.(2.12), Eq.(2.14) from Thor I. Fossen, Guidance and Control of Ocean Vehicles, Page 10
          *
@@ -358,6 +370,20 @@ namespace ctrl {
          */
         void f_cb_srv_set_point(
             const mvp_msgs::msg::ControlProcess::SharedPtr msg);
+
+        /** @brief Trivial servo joint callback
+         *
+         * @param msg
+         */
+        void f_cb_servo_joint(const sensor_msgs::msg::JointState::SharedPtr msg);
+
+
+        /** @brief Trivial thruster direction for vector thruster
+         *
+         * @param msg
+         */
+        void f_cb_vector_thruster_direction(const std_msgs::msg::Int16MultiArray::SharedPtr msg);
+
 
         /** @brief Dynamic reconfigure server callback
          *

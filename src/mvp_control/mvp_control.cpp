@@ -102,6 +102,12 @@ void MvpControl::set_upper_limit(const decltype(m_upper_limit) &upper_limit) {
     m_upper_limit = upper_limit;
 }
 
+void MvpControl::set_constraint_matrix(const decltype(m_constrain_matrix) &matrix)
+{
+    m_constrain_matrix = matrix;
+}
+
+
 bool MvpControl::calculate_needed_forces(Eigen::VectorXd *f, double dt) {
 
     /**
@@ -207,10 +213,10 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     qp_instance.upper_bounds.resize(m_upper_limit.size());
     qp_instance.upper_bounds << m_upper_limit;
 
-    qp_instance.constraint_matrix =
-        Eigen::SparseMatrix<double>(Q.cols(),Q.cols());
-
-    qp_instance.constraint_matrix.setIdentity();
+    // qp_instance.constraint_matrix =
+        // Eigen::SparseMatrix<double>(Q.cols(),Q.cols());
+    qp_instance.constraint_matrix = m_constrain_matrix;
+    // qp_instance.constraint_matrix.setIdentity();
 
     osqp::OsqpSolver solver;
     osqp::OsqpSettings settings;

@@ -26,6 +26,7 @@
 #include "vector"
 #include "string"
 #include "map"
+#include "limits"
 
 #include "mvp_msgs/msg/control_modes.hpp"
 
@@ -53,6 +54,11 @@ namespace ctrl {
     static constexpr const char * CONF_THRUSTER_MAX = "max";
     static constexpr const char * CONF_THRUSTER_MIN = "min";
 
+    static constexpr const char * CONF_THRUSTER_SERVO_LIMITS = "thruster_servo_limits";
+    static constexpr const char * CONF_THRUSTER_SERVO_TOPIC = "thruster_servo_topic";
+    static constexpr const char * CONF_THRUSTER_SERVO_JOINT = "thruster_servo_joint";
+    static constexpr const char * CONF_THRUSTER_SERVO_SPEED = "thruster_servo_speed";
+    
     static constexpr const char * CONF_GENERATOR_TYPE = "generator_type";
     static constexpr const char * CONF_GENERATOR_TYPE_OPT_TF = "tf";
     static constexpr const char * CONF_GENERATOR_TYPE_OPT_USER = "user";
