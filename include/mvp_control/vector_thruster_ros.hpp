@@ -84,7 +84,7 @@ namespace ctrl {
          * Each element in the vector describes contribution on
          * vehicle motion of the thruster in each degree of freedom
          */
-        Eigen::VectorXd m_contribution_vector;
+        Eigen::MatrixXd m_contribution_vector;
 
         //! @brief Polynomial solver
         PolynomialSolver::Ptr m_poly_solver;
