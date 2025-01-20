@@ -221,33 +221,38 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
     if(m_thrusters.empty()) {
         throw control_ros_exception("no thruster specified");
     }
-    
-   
-
-    // Control allocation matrix is generated based on each thruster. Each
-    // thruster must have equal number of elements in their contribution matrix.
-    // Code below checks the validity of the contribution vectors for each
-    // thruster.
-    for(unsigned int i = 0 ; i < m_thrusters.size() - 1 ; i++ ) {
-        if (m_thrusters[i]->get_contribution_vector().size() !=
-            m_thrusters[i + 1]->get_contribution_vector().size()) {
-            throw control_ros_exception(
-                "contribution vector sizes doesn't match"
-            );
+    else{
+        // Control allocation matrix is generated based on each thruster. Each
+        // thruster must have equal number of elements in their contribution matrix.
+        // Code below checks the validity of the contribution vectors for each
+        // thruster.
+        for(unsigned int i = 0 ; i < m_thrusters.size() - 1 ; i++ ) {
+            if (m_thrusters[i]->get_contribution_vector().size() !=
+                m_thrusters[i + 1]->get_contribution_vector().size()) {
+                throw control_ros_exception(
+                    "contribution vector sizes doesn't match"
+                );
+            }
         }
+
     }
     
+   if(m_vector_thrusters.empty()) {
+        // throw control_ros_exception("no vector thruster specified");
+        RCLCPP_WARN_STREAM(this->get_logger(), "!!! No vector thruster specified !!!");
 
-    //vector thruster
-    for(unsigned int i = 0 ; i < m_vector_thrusters.size() - 1 ; i++ ) {
-        if (m_vector_thrusters[i]->get_contribution_vector().size() !=
-            m_vector_thrusters[i + 1]->get_contribution_vector().size()) {
-            throw control_ros_exception(
-                "contribution vector sizes doesn't match"
-            );
+    }
+    else{
+        //vector thruster
+        for(unsigned int i = 0 ; i < m_vector_thrusters.size() - 1 ; i++ ) {
+            if (m_vector_thrusters[i]->get_contribution_vector().size() !=
+                m_vector_thrusters[i + 1]->get_contribution_vector().size()) {
+                throw control_ros_exception(
+                    "contribution vector sizes doesn't match"
+                );
+            }
         }
     }
-
 
 
     // Initialize the control allocation matrix based on zero matrix.
@@ -259,7 +264,6 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
     );
 
     
-
     // Until this point, all the allocation matrix related issued must be
     // solved or exceptions thrown.
 
@@ -301,6 +305,8 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
         count = count + 2;  //increase the count by 2
         
     }
+
+    printf("allocation matrix initialized\r\n");
 
     
     // std::cout<< m_control_allocation_matrix<<std::endl;
@@ -491,8 +497,8 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
             /////////////////////////////////////////////////////////
             //update the contribution matrix element for euler angle///////
             ////////////////////////////////////////////////////////
-             //! Eq.(2.12), Eq.(2.14) from Thor I. Fossen, Guidance and Control of Ocean Vehicles, Page 10
-             //get relative orientation for angular transform matrix
+            //! Eq.(2.12), Eq.(2.14) from Thor I. Fossen, Guidance and Control of Ocean Vehicles, Page 10
+            //get relative orientation for angular transform matrix
             Eigen::Matrix3d ang_vel_tranform = f_angular_velocity_transform(tf_child_world);
 
             auto tx_rpy = ang_vel_tranform * tx_pqr;
@@ -512,10 +518,10 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
         } catch (const tf2::TransformException & e) {
             RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, 
                                         std::string("mvp_control allocation matrix generation error:") + e.what());
-          return;
+        return;
 
         }
-     }
+    }
 
 }
 
@@ -523,7 +529,7 @@ bool MvpControlROS::f_initial_tf_check(){
     auto steady_clock = rclcpp::Clock();
     
     RCLCPP_INFO_STREAM(this->get_logger(), "MVP_control_node initial TF checking");
-
+    printf("###### thruster numer = %d, vector thruster number = %d #########\r\n", m_thrusters.size(), m_vector_thrusters.size());
     //check world link to cg link is up
     try {
             // Transform center of gravity to world
@@ -574,14 +580,11 @@ bool MvpControlROS::f_initial_tf_check(){
         } catch (const tf2::TransformException & e) {
             RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF for thrusters: ") + e.what());
             RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s",
-                         t->get_link_id().c_str(), m_child_link_id_initial.c_str(), e.what() ); 
-          return false;
+                        t->get_link_id().c_str(), m_child_link_id_initial.c_str(), e.what() ); 
+        return false;
         }
     }
 
-    RCLCPP_INFO_STREAM(this->get_logger(), "all thrusts to initial child_link tf found");
-
-    RCLCPP_INFO_STREAM(this->get_logger(), "MVP control initialized");
     return true;
 
 }
