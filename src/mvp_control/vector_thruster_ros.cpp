@@ -160,9 +160,9 @@ void VectorThrusterROS::set_poly_solver(decltype(m_poly_solver) solver) {
 bool VectorThrusterROS::request_command(double fx, double fy, double current_angle, double &command, double &new_angle ) {
 
     std::vector<std::complex<double>> roots;
-    double N = std::sqrt(std::pow(fx, 2) + std::pow(fy, 2));
-    printf("%s:", m_thrust_command_topic_id.c_str());
-    printf(" force=%lf, %lf\r\n", fx, fy);
+    double N = m_thruster_direction * std::sqrt(std::pow(fx, 2) + std::pow(fy, 2));
+    // printf("%s:", m_thrust_command_topic_id.c_str());
+    // printf(" force=%lf, %lf, %lf\r\n", fx, fy, N);
     //solve angle
     double delta_angle;
     if(fx == 0)

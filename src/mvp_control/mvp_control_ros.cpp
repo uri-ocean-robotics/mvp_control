@@ -825,6 +825,24 @@ void MvpControlROS::f_update_osqp_matrix()
                             m_vector_thrusters[i]->m_servo_speed/m_controller_frequency);
         alpha_l = std::max(m_vector_thrusters[i]->m_servo_angle_min - m_vector_thrusters[i]->get_thruster_servo_angle(), 
                            -m_vector_thrusters[i]->m_servo_speed/m_controller_frequency);
+
+        double sin_u = std::sin(alpha_u);
+        double cos_u = std::cos(alpha_u);
+        double sin_l = std::sin(alpha_l);
+        double cos_l = std::cos(alpha_l);
+
+        if(std::cos(alpha_u)>0.999)
+        {
+            alpha_u = 0.999;
+        }
+
+        if(std::cos(alpha_l)>0.999)
+        {
+            alpha_l = 0.999;
+        }
+        // printf("cos_au=%lf, sin_au=%lf\r\n",std::cos(alpha_u), std::sin(alpha_u));
+        // printf("cos_aL=%lf, sin_aL=%lf\r\n",std::cos(alpha_l), std::sin(alpha_l));
+
         
         if(m_vector_thrusters[i]->get_thruster_direction()>0){
             upper_limit[row_count] = P_INFINITY;
@@ -839,18 +857,19 @@ void MvpControlROS::f_update_osqp_matrix()
             constraints_matrix.insert(row_count+1, col_count +1) = -1;
 
             upper_limit[row_count+2] = P_INFINITY;
-            lower_limit[row_count+2] = std::sin(alpha_u)*m_vector_thrusters[i]->m_force_max/(std::cos(alpha_u)-1);
-            constraints_matrix.insert(row_count+2, col_count) = std::sin(alpha_u)/(std::cos(alpha_u)-1);
+            lower_limit[row_count+2] = sin_u/(cos_u-1) * m_vector_thrusters[i]->m_force_max;
+            constraints_matrix.insert(row_count+2, col_count) = sin_u/(cos_u-1);
             constraints_matrix.insert(row_count+2, col_count +1) = -1;
  
 
-            upper_limit[row_count+3] = std::sin(alpha_l)*m_vector_thrusters[i]->m_force_max/(std::cos(alpha_l)-1);
+            upper_limit[row_count+3] = sin_l/(cos_l-1) * m_vector_thrusters[i]->m_force_max;
             lower_limit[row_count+3] = N_INFINITY;
-            constraints_matrix.insert(row_count+3, col_count) = std::sin(alpha_l)/(std::cos(alpha_l)-1);
+            constraints_matrix.insert(row_count+3, col_count) = sin_l/(cos_l-1);
             constraints_matrix.insert(row_count+3, col_count +1) = -1;
 
         }
         else{
+            // printf("negative thrust direction\r\n");
             upper_limit[row_count] = 0;
             lower_limit[row_count] = N_INFINITY;
             constraints_matrix.insert(row_count, col_count) = std::tan(alpha_u);
@@ -863,15 +882,15 @@ void MvpControlROS::f_update_osqp_matrix()
             constraints_matrix.insert(row_count+1, col_count +1) = -1;
  
 
-            upper_limit[row_count+2] = std::sin(alpha_u)*m_vector_thrusters[i]->m_force_min/(std::cos(alpha_u)-1);
+            upper_limit[row_count+2] = sin_u/(cos_u-1) * m_vector_thrusters[i]->m_force_min;
             lower_limit[row_count+2] = N_INFINITY;
-            constraints_matrix.insert(row_count+2, col_count) = std::sin(alpha_u)/(std::cos(alpha_u)-1);
+            constraints_matrix.insert(row_count+2, col_count) = sin_u/(cos_u-1);
             constraints_matrix.insert(row_count+2, col_count +1) = -1;
      
 
             upper_limit[row_count+3] = P_INFINITY;
-            lower_limit[row_count+3] = std::sin(alpha_l)*m_vector_thrusters[i]->m_force_min/(std::cos(alpha_l)-1);
-            constraints_matrix.insert(row_count+3, col_count) = std::sin(alpha_l)/(std::cos(alpha_l)-1);
+            lower_limit[row_count+3] = sin_l/(cos_l-1) * m_vector_thrusters[i]->m_force_min;
+            constraints_matrix.insert(row_count+3, col_count) = sin_l/(cos_l-1);
             constraints_matrix.insert(row_count+3, col_count +1) = -1;
         }
         //each vecot thruster will create 4 rows and 2 columns in allocation matrix.
@@ -1179,7 +1198,9 @@ void MvpControlROS::f_cb_vector_thruster_direction(const std_msgs::msg::Int16Mul
     if(msg->data.size()== m_vector_thrusters.size()){
         for(unsigned int i =0; i < m_vector_thrusters.size(); i++)
         {
-            m_vector_thrusters[i]->set_thruster_direction(msg->data[i]);
+            double result = (msg->data[i] >= 0) ? 1.0 : -1.0; //make it -1 or 1
+            m_vector_thrusters[i]->set_thruster_direction(result);
+            printf("%s direction set to %d\r\n", m_vector_thrusters[i]->get_link_id().c_str(), msg->data[i]);
         }
     }
     else{

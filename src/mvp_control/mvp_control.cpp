@@ -226,9 +226,9 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     // **Customize OSQP Settings Here**
     settings.eps_abs = 1e-5;  // Set absolute tolerance
     settings.eps_rel = 1e-5;  // Set relative tolerance
-    settings.eps_prim_inf = 1e-5; // Primal infeasibility tolerance
-    settings.eps_dual_inf = 1e-5; // Dual infeasibility tolerance
-    settings.max_iter = 1e5;    // Set maximum iterations
+    settings.eps_prim_inf = 1e-4; // Primal infeasibility tolerance
+    settings.eps_dual_inf = 1e-4; // Dual infeasibility tolerance
+    settings.max_iter = 1e6;    // Set maximum iterations
     settings.scaling = false;      // Enable automatic scaling
 
     auto status = solver.Init(qp_instance, settings);
