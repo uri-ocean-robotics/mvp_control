@@ -535,7 +535,7 @@ bool MvpControlROS::f_initial_tf_check(){
     auto steady_clock = rclcpp::Clock();
     
     RCLCPP_INFO_STREAM(this->get_logger(), "MVP_control_node initial TF checking");
-    printf("###### thruster numer = %d, vector thruster number = %d #########\r\n", m_thrusters.size(), m_vector_thrusters.size());
+    // printf("###### thruster numer = %d, vector thruster number = %d #########\r\n", m_thrusters.size(), m_vector_thrusters.size());
     //check world link to cg link is up
     try {
             // Transform center of gravity to world
@@ -1463,11 +1463,18 @@ void MvpControlROS::f_load_control_config()
             t->m_angle_publisher= this->create_publisher<std_msgs::msg::Float64>(param_name, 10);
             printf("####Vector Thruster: %s, servo_topic name: %s\r\n", t_name.c_str(), param_name.c_str());
 
+            //joint need namespace prefix
             param_name = map["vector_thruster_ids"][t_name]["servo_joint"].as<std::string>();
+
+            std::string m_ns = this->get_namespace();
+            if (!m_ns.empty() && m_ns[0] == '/') {
+                m_ns = m_ns.substr(1);
+            }
+            std::string joint_name = m_ns + "/" + param_name;
             // printf("    command_topic: %s\r\n", topic_name.c_str());
-            this->declare_parameter(std::string()+CONF_THRUSTER_SERVO_JOINT + "/" + t_name, param_name);
-            t->set_thruster_servo_joint_id(param_name);
-            printf("####Vector Thruster: %s, servo_joint name: %s\r\n", t_name.c_str(), param_name.c_str());
+            this->declare_parameter(std::string()+CONF_THRUSTER_SERVO_JOINT + "/" + t_name, joint_name);
+            t->set_thruster_servo_joint_id(joint_name);
+            printf("####Vector Thruster: %s, servo_joint name: %s\r\n", t_name.c_str(), joint_name.c_str());
 
             double speed = map["vector_thruster_ids"][t_name]["servo_speed"].as<float>();
             // printf("    command_topic: %s\r\n", topic_name.c_str());
