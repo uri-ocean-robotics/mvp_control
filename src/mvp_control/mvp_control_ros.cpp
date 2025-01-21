@@ -750,6 +750,9 @@ bool MvpControlROS::f_update_control_allocation_matrix() {
             m_control_allocation_matrix(DOF::Y, count) = fx_xyz.y();
             m_control_allocation_matrix(DOF::Z, count) = fx_xyz.z();
             
+            // printf("thruster->%s = ", m_vector_thrusters[j]->get_link_id().c_str());
+            // std::cout<<fx_xyz<<std::endl;
+
             m_control_allocation_matrix(DOF::X, count+1) = fy_xyz.x();
             m_control_allocation_matrix(DOF::Y, count+1) = fy_xyz.y();
             m_control_allocation_matrix(DOF::Z, count+1) = fy_xyz.z();
@@ -820,7 +823,7 @@ void MvpControlROS::f_update_osqp_matrix()
         //find the alpha u and alpah l;
         alpha_u = std::min(m_vector_thrusters[i]->m_servo_angle_max - m_vector_thrusters[i]->get_thruster_servo_angle(), 
                             m_vector_thrusters[i]->m_servo_speed/m_controller_frequency);
-        alpha_l = std::min(m_vector_thrusters[i]->m_servo_angle_min - m_vector_thrusters[i]->get_thruster_servo_angle(), 
+        alpha_l = std::max(m_vector_thrusters[i]->m_servo_angle_min - m_vector_thrusters[i]->get_thruster_servo_angle(), 
                            -m_vector_thrusters[i]->m_servo_speed/m_controller_frequency);
         
         if(m_vector_thrusters[i]->get_thruster_direction()>0){
@@ -834,7 +837,6 @@ void MvpControlROS::f_update_osqp_matrix()
             lower_limit[row_count+1] = N_INFINITY;
             constraints_matrix.insert(row_count+1, col_count) = std::tan(alpha_l);
             constraints_matrix.insert(row_count+1, col_count +1) = -1;
- 
 
             upper_limit[row_count+2] = P_INFINITY;
             lower_limit[row_count+2] = std::sin(alpha_u)*m_vector_thrusters[i]->m_force_max/(std::cos(alpha_u)-1);
@@ -1108,7 +1110,6 @@ void MvpControlROS::f_control_loop() {
                 double fx, fy, angle, command, new_angle;
                 std_msgs::msg::Float64 Nmsg;
 
-
                 fx = needed_forces(count);
                 count++;
                 fy = needed_forces(count);
@@ -1161,10 +1162,14 @@ void MvpControlROS::f_cb_servo_joint(
 {
     //Set vector thruster servo angle from msg
     for(unsigned int i = 0 ; i < m_vector_thrusters.size() ; i++ ) {
+        // printf("joint id=%s\r\n", m_vector_thrusters[i]->get_thruster_servo_joint_id().c_str());
         auto it = std::find(msg->name.begin(), msg->name.end(), m_vector_thrusters[i]->get_thruster_servo_joint_id());
         if (it != msg->name.end()) {
             int ind = std::distance(msg->name.begin(), it);
             m_vector_thrusters[i]->set_thruster_servo_angle(msg->position[ind]);
+        }
+        else{
+            printf("joint not found\r\n");
         }
     }
 }
