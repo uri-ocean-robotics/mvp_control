@@ -134,6 +134,7 @@ bool MvpControl::calculate_needed_forces(Eigen::VectorXd *f, double dt) {
         return true;
     } else {
         // todo: create a warning
+        printf("optimize_thruster false return\r\n");
     }
 
     return false;
@@ -222,6 +223,13 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     osqp::OsqpSettings settings;
 
     settings.verbose = false;
+    // **Customize OSQP Settings Here**
+    settings.eps_abs = 1e-5;  // Set absolute tolerance
+    settings.eps_rel = 1e-5;  // Set relative tolerance
+    settings.eps_prim_inf = 1e-5; // Primal infeasibility tolerance
+    settings.eps_dual_inf = 1e-5; // Dual infeasibility tolerance
+    settings.max_iter = 1e5;    // Set maximum iterations
+    settings.scaling = false;      // Enable automatic scaling
 
     auto status = solver.Init(qp_instance, settings);
 
@@ -238,24 +246,34 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
             break;
         }
         case osqp::OsqpExitCode::kPrimalInfeasible:
+            printf("Error: PrimalInfeasible\r\n");
             break;
         case osqp::OsqpExitCode::kDualInfeasible:
+            printf("Error: kDualInfeasible\r\n");
             break;
         case osqp::OsqpExitCode::kOptimalInaccurate:
+            printf("Error: kOptimalInaccurate\r\n");
             break;
         case osqp::OsqpExitCode::kPrimalInfeasibleInaccurate:
+            printf("Error: kPrimalInfeasibleInaccurate\r\n");
             break;
         case osqp::OsqpExitCode::kDualInfeasibleInaccurate:
+            printf("Error: kDualInfeasibleInaccurate\r\n");
             break;
         case osqp::OsqpExitCode::kMaxIterations:
+            printf("Error: kMaxIterations\r\n");
             break;
         case osqp::OsqpExitCode::kInterrupted:
+            printf("Error: kInterrupted\r\n");
             break;
         case osqp::OsqpExitCode::kTimeLimitReached:
+            printf("Error: kTimeLimitReached\r\n");
             break;
         case osqp::OsqpExitCode::kNonConvex:
+            printf("Error: kNonConvex\r\n");
             break;
         case osqp::OsqpExitCode::kUnknown:
+            printf("Error: Unknow\r\n");
             break;
         default:
             break;

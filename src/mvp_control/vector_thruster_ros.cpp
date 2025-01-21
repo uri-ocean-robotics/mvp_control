@@ -161,8 +161,8 @@ bool VectorThrusterROS::request_command(double fx, double fy, double current_ang
 
     std::vector<std::complex<double>> roots;
     double N = std::sqrt(std::pow(fx, 2) + std::pow(fy, 2));
-    // printf("thruster name =%s\r\n", m_thrust_command_topic_id.c_str());
-    // printf("vector thruster force=%lf, %lf\r\n", fx, fy);
+    printf("%s:", m_thrust_command_topic_id.c_str());
+    printf(" force=%lf, %lf\r\n", fx, fy);
     //solve angle
     double delta_angle;
     if(fx == 0)
