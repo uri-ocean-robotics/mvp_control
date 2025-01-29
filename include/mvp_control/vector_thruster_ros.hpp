@@ -40,7 +40,7 @@ namespace ctrl {
     /** @brief Thruster class for managing data
      *
      */
-    class ThrusterROS {
+    class VectorThrusterROS {
     private:
         // rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr node_logger_;
         friend MvpControlROS;
@@ -54,12 +54,29 @@ namespace ctrl {
 
         //! @brief Thruster force topic id
         std::string m_thrust_force_topic_id;
-        
-        //! @brief Public node handler
-        // std::shared_ptr<rclcpp::Node> m_nh;
+
+        //! @brief Thruster_servo_joint_id
+        std::string m_thruster_servo_topic_id;
+
+        //! @brief Thruster_servo_joint_id
+        std::string m_thruster_servo_joint_id;
 
         //! @brief thruster link id
         std::string m_link_id;
+
+        double m_force_max;
+
+        double m_force_min;
+
+        double m_servo_angle_max;
+
+        double m_servo_angle_min;
+
+        double m_servo_angle;
+
+        double m_servo_speed;
+
+        double m_thruster_direction;
 
         /** @brief Thruster contribution vector
          *
@@ -67,24 +84,24 @@ namespace ctrl {
          * Each element in the vector describes contribution on
          * vehicle motion of the thruster in each degree of freedom
          */
-        Eigen::VectorXd m_contribution_vector;
-
-        //! @brief Thrust publisher
-        rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr m_thrust_publisher;
-        //! @brief Thrust force publisherrequest_command
-        rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr m_force_publisher;
+        Eigen::MatrixXd m_contribution_vector;
 
         //! @brief Polynomial solver
         PolynomialSolver::Ptr m_poly_solver;
 
-        double m_force_max;
+        
 
-        double m_force_min;
+        //! @brief Thrust publisher
+        rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr m_thrust_publisher;
+        //! @brief Thrust force publisher
+        rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr m_force_publisher;
+        //! @brief Thrust angle publisher
+        rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr m_angle_publisher;
 
     public:
 
         //! @brief Default constructor
-        ThrusterROS();
+        VectorThrusterROS();
 
         /** @brief Thruster ROS class constructor.
          *
@@ -95,8 +112,8 @@ namespace ctrl {
          * @param topic_id
          * @param contribution_vector
          */
-        ThrusterROS(std::string id, std::string topic_id,
-                    Eigen::VectorXd contribution_vector);
+        VectorThrusterROS(std::string id, std::string topic_id, std::string servo_topic_id,
+                        Eigen::VectorXd contribution_vector);
         /** @brief Initializes publishers and subscribers
          *
          */
@@ -126,8 +143,50 @@ namespace ctrl {
          *
          * @param topic_id
          */
-        void set_thrust_force_topic_id(
-            const decltype(m_thrust_force_topic_id) &topic_id);
+        void set_thrust_force_topic_id(const decltype(m_thrust_force_topic_id) &topic_id);
+
+        /** @brief Default getter thruster servo topic id
+         *
+         * @param topic_id
+         */
+        auto get_thruster_servo_topic_id() -> decltype(m_thruster_servo_topic_id);
+
+         /** @brief Default Setter thruster servo topic id
+         *
+         * @param topic_id
+         */
+        void set_thruster_servo_topic_id(const decltype(m_thruster_servo_topic_id) &topic_id);
+
+
+        /** @brief Default Setter thruster servo joint id
+         *
+         * @param joint_id
+         */
+        auto get_thruster_servo_joint_id() -> decltype(m_thruster_servo_joint_id);
+
+        void set_thruster_servo_joint_id(const decltype(m_thruster_servo_joint_id) &joint_id);
+
+        auto get_thruster_servo_speed() -> decltype(m_servo_speed);
+
+        void set_thruster_servo_speed(const decltype(m_servo_speed) &servo_speed);
+
+        auto get_thruster_direction() -> decltype(m_thruster_direction);
+
+        void set_thruster_direction(const decltype(m_thruster_direction) &thruster_direction);
+
+
+        /** @brief Default getter servo angle
+         *
+         * @param topic_id
+         */
+        auto get_thruster_servo_angle() -> decltype(m_servo_angle);
+
+         /** @brief Default Setter thruster servo angle
+         *
+         * @param topic_id
+         */
+        void set_thruster_servo_angle(const decltype(m_servo_angle) &servo_angle);
+
 
         /** @brief Trivial getter for link id
          *
@@ -164,8 +223,7 @@ namespace ctrl {
          *
          * @param contribution Contribution vector for the thruster
          */
-        void set_contribution_vector(
-            const decltype(m_contribution_vector) &contribution_vector);
+        void set_contribution_vector(const decltype(m_contribution_vector) &contribution_vector);
 
         /** @brief Trivial getter for polynomial solver
          *
@@ -180,7 +238,7 @@ namespace ctrl {
         void set_poly_solver(decltype(m_poly_solver) solver);
 
         //! @brief Generic typedef for shared pointer
-        typedef std::shared_ptr<ThrusterROS> Ptr;
+        typedef std::shared_ptr<VectorThrusterROS> Ptr;
 
         /** @brief Request force from thruster
          *
@@ -190,7 +248,9 @@ namespace ctrl {
          * @param N force as newton
          * @return true if polynomial is solved, false if polynomial isn't solved.
          */
-        bool request_command(double N, double &command);
+
+        bool request_command(double fx, double fy, double current_angle, double &command, double &new_angle);
+        
     };
 
 }

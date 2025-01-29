@@ -17,6 +17,7 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(mvp_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(GSL REQUIRED)
@@ -33,7 +34,7 @@ set(dependencies
   tf2_eigen
   std_msgs
   std_srvs
-  
+  sensor_msgs
 )
 
 include_directories(
@@ -67,6 +68,7 @@ add_library(${library_name} SHARED
   src/mvp_control/polynomial_solver.cpp
   src/mvp_control/mimo_pid.cpp
   src/mvp_control/thruster_ros.cpp
+  src/mvp_control/vector_thruster_ros.cpp
   src/mvp_control/mvp_control.cpp
   src/mvp_control/mvp_control_ros.cpp
 )

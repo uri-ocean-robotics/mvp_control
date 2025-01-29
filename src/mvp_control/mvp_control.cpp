@@ -102,6 +102,12 @@ void MvpControl::set_upper_limit(const decltype(m_upper_limit) &upper_limit) {
     m_upper_limit = upper_limit;
 }
 
+void MvpControl::set_constraint_matrix(const decltype(m_constrain_matrix) &matrix)
+{
+    m_constrain_matrix = matrix;
+}
+
+
 bool MvpControl::calculate_needed_forces(Eigen::VectorXd *f, double dt) {
 
     /**
@@ -128,6 +134,7 @@ bool MvpControl::calculate_needed_forces(Eigen::VectorXd *f, double dt) {
         return true;
     } else {
         // todo: create a warning
+        printf("optimize_thruster false return\r\n");
     }
 
     return false;
@@ -207,15 +214,22 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     qp_instance.upper_bounds.resize(m_upper_limit.size());
     qp_instance.upper_bounds << m_upper_limit;
 
-    qp_instance.constraint_matrix =
-        Eigen::SparseMatrix<double>(Q.cols(),Q.cols());
-
-    qp_instance.constraint_matrix.setIdentity();
+    // qp_instance.constraint_matrix =
+        // Eigen::SparseMatrix<double>(Q.cols(),Q.cols());
+    qp_instance.constraint_matrix = m_constrain_matrix;
+    // qp_instance.constraint_matrix.setIdentity();
 
     osqp::OsqpSolver solver;
     osqp::OsqpSettings settings;
 
     settings.verbose = false;
+    // **Customize OSQP Settings Here**
+    settings.eps_abs = 1e-5;  // Set absolute tolerance
+    settings.eps_rel = 1e-5;  // Set relative tolerance
+    settings.eps_prim_inf = 1e-4; // Primal infeasibility tolerance
+    settings.eps_dual_inf = 1e-4; // Dual infeasibility tolerance
+    settings.max_iter = 1e6;    // Set maximum iterations
+    settings.scaling = false;      // Enable automatic scaling
 
     auto status = solver.Init(qp_instance, settings);
 
@@ -232,24 +246,34 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
             break;
         }
         case osqp::OsqpExitCode::kPrimalInfeasible:
+            printf("Error: PrimalInfeasible\r\n");
             break;
         case osqp::OsqpExitCode::kDualInfeasible:
+            printf("Error: kDualInfeasible\r\n");
             break;
         case osqp::OsqpExitCode::kOptimalInaccurate:
+            printf("Error: kOptimalInaccurate\r\n");
             break;
         case osqp::OsqpExitCode::kPrimalInfeasibleInaccurate:
+            printf("Error: kPrimalInfeasibleInaccurate\r\n");
             break;
         case osqp::OsqpExitCode::kDualInfeasibleInaccurate:
+            printf("Error: kDualInfeasibleInaccurate\r\n");
             break;
         case osqp::OsqpExitCode::kMaxIterations:
+            printf("Error: kMaxIterations\r\n");
             break;
         case osqp::OsqpExitCode::kInterrupted:
+            printf("Error: kInterrupted\r\n");
             break;
         case osqp::OsqpExitCode::kTimeLimitReached:
+            printf("Error: kTimeLimitReached\r\n");
             break;
         case osqp::OsqpExitCode::kNonConvex:
+            printf("Error: kNonConvex\r\n");
             break;
         case osqp::OsqpExitCode::kUnknown:
+            printf("Error: Unknow\r\n");
             break;
         default:
             break;

@@ -75,6 +75,9 @@ namespace ctrl {
 
         Eigen::VectorXd m_lower_limit;
 
+        Eigen::SparseMatrix<double> m_constrain_matrix;
+
+
         /** @brief Calculates PID using #MimoPID
          *
          * Measures the error between desired and current state.
@@ -122,7 +125,7 @@ namespace ctrl {
         MvpControl();
 
 
-        /** @brief Trivial Setter for control allocation matrix
+        /** @brief Trivial Setter for control allocation matrixm_constrain_matrix
          *
          * @param matrix
          */
@@ -222,6 +225,8 @@ namespace ctrl {
         void set_lower_limit(const decltype(m_lower_limit) &lower_limit);
 
         void set_upper_limit(const decltype(m_upper_limit) &upper_limit);
+        
+        void set_constraint_matrix(const decltype(m_constrain_matrix) &matrix);
 
     };
 
