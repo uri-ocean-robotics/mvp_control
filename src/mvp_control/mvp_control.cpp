@@ -63,10 +63,31 @@ void MvpControl::set_control_allocation_matrix(
     m_control_allocation_matrix = matrix;
 }
 
+void MvpControl::set_direction_cost_matrix(
+        const decltype(m_direction_cost_matrix)& matrix) {
+    m_direction_cost_matrix = matrix;
+}
+
+void MvpControl::set_direction_cost_matrix_c(
+        const decltype(m_direction_cost_matrix_c)& matrix) {
+    m_direction_cost_matrix_c = matrix;
+}
+
 auto MvpControl::get_control_allocation_matrix() ->
         decltype(m_control_allocation_matrix) {
     return m_control_allocation_matrix;
 }
+
+auto MvpControl::get_direction_cost_matrix() ->
+        decltype(m_direction_cost_matrix) {
+    return m_direction_cost_matrix;
+}
+
+auto MvpControl::get_direction_cost_matrix_c() ->
+        decltype(m_direction_cost_matrix_c) {
+    return m_direction_cost_matrix_c;
+}
+
 
 auto MvpControl::get_pid() -> decltype(m_pid) {
     return m_pid;
@@ -183,9 +204,9 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
      */
 
     // Q -> objective matrix
-    Eigen::MatrixXd Q = 2 * T.transpose() * T;
+    Eigen::MatrixXd Q = 2 * T.transpose() * T + m_direction_cost_matrix;
     // c -> objective vector
-    Eigen::VectorXd c = (-2 * (U.transpose() * T)).transpose();
+    Eigen::VectorXd c = (-2 * (U.transpose() * T)).transpose() + m_direction_cost_matrix_c;
 
     std::vector<Eigen::Triplet<double>> Q_triplets;
     for(int i = 0 ; i < Q.rows() ; i++) {

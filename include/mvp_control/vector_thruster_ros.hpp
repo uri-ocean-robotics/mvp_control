@@ -77,7 +77,7 @@ namespace ctrl {
         double m_servo_speed;
 
         double m_thruster_direction;
-
+        
         /** @brief Thruster contribution vector
          *
          * This vector defines a column in control allocation matrix.
