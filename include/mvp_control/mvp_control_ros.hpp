@@ -185,7 +185,9 @@ namespace ctrl {
         //! @brief Setpoint timeer
         double setpoint_timer;
 
-        bool vector_thruster_auto_direction;
+        bool m_vector_thruster_auto_direction;
+
+        double m_direction_cost_factor;
 
         //! @brief Get control modes ros service server
         // ros::ServiceServer m_get_control_modes_server;

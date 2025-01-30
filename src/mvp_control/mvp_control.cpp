@@ -89,6 +89,12 @@ auto MvpControl::get_direction_cost_matrix_c() ->
 }
 
 
+void MvpControl::set_direction_lambda(
+        const decltype(m_direction_lambda)& lambda) {
+    m_direction_lambda = lambda;
+}
+
+
 auto MvpControl::get_pid() -> decltype(m_pid) {
     return m_pid;
 }
@@ -156,6 +162,7 @@ bool MvpControl::calculate_needed_forces(Eigen::VectorXd *f, double dt) {
     } else {
         // todo: create a warning
         printf("optimize_thruster false return\r\n");
+        return false;
     }
 
     return false;
@@ -172,9 +179,13 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
         m_controlled_freedoms.size(),
         m_control_allocation_matrix.cols()
     );
-
+    Eigen::MatrixXd B2(
+        m_controlled_freedoms.size(),
+        m_control_allocation_matrix.cols()
+    );
     // // Control matrix
     Eigen::VectorXd U(m_controlled_freedoms.size());
+    Eigen::VectorXd B1 =m_direction_cost_matrix_c;
 
     {
         /**
@@ -193,8 +204,9 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
          *
          */
         for (int i = 0; i < m_controlled_freedoms.size(); i++) {
-            T.row(i) = m_control_allocation_matrix.row(
-                m_controlled_freedoms.at(i));
+            T.row(i) = m_control_allocation_matrix.row(m_controlled_freedoms.at(i));
+            B2.row(i) = m_direction_cost_matrix.row(m_controlled_freedoms.at(i));
+            
             U(i) = u(m_controlled_freedoms.at(i));
         }
     }
@@ -202,11 +214,25 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     /**
      * Now we are preparing data for quadratic solver to consume.
      */
+    
+    
+    // std::cout << "T size: " << T.rows() << " x " << T.cols() << std::endl;
 
+    // std::cout << "B2 size: " << B2.rows() << " x " << B2.cols() << std::endl;
+
+    // std::cout << "U size: " << U.size() << std::endl;
+
+    // std::cout << "B1 size: " << B1.size() << std::endl;
+
+    // double lambda = 10;
     // Q -> objective matrix
-    Eigen::MatrixXd Q = 2 * T.transpose() * T + m_direction_cost_matrix;
+    Eigen::MatrixXd Q = 2 * T.transpose() * T - 2*m_direction_lambda*B2.transpose()*B2;
+
     // c -> objective vector
-    Eigen::VectorXd c = (-2 * (U.transpose() * T)).transpose() + m_direction_cost_matrix_c;
+    Eigen::VectorXd c = (-2 * (U.transpose() * T)).transpose() + m_direction_lambda*B1;
+
+    // std::cout << "c size: " << c.size() << std::endl;
+
 
     std::vector<Eigen::Triplet<double>> Q_triplets;
     for(int i = 0 ; i < Q.rows() ; i++) {
@@ -245,11 +271,11 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
 
     settings.verbose = false;
     // **Customize OSQP Settings Here**
-    settings.eps_abs = 1e-5;  // Set absolute tolerance
-    settings.eps_rel = 1e-5;  // Set relative tolerance
+    settings.eps_abs = 1e-3;  // Set absolute tolerance
+    settings.eps_rel = 1e-3;  // Set relative tolerance
     settings.eps_prim_inf = 1e-4; // Primal infeasibility tolerance
     settings.eps_dual_inf = 1e-4; // Dual infeasibility tolerance
-    settings.max_iter = 1e6;    // Set maximum iterations
+    settings.max_iter = 3*1e5;    // Set maximum iterations
     settings.scaling = false;      // Enable automatic scaling
 
     auto status = solver.Init(qp_instance, settings);
@@ -268,33 +294,43 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
         }
         case osqp::OsqpExitCode::kPrimalInfeasible:
             printf("Error: PrimalInfeasible\r\n");
+            return false;
             break;
         case osqp::OsqpExitCode::kDualInfeasible:
             printf("Error: kDualInfeasible\r\n");
+            return false;
             break;
         case osqp::OsqpExitCode::kOptimalInaccurate:
             printf("Error: kOptimalInaccurate\r\n");
+            return false;
             break;
         case osqp::OsqpExitCode::kPrimalInfeasibleInaccurate:
             printf("Error: kPrimalInfeasibleInaccurate\r\n");
+            return false;
             break;
         case osqp::OsqpExitCode::kDualInfeasibleInaccurate:
             printf("Error: kDualInfeasibleInaccurate\r\n");
+            return false;
             break;
         case osqp::OsqpExitCode::kMaxIterations:
             printf("Error: kMaxIterations\r\n");
+            return false;
             break;
         case osqp::OsqpExitCode::kInterrupted:
             printf("Error: kInterrupted\r\n");
+            return false;
             break;
         case osqp::OsqpExitCode::kTimeLimitReached:
             printf("Error: kTimeLimitReached\r\n");
+            return false;
             break;
         case osqp::OsqpExitCode::kNonConvex:
             printf("Error: kNonConvex\r\n");
+            return false;
             break;
         case osqp::OsqpExitCode::kUnknown:
             printf("Error: Unknow\r\n");
+            return false;
             break;
         default:
             break;

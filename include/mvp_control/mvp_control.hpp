@@ -81,6 +81,8 @@ namespace ctrl {
 
         Eigen::SparseMatrix<double> m_constrain_matrix;
 
+        double m_direction_lambda;
+
 
         /** @brief Calculates PID using #MimoPID
          *
@@ -154,6 +156,9 @@ namespace ctrl {
 
         auto get_direction_cost_matrix_c() ->
         decltype(m_direction_cost_matrix_c);
+
+        void set_direction_lambda(
+            const decltype(m_direction_lambda) &lambda);
 
         //! @brief Standard shared pointer type
         typedef std::shared_ptr<MvpControl> Ptr;
