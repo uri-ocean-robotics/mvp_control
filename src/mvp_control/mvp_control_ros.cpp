@@ -1352,7 +1352,7 @@ void MvpControlROS::f_control_loop() {
                     // fs = needed_forces(count);
                     // count++;
                 }
-                printf("thruster %d results: %lf, %lf, %lf, %lf\r\n", fxp, fxn, fy, fs);
+                // printf("thruster %d results: %lf, %lf, %lf, %lf\r\n", fxp, fxn, fy, fs);
 
                 fx = fxp+fxn;
                 angle = m_vector_thrusters[i]->get_thruster_servo_angle();
