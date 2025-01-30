@@ -156,11 +156,37 @@ void VectorThrusterROS::set_poly_solver(decltype(m_poly_solver) solver) {
 }
 
 
+void VectorThrusterROS::set_thruster_auto_mode(decltype(m_auto_dir_mode) &mode) {
+    m_auto_dir_mode = mode;
+    if(mode){
+        m_force_count = 3;
+        m_constraint_count =8;
+    }
+    else{
+        m_force_count = 2;
+        m_constraint_count = 4;
+    }
+
+}
+
+auto VectorThrusterROS::get_thruster_force_count() -> decltype(m_force_count){
+    return m_force_count;
+}
+
+auto VectorThrusterROS::get_thruster_constraint_count() -> decltype(m_constraint_count)
+{
+    return m_constraint_count;
+}
+
 
 bool VectorThrusterROS::request_command(double fx, double fy, double current_angle, double &command, double &new_angle ) {
 
     std::vector<std::complex<double>> roots;
-    double N = m_thruster_direction * std::sqrt(std::pow(fx, 2) + std::pow(fy, 2));
+    // double N = m_thruster_direction * std::sqrt(std::pow(fx, 2) + std::pow(fy, 2));
+
+    double sign_x = std::copysign(1.0, fx);
+
+    double N = sign_x * std::sqrt(std::pow(fx, 2) + std::pow(fy, 2));
     // printf("%s:", m_thrust_command_topic_id.c_str());
     // printf(" force=%lf, %lf, %lf\r\n", fx, fy, N);
     //solve angle

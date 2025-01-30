@@ -75,7 +75,13 @@ namespace ctrl {
 
         Eigen::VectorXd m_lower_limit;
 
+        Eigen::MatrixXd m_direction_cost_matrix;
+
+        Eigen::VectorXd m_direction_cost_matrix_c;
+
         Eigen::SparseMatrix<double> m_constrain_matrix;
+
+        double m_total_force_cost_factor;
 
 
         /** @brief Calculates PID using #MimoPID
@@ -131,14 +137,28 @@ namespace ctrl {
          */
         void set_control_allocation_matrix(
             const decltype(m_control_allocation_matrix) &matrix);
+        
 
+        void set_direction_cost_matrix(
+            const decltype(m_direction_cost_matrix) &matrix);
 
+        void set_direction_cost_matrix_c(
+            const decltype(m_direction_cost_matrix_c) &matrix);
         /** @brief Trivial getter for thruster id
          *
          * @return #MvpControl::m_control_allocation_matrix
          */
         auto get_control_allocation_matrix() ->
         decltype(m_control_allocation_matrix);
+
+        auto get_direction_cost_matrix() ->
+        decltype(m_direction_cost_matrix);
+
+        auto get_direction_cost_matrix_c() ->
+        decltype(m_direction_cost_matrix_c);
+
+        void set_total_force_cost_factor(
+            const decltype(m_total_force_cost_factor) &factor);
 
         //! @brief Standard shared pointer type
         typedef std::shared_ptr<MvpControl> Ptr;
