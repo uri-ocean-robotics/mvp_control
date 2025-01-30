@@ -159,8 +159,8 @@ void VectorThrusterROS::set_poly_solver(decltype(m_poly_solver) solver) {
 void VectorThrusterROS::set_thruster_auto_mode(decltype(m_auto_dir_mode) &mode) {
     m_auto_dir_mode = mode;
     if(mode){
-        m_force_count = 4;
-        m_constraint_count =9;
+        m_force_count = 3;
+        m_constraint_count =8;
     }
     else{
         m_force_count = 2;
