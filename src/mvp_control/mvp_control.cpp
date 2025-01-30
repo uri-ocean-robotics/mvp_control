@@ -89,9 +89,9 @@ auto MvpControl::get_direction_cost_matrix_c() ->
 }
 
 
-void MvpControl::set_direction_lambda(
-        const decltype(m_direction_lambda)& lambda) {
-    m_direction_lambda = lambda;
+void MvpControl::set_total_force_cost_factor(
+        const decltype(m_total_force_cost_factor)& factor) {
+    m_total_force_cost_factor = factor;
 }
 
 
@@ -183,6 +183,8 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
         m_controlled_freedoms.size(),
         m_control_allocation_matrix.cols()
     );
+
+    B2.setIdentity();
     // // Control matrix
     Eigen::VectorXd U(m_controlled_freedoms.size());
     Eigen::VectorXd B1 =m_direction_cost_matrix_c;
@@ -205,7 +207,7 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
          */
         for (int i = 0; i < m_controlled_freedoms.size(); i++) {
             T.row(i) = m_control_allocation_matrix.row(m_controlled_freedoms.at(i));
-            B2.row(i) = m_direction_cost_matrix.row(m_controlled_freedoms.at(i));
+            // B2.row(i) = m_direction_cost_matrix.row(m_controlled_freedoms.at(i));
             
             U(i) = u(m_controlled_freedoms.at(i));
         }
@@ -224,9 +226,8 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
 
     // std::cout << "B1 size: " << B1.size() << std::endl;
 
-    // double lambda = 10;
     // Q -> objective matrix
-    Eigen::MatrixXd Q = 2 * T.transpose() * T ;//- 2*m_direction_lambda*B2.transpose()*B2;
+    Eigen::MatrixXd Q = 2 * T.transpose() * T + 2*m_total_force_cost_factor*B2.transpose()*B2;//- 2*m_direction_lambda*B2.transpose()*B2;
 
     // c -> objective vector
     Eigen::VectorXd c = (-2 * (U.transpose() * T)).transpose(); // + m_direction_lambda*B1;

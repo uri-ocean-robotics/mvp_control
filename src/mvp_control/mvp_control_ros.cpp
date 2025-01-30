@@ -101,8 +101,8 @@ MvpControlROS::MvpControlROS(std::string name) : Node(name)
     this->declare_parameter("auto_vector_direction", true);
     this->get_parameter("auto_vector_direction", m_vector_thruster_auto_direction);
 
-    this->declare_parameter("direction_cost_factor", 0.0);
-    this->get_parameter("direction_cost_factor", m_direction_cost_factor);
+    this->declare_parameter("total_force_cost_factor", 0.0);
+    this->get_parameter("total_force_cost_factor", m_total_force_cost_factor);
 
     //control config file location
     this->declare_parameter("config_file", "control.yaml");
@@ -348,7 +348,7 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
     m_mvp_control->set_control_allocation_matrix(m_control_allocation_matrix);
     m_mvp_control->set_direction_cost_matrix(m_direction_cost_matrix);
     m_mvp_control->set_direction_cost_matrix_c(m_direction_cost_matrix_c);
-    m_mvp_control->set_direction_lambda(m_direction_cost_factor);
+    m_mvp_control->set_total_force_cost_factor(m_total_force_cost_factor);
 
 }
 

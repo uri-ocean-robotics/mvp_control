@@ -187,7 +187,7 @@ namespace ctrl {
 
         bool m_vector_thruster_auto_direction;
 
-        double m_direction_cost_factor;
+        double m_total_force_cost_factor;
 
         //! @brief Get control modes ros service server
         // ros::ServiceServer m_get_control_modes_server;
