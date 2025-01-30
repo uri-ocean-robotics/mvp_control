@@ -265,31 +265,14 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
     // M by N matrix. M -> number of all controllable DOF, N -> number of
     // thrusters
     //total column number is N_thruster + 2*N_vector_thruster
-    if(m_vector_thruster_auto_direction)
-    {
-        m_control_allocation_matrix = Eigen::MatrixXd::Zero(
-            CONTROLLABLE_DOF_LENGTH, (int) m_thrusters.size() + 4*(int) m_vector_thrusters.size()
-        );
-        m_direction_cost_matrix = Eigen::MatrixXd::Zero(
-            CONTROLLABLE_DOF_LENGTH, (int) m_thrusters.size() + 4*(int) m_vector_thrusters.size()
-        );
-        m_direction_cost_matrix_c = Eigen::VectorXd::Zero(
-            (int) m_thrusters.size() + 4*(int) m_vector_thrusters.size());
+    int col_num;
+    col_num = (int) m_thrusters.size() + 
+              (int)m_vector_thrusters[0]->get_thruster_force_count()*(int)m_vector_thrusters.size();
 
-    }
-    else{
-        m_control_allocation_matrix = Eigen::MatrixXd::Zero(
-            CONTROLLABLE_DOF_LENGTH, (int) m_thrusters.size() + 2*(int) m_vector_thrusters.size()
-        );
-         m_direction_cost_matrix = Eigen::MatrixXd::Zero(
-            CONTROLLABLE_DOF_LENGTH, (int) m_thrusters.size() + 2*(int) m_vector_thrusters.size()
-        );
-        m_direction_cost_matrix_c = Eigen::VectorXd::Zero(
-            (int) m_thrusters.size() + 2*(int) m_vector_thrusters.size());
+    m_control_allocation_matrix = Eigen::MatrixXd::Zero(CONTROLLABLE_DOF_LENGTH, col_num);
 
-    }
-    
-
+    m_direction_cost_matrix = Eigen::MatrixXd::Zero(CONTROLLABLE_DOF_LENGTH, col_num);
+    m_direction_cost_matrix_c = Eigen::VectorXd::Zero(col_num);
     
     // Until this point, all the allocation matrix related issued must be
     // solved or exceptions thrown.
@@ -314,7 +297,6 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
         
     }
 
-
     count = m_thrusters.size();
     //vector thruster
     for (uint64_t i = 0; i < m_vector_thrusters.size(); i++) {
@@ -332,6 +314,7 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
             // each thruster has two rows
             m_control_allocation_matrix(j, count) = m_vector_thrusters[i]->get_contribution_vector()(j, 0);
             m_control_allocation_matrix(j, count+1) = m_vector_thrusters[i]->get_contribution_vector()(j, 1);
+
             if(m_vector_thruster_auto_direction)
             {
                 m_control_allocation_matrix(j, count+2) = m_vector_thrusters[i]->get_contribution_vector()(j, 0);
@@ -341,17 +324,14 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
 
         }
 
-        
 
         if(m_vector_thruster_auto_direction)
         {
             m_direction_cost_matrix(count + 3, count + 3) = 1;
             m_direction_cost_matrix_c(count+3) = 1;
-            count = count +4;
+           
         }
-        else{
-            count = count + 2;  //increase the count by 2
-        }
+        count = count + (int)m_vector_thrusters[i]->get_thruster_force_count();
         
     }
 
@@ -819,11 +799,8 @@ bool MvpControlROS::f_update_control_allocation_matrix() {
             {
                 m_control_allocation_matrix.col(count + 2) = m_control_allocation_matrix.col(count); //Fx- has the same allocation as Fx+
                 m_control_allocation_matrix.col(count + 3) = 0*m_control_allocation_matrix.col(count);
-                count = count + 4;
             }
-            else{
-                count = count +2;
-            }
+            count = count + m_vector_thrusters[j]->get_thruster_force_count();
 
         }
 
@@ -855,11 +832,13 @@ bool MvpControlROS::f_update_control_allocation_matrix() {
 
 void MvpControlROS::f_update_osqp_matrix_auto_direction()
 {
+    int constraints_per_thruster = m_vector_thrusters[0]->get_thruster_constraint_count();
+    int forces_per_thruster = m_vector_thrusters[0]->get_thruster_force_count();
     int row_num;  //number of constraints
     int col_num;  //number of forces
 
-    row_num = m_thrusters.size() + 9*m_vector_thrusters.size(); //each vector thruster has 4 constraints
-    col_num = m_thrusters.size() + 4*m_vector_thrusters.size(); //each vector thruster has 2 forces
+    row_num = m_thrusters.size() + constraints_per_thruster*m_vector_thrusters.size(); //each vector thruster has 4 constraints
+    col_num = m_thrusters.size() + forces_per_thruster*m_vector_thrusters.size(); //each vector thruster has 2 forces
     ///prepare OSQP matrix
     Eigen::VectorXd upper_limit(row_num);
     Eigen::VectorXd lower_limit(row_num);
@@ -1047,8 +1026,8 @@ void MvpControlROS::f_update_osqp_matrix_auto_direction()
         constraints_matrix.insert(row_count+8, col_count +2) = 0;
         constraints_matrix.insert(row_count+8, col_count +3) = 1;
 
-        row_count = row_count + 9; 
-        col_count = col_count + 4;
+        row_count = row_count + constraints_per_thruster; 
+        col_count = col_count + forces_per_thruster;
     }
     // std::cout << "upper_limit: " << std::endl << upper_limit << std::endl;
     // std::cout << "lower_limit: " << std::endl << lower_limit << std::endl;
@@ -1066,8 +1045,8 @@ void MvpControlROS::f_update_osqp_matrix()
     int row_num;  //number of constraints
     int col_num;  //number of forces
 
-    row_num = m_thrusters.size() + 4*m_vector_thrusters.size(); //each vector thruster has 4 constraints
-    col_num = m_thrusters.size() + 2*m_vector_thrusters.size(); //each vector thruster has 2 forces
+    row_num = m_thrusters.size() + m_vector_thrusters[0]->get_thruster_constraint_count()*m_vector_thrusters.size(); //each vector thruster has 4 constraints
+    col_num = m_thrusters.size() + m_vector_thrusters[0]->get_thruster_force_count()*m_vector_thrusters.size(); //each vector thruster has 2 forces
     ///prepare OSQP matrix
     Eigen::VectorXd upper_limit(row_num);
     Eigen::VectorXd lower_limit(row_num);
@@ -1164,14 +1143,13 @@ void MvpControlROS::f_update_osqp_matrix()
             constraints_matrix.insert(row_count+3, col_count +1) = -1;
         }
         //each vecot thruster will create 4 rows and 2 columns in allocation matrix.
-        row_count = row_count + 4; 
-        col_count = col_count + 2;
+        row_count = row_count + m_vector_thrusters[0]->get_thruster_constraint_count(); 
+        col_count = col_count + m_vector_thrusters[0]->get_thruster_force_count();
 
     }
 
 
     m_mvp_control->set_lower_limit(lower_limit);
-
     m_mvp_control->set_upper_limit(upper_limit);
     m_mvp_control->set_constraint_matrix(constraints_matrix);
 
@@ -1399,28 +1377,27 @@ void MvpControlROS::f_control_loop() {
                 double fs;
                 double fx;
                 std_msgs::msg::Float64 Nmsg;
+                fxn = 0;
 
                 fxp = needed_forces(count);
                 count++;
                 fy = needed_forces(count);
                 count++;
-                fxn = needed_forces(count);
-                count++;
-                fs = needed_forces(count);
+                // printf("auto_direction =%d",(int)m_vector_thruster_auto_direction);
 
-                printf("thruster %d results: %lf, %lf, %lf, %lf\r\n", fxp, fxn, fy, fs);
-                count++;
-
-                if(fs>0.5){
-                    fx = fxp;
-
+                if(m_vector_thruster_auto_direction)
+                {
+                    fxn = needed_forces(count);
+                    count++;
+                    fs = needed_forces(count);
+                    count++;
                 }
-                else{
-                    fx = fxn;
-                }
+                // printf("thruster %d results: %lf, %lf, %lf, %lf\r\n", fxp, fxn, fy, fs);
+
+                fx = fxp+fxn;
                 angle = m_vector_thrusters[i]->get_thruster_servo_angle();
 
-                Nmsg.data = std::sqrt(std::pow(fx, 2) + std::pow(fy, 2));
+                Nmsg.data = std::copysign(1.0, fx) * std::sqrt(std::pow(fx, 2) + std::pow(fy, 2));
                 m_vector_thrusters.at(i)->m_force_publisher->publish(Nmsg);
 
                 if (m_vector_thrusters.at(i)->request_command(fx, fy, angle, command, new_angle) )
@@ -1813,6 +1790,7 @@ void MvpControlROS::f_load_control_config()
             //set servo angle to zero
             t->set_thruster_servo_angle(0.0);
             t->set_thruster_direction(1.0);
+            t->set_thruster_auto_mode(m_vector_thruster_auto_direction);
 
             m_vector_thrusters.emplace_back(t);
         }

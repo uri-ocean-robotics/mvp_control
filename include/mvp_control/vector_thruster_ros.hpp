@@ -77,6 +77,12 @@ namespace ctrl {
         double m_servo_speed;
 
         double m_thruster_direction;
+
+        int m_force_count;
+
+        int m_constraint_count;
+
+        bool m_auto_dir_mode;
         
         /** @brief Thruster contribution vector
          *
@@ -236,6 +242,13 @@ namespace ctrl {
          * @param solver
          */
         void set_poly_solver(decltype(m_poly_solver) solver);
+
+
+        void set_thruster_auto_mode(decltype(m_auto_dir_mode) &mode);
+
+        auto get_thruster_force_count() -> decltype(m_force_count);
+
+        auto get_thruster_constraint_count() -> decltype(m_constraint_count);
 
         //! @brief Generic typedef for shared pointer
         typedef std::shared_ptr<VectorThrusterROS> Ptr;

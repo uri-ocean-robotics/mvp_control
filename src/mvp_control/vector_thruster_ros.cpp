@@ -156,6 +156,28 @@ void VectorThrusterROS::set_poly_solver(decltype(m_poly_solver) solver) {
 }
 
 
+void VectorThrusterROS::set_thruster_auto_mode(decltype(m_auto_dir_mode) &mode) {
+    m_auto_dir_mode = mode;
+    if(mode){
+        m_force_count = 4;
+        m_constraint_count =9;
+    }
+    else{
+        m_force_count = 2;
+        m_constraint_count = 4;
+    }
+
+}
+
+auto VectorThrusterROS::get_thruster_force_count() -> decltype(m_force_count){
+    return m_force_count;
+}
+
+auto VectorThrusterROS::get_thruster_constraint_count() -> decltype(m_constraint_count)
+{
+    return m_constraint_count;
+}
+
 
 bool VectorThrusterROS::request_command(double fx, double fy, double current_angle, double &command, double &new_angle ) {
 
