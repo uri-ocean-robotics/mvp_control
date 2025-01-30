@@ -134,6 +134,10 @@ namespace ctrl {
          */
         Eigen::MatrixXd m_control_allocation_matrix;
 
+        Eigen::MatrixXd m_direction_cost_matrix;
+
+        Eigen::VectorXd m_direction_cost_matrix_c;
+
         std::string generator_type;  //tf generate type
         //! @brief Center of gravity link id
         std::string m_cg_link_id;
@@ -180,6 +184,10 @@ namespace ctrl {
 
         //! @brief Setpoint timeer
         double setpoint_timer;
+
+        bool m_vector_thruster_auto_direction;
+
+        double m_total_force_cost_factor;
 
         //! @brief Get control modes ros service server
         // ros::ServiceServer m_get_control_modes_server;
@@ -322,6 +330,8 @@ namespace ctrl {
         void f_control_loop();
 
         void f_update_osqp_matrix();
+
+        void f_update_osqp_matrix_auto_direction();
 
 
         /** @brief Convert prq to world_frame angular rate:
