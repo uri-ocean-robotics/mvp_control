@@ -897,13 +897,17 @@ void MvpControlROS::f_update_osqp_matrix_auto_direction()
             lower_limit[row_count+3] = 0;
             lower_limit[row_count+4] = N_INFINITY;
             lower_limit[row_count+5] = 0;
-            lower_limit[row_count+6] = m_vector_thrusters[i]->m_force_min*cos_u;
-            lower_limit[row_count+7] = m_vector_thrusters[i]->m_force_min*cos_l;;
+            // lower_limit[row_count+6] = m_vector_thrusters[i]->m_force_min*cos_u;
+            // lower_limit[row_count+7] = m_vector_thrusters[i]->m_force_min*cos_l;
+            lower_limit[row_count+6] = m_vector_thrusters[i]->m_force_min;
+            lower_limit[row_count+7] = m_vector_thrusters[i]->m_force_min;
     
             upper_limit[row_count] = P_INFINITY;
             upper_limit[row_count+1] = 0;
-            upper_limit[row_count+2] = m_vector_thrusters[i]->m_force_max*cos_u;
-            upper_limit[row_count+3] = m_vector_thrusters[i]->m_force_max*cos_l;
+            // upper_limit[row_count+2] = m_vector_thrusters[i]->m_force_max*cos_u;
+            // upper_limit[row_count+3] = m_vector_thrusters[i]->m_force_max*cos_l;
+            upper_limit[row_count+2] = m_vector_thrusters[i]->m_force_max;
+            upper_limit[row_count+3] = m_vector_thrusters[i]->m_force_max;
             upper_limit[row_count+4] = 0;
             upper_limit[row_count+5] = P_INFINITY;
             upper_limit[row_count+6] = 0;
@@ -918,11 +922,11 @@ void MvpControlROS::f_update_osqp_matrix_auto_direction()
             constraints_matrix.insert(row_count+1, col_count +2) = 0;
 
             constraints_matrix.insert(row_count+2, col_count) = 1;
-            constraints_matrix.insert(row_count+2, col_count +1) = 0;
+            constraints_matrix.insert(row_count+2, col_count +1) = std::tan(alpha_u/2); //0
             constraints_matrix.insert(row_count+2, col_count +2) = 0;
 
             constraints_matrix.insert(row_count+3, col_count) = 1;
-            constraints_matrix.insert(row_count+3, col_count +1) = 0;
+            constraints_matrix.insert(row_count+3, col_count +1) = std::tan(alpha_l/2); //0;
             constraints_matrix.insert(row_count+3, col_count +2) = 0;
 
             constraints_matrix.insert(row_count+4, col_count) = 0;
@@ -934,60 +938,67 @@ void MvpControlROS::f_update_osqp_matrix_auto_direction()
             constraints_matrix.insert(row_count+5, col_count +2) = std::tan(alpha_l);
 
             constraints_matrix.insert(row_count+6, col_count) = 0;
-            constraints_matrix.insert(row_count+6, col_count +1) = 0;
+            constraints_matrix.insert(row_count+6, col_count +1) = std::tan(alpha_l/2); //0;
             constraints_matrix.insert(row_count+6, col_count +2) = 1;
 
             constraints_matrix.insert(row_count+7, col_count) = 0;
-            constraints_matrix.insert(row_count+7, col_count +1) = 0;
+            constraints_matrix.insert(row_count+7, col_count +1) = std::tan(alpha_u/2); //0;
             constraints_matrix.insert(row_count+7, col_count +2) = 1;
         }
         //manual direction//
         else{
             if(m_vector_thrusters[i]->get_thruster_direction()>0){
                 lower_limit[row_count] = 0;
+                lower_limit[row_count+1] = N_INFINITY;
+                lower_limit[row_count+2] = 0;
+                lower_limit[row_count+3] = 0;
+
                 upper_limit[row_count] = P_INFINITY;
+                upper_limit[row_count+1] = 0;
+                // upper_limit[row_count+2] = m_vector_thrusters[i]->m_force_max*cos_u;
+                // upper_limit[row_count+3] = m_vector_thrusters[i]->m_force_max*cos_l;
+                upper_limit[row_count+2] = m_vector_thrusters[i]->m_force_max;
+                upper_limit[row_count+3] = m_vector_thrusters[i]->m_force_max;
+
+
                 constraints_matrix.insert(row_count, col_count) = std::tan(alpha_u);
                 constraints_matrix.insert(row_count, col_count +1) = -1;
 
-                lower_limit[row_count+1] = N_INFINITY;
-                upper_limit[row_count+1] = 0;
                 constraints_matrix.insert(row_count+1, col_count) = std::tan(alpha_l);
                 constraints_matrix.insert(row_count+1, col_count +1) = -1;
 
-                lower_limit[row_count+2] = 0;
-                upper_limit[row_count+2] = m_vector_thrusters[i]->m_force_max*cos_u;
                 constraints_matrix.insert(row_count+2, col_count) = 1;
-                constraints_matrix.insert(row_count+2, col_count +1) =0; 
+                constraints_matrix.insert(row_count+2, col_count +1) =std::tan(alpha_u/2); //0;
     
-                lower_limit[row_count+3] = 0;
-                upper_limit[row_count+3] = m_vector_thrusters[i]->m_force_max*cos_l;
                 constraints_matrix.insert(row_count+3, col_count) = 1;
-                constraints_matrix.insert(row_count+3, col_count +1) = 0;
+                constraints_matrix.insert(row_count+3, col_count +1) = std::tan(alpha_l/2); //0;
 
             }
             else{
                 // printf("negative thrust direction\r\n");
                 lower_limit[row_count] = N_INFINITY;
+                lower_limit[row_count+1] = 0;
+                // lower_limit[row_count+2] = m_vector_thrusters[i]->m_force_min *cos_u;
+                // lower_limit[row_count+3] = m_vector_thrusters[i]->m_force_min *cos_l;
+                lower_limit[row_count+2] = m_vector_thrusters[i]->m_force_min;
+                lower_limit[row_count+3] = m_vector_thrusters[i]->m_force_min;
+
                 upper_limit[row_count] = 0;
+                upper_limit[row_count+1] = P_INFINITY;
+                upper_limit[row_count+2] = 0;
+                upper_limit[row_count+3] = 0;
+
                 constraints_matrix.insert(row_count, col_count) = std::tan(alpha_u);
                 constraints_matrix.insert(row_count, col_count +1) = -1;
     
-
-                lower_limit[row_count+1] = 0;
-                upper_limit[row_count+1] = P_INFINITY;
-                
                 constraints_matrix.insert(row_count+1, col_count) = std::tan(alpha_l);
                 constraints_matrix.insert(row_count+1, col_count +1) = -1;
     
-                lower_limit[row_count+2] = m_vector_thrusters[i]->m_force_min *cos_u;
-                upper_limit[row_count+2] = 0;
                 constraints_matrix.insert(row_count+2, col_count) =  1;
-                constraints_matrix.insert(row_count+2, col_count +1) = 0;
+                constraints_matrix.insert(row_count+2, col_count +1) = std::tan(alpha_l/2);//0;
         
-                lower_limit[row_count+3] = m_vector_thrusters[i]->m_force_min *cos_l;
-                upper_limit[row_count+3] = 0;
                 constraints_matrix.insert(row_count+3, col_count) = 1;
-                constraints_matrix.insert(row_count+3, col_count +1) = 0;
+                constraints_matrix.insert(row_count+3, col_count +1) = std::tan(alpha_u/2); //0;
             }
         }
 
