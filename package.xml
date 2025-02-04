@@ -23,6 +23,8 @@
   <depend>tf2_eigen</depend>
   <depend>libgsl</depend>
   <depend>mvp_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>tf2_geometry_msgs</depend>
   <doc_depend>doxygen</doc_depend>
   
   <exec_depend>ros2launch</exec_depend>
