@@ -286,10 +286,16 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     }
 
     osqp::OsqpExitCode exitCode = solver.Solve();
+    // printf("final cost = %lf\r\n", solver.objective_value());
 
     switch (exitCode) {
         case osqp::OsqpExitCode::kOptimal: {
             *t = solver.primal_solution();
+            // Eigen::VectorXd J;
+            // Eigen::MatrixXd J1;
+            // J1 = T *solver.primal_solution()-U;
+            // // J = J1.transpose() * J1;
+            // std::cout<<"J1: "<< J1.transpose()<<std::endl;
             return true;
             break;
         }
