@@ -227,7 +227,10 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     // std::cout << "B1 size: " << B1.size() << std::endl;
 
     // Q -> objective matrix
-    Eigen::MatrixXd Q = 2 * T.transpose() * T + 2*m_total_force_cost_factor*B2.transpose()*B2;//- 2*m_direction_lambda*B2.transpose()*B2;
+    Eigen::VectorXd ones = Eigen::VectorXd::Ones(m_control_allocation_matrix.cols());
+
+    // Eigen::MatrixXd Q = 2 * T.transpose() * T + 2*m_total_force_cost_factor*B2.transpose()*B2;//- 2*m_direction_lambda*B2.transpose()*B2;
+    Eigen::MatrixXd Q = 2 * T.transpose() * T + m_total_force_cost_factor*ones*ones.transpose();//- 2*m_direction_lambda*B2.transpose()*B2;
 
     // c -> objective vector
     Eigen::VectorXd c = (-2 * (U.transpose() * T)).transpose(); // + m_direction_lambda*B1;
