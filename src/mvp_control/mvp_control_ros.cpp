@@ -1810,7 +1810,9 @@ bool MvpControlROS::f_cb_srv_set_control_point(
     const std::shared_ptr<SetControlPoint::Response> resp) {
     
     mvp_msgs::msg::ControlProcess::SharedPtr msg = std::make_shared<mvp_msgs::msg::ControlProcess>(req->setpoint);
-
+    Eigen::VectorXd m_i(CONTROLLABLE_DOF_LENGTH);
+    m_i.setZero();
+    m_mvp_control->get_pid()->set_m_i(m_i);
     return f_amend_set_point(msg);
 
 }

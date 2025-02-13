@@ -68,6 +68,9 @@ namespace ctrl {
         //! @brief Error State
         Eigen::VectorXd m_error_state;
 
+        //! @brief previous forces
+        Eigen::VectorXd m_force_prev;
+
         //! @brief Controlled freedoms
         std::vector<int> m_controlled_freedoms;
 
