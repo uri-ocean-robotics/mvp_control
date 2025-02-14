@@ -1393,6 +1393,7 @@ void MvpControlROS::f_control_loop() {
                 {
                         std_msgs::msg::Float64 msg, ang_msg;
                         msg.data = command;
+                        new_angle = std::max(m_vector_thrusters[i]->m_servo_angle_min, std::min(m_vector_thrusters[i]->m_servo_angle_max, new_angle));
                         ang_msg.data = new_angle;
                         m_vector_thrusters.at(i)->m_thrust_publisher->publish(msg);
                         m_vector_thrusters.at(i)->m_angle_publisher->publish(ang_msg);
