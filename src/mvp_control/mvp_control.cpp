@@ -179,11 +179,14 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
         m_controlled_freedoms.size(),
         m_control_allocation_matrix.cols()
     );
+    // Eigen::MatrixXd B2(
+    //     m_controlled_freedoms.size(),
+    //     m_control_allocation_matrix.cols()
+    // );
     Eigen::MatrixXd B2(
-        m_controlled_freedoms.size(),
+        m_control_allocation_matrix.cols(),
         m_control_allocation_matrix.cols()
     );
-
     B2.setIdentity();
     // // Control matrix
     Eigen::VectorXd U(m_controlled_freedoms.size());
@@ -227,7 +230,10 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     // std::cout << "B1 size: " << B1.size() << std::endl;
 
     // Q -> objective matrix
-    Eigen::MatrixXd Q = 2 * T.transpose() * T + 2*m_total_force_cost_factor*B2.transpose()*B2;//- 2*m_direction_lambda*B2.transpose()*B2;
+    Eigen::VectorXd ones = Eigen::VectorXd::Ones(m_control_allocation_matrix.cols());
+
+    Eigen::MatrixXd Q = 2 * T.transpose() * T + 2*m_total_force_cost_factor*B2;//B2.transpose()*B2;//- 2*m_direction_lambda*B2.transpose()*B2;
+    // Eigen::MatrixXd Q = 2 * T.transpose() * T + m_total_force_cost_factor*ones*ones.transpose();//- 2*m_direction_lambda*B2.transpose()*B2;
 
     // c -> objective vector
     Eigen::VectorXd c = (-2 * (U.transpose() * T)).transpose(); // + m_direction_lambda*B1;
@@ -286,10 +292,16 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     }
 
     osqp::OsqpExitCode exitCode = solver.Solve();
+    // printf("final cost = %lf\r\n", solver.objective_value());
 
     switch (exitCode) {
         case osqp::OsqpExitCode::kOptimal: {
             *t = solver.primal_solution();
+            // Eigen::VectorXd J;
+            // Eigen::MatrixXd J1;
+            // J1 = T *solver.primal_solution()-U;
+            // // J = J1.transpose() * J1;
+            // std::cout<<"J1: "<< J1.transpose()<<std::endl;
             return true;
             break;
         }

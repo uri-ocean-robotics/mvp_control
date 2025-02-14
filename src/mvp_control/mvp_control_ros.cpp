@@ -37,6 +37,7 @@
 #include <memory>
 
 
+
 using std::placeholders::_1;
 using std::placeholders::_2;
 using std::placeholders::_3;
@@ -1135,18 +1136,35 @@ bool MvpControlROS::f_compute_process_values() {
 
     try {
         // Transform child frame to world
-        geometry_msgs::msg::TransformStamped cg_world = m_transform_buffer->lookupTransform(
+        geometry_msgs::msg::TransformStamped odom_world = m_transform_buffer->lookupTransform(
             m_world_link_id,
-            m_child_link_id,
+            m_odometry_msg.header.frame_id,
             tf2::TimePointZero,
             10ms
         );
 
+
+        geometry_msgs::msg::PoseStamped pose_in, pose_out;
+        pose_in.header = m_odometry_msg.header;
+        pose_in.pose.position.x = m_odometry_msg.pose.pose.position.x;
+        pose_in.pose.position.y = m_odometry_msg.pose.pose.position.y;
+        pose_in.pose.position.z = m_odometry_msg.pose.pose.position.z;
+        pose_in.pose.orientation.x = m_odometry_msg.pose.pose.orientation.x;
+        pose_in.pose.orientation.y = m_odometry_msg.pose.pose.orientation.y;
+        pose_in.pose.orientation.z = m_odometry_msg.pose.pose.orientation.z;
+        pose_in.pose.orientation.w = m_odometry_msg.pose.pose.orientation.w;
+
+        
+        pose_out.header.frame_id = m_world_link_id;
+
+        tf2::doTransform(pose_in, pose_out, odom_world);
+
         tf2::Quaternion quat;
-        quat.setW(cg_world.transform.rotation.w);
-        quat.setX(cg_world.transform.rotation.x);
-        quat.setY(cg_world.transform.rotation.y);
-        quat.setZ(cg_world.transform.rotation.z);
+        quat.setW(pose_out.pose.orientation.w);
+        quat.setX(pose_out.pose.orientation.x);
+        quat.setY(pose_out.pose.orientation.y);
+        quat.setZ(pose_out.pose.orientation.z);
+
 
         tf2::Matrix3x3(quat).getRPY(
             m_process_values(DOF::ROLL),
@@ -1154,9 +1172,9 @@ bool MvpControlROS::f_compute_process_values() {
             m_process_values(DOF::YAW)
         );
 
-        m_process_values(DOF::X) = cg_world.transform.translation.x;
-        m_process_values(DOF::Y) = cg_world.transform.translation.y;
-        m_process_values(DOF::Z) = cg_world.transform.translation.z;
+        m_process_values(DOF::X) = pose_out.pose.position.x;
+        m_process_values(DOF::Y) = pose_out.pose.position.y;
+        m_process_values(DOF::Z) = pose_out.pose.position.z;
 
     } catch(tf2::TransformException &e) {
         RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't compute process values: ") + e.what());
@@ -1363,7 +1381,7 @@ void MvpControlROS::f_control_loop() {
                     // fs = needed_forces(count);
                     // count++;
                 }
-                // printf("thruster %d results: %lf, %lf, %lf, %lf\r\n", fxp, fxn, fy, fs);
+                // printf("thruster %d results: %lf, %lf, %lf, \r\n", fxp, fxn, fy);
 
                 fx = fxp+fxn;
                 angle = m_vector_thrusters[i]->get_thruster_servo_angle();
@@ -1792,7 +1810,9 @@ bool MvpControlROS::f_cb_srv_set_control_point(
     const std::shared_ptr<SetControlPoint::Response> resp) {
     
     mvp_msgs::msg::ControlProcess::SharedPtr msg = std::make_shared<mvp_msgs::msg::ControlProcess>(req->setpoint);
-
+    Eigen::VectorXd m_i(CONTROLLABLE_DOF_LENGTH);
+    m_i.setZero();
+    m_mvp_control->get_pid()->set_m_i(m_i);
     return f_amend_set_point(msg);
 
 }
