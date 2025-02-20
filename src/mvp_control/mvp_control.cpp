@@ -179,10 +179,7 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
         m_controlled_freedoms.size(),
         m_control_allocation_matrix.cols()
     );
-    // Eigen::MatrixXd B2(
-    //     m_controlled_freedoms.size(),
-    //     m_control_allocation_matrix.cols()
-    // );
+
     Eigen::MatrixXd B2(
         m_control_allocation_matrix.cols(),
         m_control_allocation_matrix.cols()
@@ -208,7 +205,7 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
          * control input. This is important for online mode updates.
          *
          */
-        for (int i = 0; i < m_controlled_freedoms.size(); i++) {
+        for (uint8_t i = 0; i < m_controlled_freedoms.size(); i++) {
             T.row(i) = m_control_allocation_matrix.row(m_controlled_freedoms.at(i));
             // B2.row(i) = m_direction_cost_matrix.row(m_controlled_freedoms.at(i));
             
@@ -228,16 +225,25 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     // std::cout << "U size: " << U.size() << std::endl;
 
     // std::cout << "B1 size: " << B1.size() << std::endl;
-
     // Q -> objective matrix
-    Eigen::VectorXd ones = Eigen::VectorXd::Ones(m_control_allocation_matrix.cols());
+    // Eigen::VectorXd ones = Eigen::VectorXd::Ones(m_control_allocation_matrix.cols());
+    // Eigen::MatrixXd TT = ones.transpose()*T.transpose() * T*ones;
+    // std::cout << "TT:  " << TT << std::endl;
+    
+    double UU = sqrt(U.transpose()*U);
+    double cost_factor = m_total_force_cost_factor/(1+std::exp(-0.05*UU));
+    // double cost_factor = m_total_force_cost_factor/(1+std::exp(0.05*UU));
 
-    Eigen::MatrixXd Q = 2 * T.transpose() * T + 2*m_total_force_cost_factor*B2;//B2.transpose()*B2;//- 2*m_direction_lambda*B2.transpose()*B2;
-    // Eigen::MatrixXd Q = 2 * T.transpose() * T + m_total_force_cost_factor*ones*ones.transpose();//- 2*m_direction_lambda*B2.transpose()*B2;
+
+    //1/(x+a)
+    // std::cout << "U:  " << sqrt(U.transpose()*U) << std::endl;
+    // std::cout << "Cost:  " << cost_factor << std::endl;
+
+    Eigen::MatrixXd Q = 2 * T.transpose() * T + 2*cost_factor*B2;//B2.transpose()*B2;//- 2*m_direction_lambda*B2.transpose()*B2;
+    // Eigen::MatrixXd Q = 2 * T.transpose() * T + 2*m_total_force_cost_factor*ones*ones.transpose();//- 2*m_direction_lambda*B2.transpose()*B2;
 
     // c -> objective vector
     Eigen::VectorXd c = (-2 * (U.transpose() * T)).transpose(); // + m_direction_lambda*B1;
-
     // std::cout << "c size: " << c.size() << std::endl;
 
 

@@ -204,6 +204,7 @@ bool VectorThrusterROS::request_command(double fx, double fy, double current_ang
          delta_angle = std::atan(fy/fx);
     }
 
+    // printf("angle = %lf, Fy =%lf\r\n", delta_angle, fy);
     new_angle = delta_angle + current_angle;
 
     // printf("angle =%lf, %lf, %lf\r\n", current_angle, new_angle, delta_angle);
