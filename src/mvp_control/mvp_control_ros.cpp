@@ -1419,7 +1419,7 @@ void MvpControlROS::f_control_loop() {
                         std_msgs::msg::Float64 msg, ang_msg;
                         msg.data = command;
                         
-                        new_angle = std::max(m_vector_thrusters[i]->m_servo_angle_min, std::min(m_vector_thrusters[i]->m_servo_angle_max, new_angle));
+                        // new_angle = std::max(m_vector_thrusters[i]->m_servo_angle_min, std::min(m_vector_thrusters[i]->m_servo_angle_max, new_angle));
                         ang_msg.data = new_angle;
                         m_vector_thrusters.at(i)->m_thrust_publisher->publish(msg);
                         m_vector_thrusters.at(i)->m_angle_publisher->publish(ang_msg);
@@ -1793,6 +1793,8 @@ void MvpControlROS::f_load_control_config()
             // printf("    command_topic: %s\r\n", topic_name.c_str());
             this->declare_parameter(std::string()+CONF_THRUSTER_SERVO_SPEED + "/" + t_name, speed);
             t->set_thruster_servo_speed(speed);
+            t->m_servo_angle_step = t->get_thruster_servo_speed()/m_controller_frequency;  //get angle step.
+
 
             std::vector<float> angle_min_max;
             angle_min_max = map["vector_thruster_ids"][t_name]["angle_limits"].as<std::vector<float> >();

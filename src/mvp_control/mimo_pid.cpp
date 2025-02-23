@@ -67,9 +67,11 @@ bool MimoPID::calculate(Eigen::VectorXd* u, const Eigen::ArrayXd& desired, const
     pid_sum = (pid_sum < m_pid_min).select(m_pid_min, pid_sum);
 
     m_i = (pid_sum.array() > m_pid_min.array() && pid_sum.array() < m_pid_max.array()).select(m_i+delta_i, m_i);
-    // printf("PID: %lf, %lf,%lf, | all: %lf\r\n", p[4], m_i[4], d[4], pid_sum[4]);
-    // printf("PID z: %lf, %lf,%lf, | all: %lf\r\n", p[2], m_i[2], d[2], pid_sum[2]);
-
+    printf("----------------------"\r\n);
+    printf("PID pitch: %lf, %lf,%lf, | all: %lf\r\n", p[4], m_i[4], d[4], pid_sum[4]);
+    printf("PID Yaw: %lf, %lf,%lf, | all: %lf\r\n", p[5], m_i[5], d[5], pid_sum[5]);
+    printf("PID Z: %lf, %lf,%lf, | all: %lf\r\n", p[2], m_i[2], d[2], pid_sum[2]);
+    printf("PID v: %lf, %lf,%lf, | all: %lf\r\n", p[7], m_i[7], d[7], pid_sum[7]);
     // *u = p + m_i + d;
     *u = pid_sum;
 

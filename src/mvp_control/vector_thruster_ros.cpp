@@ -204,9 +204,18 @@ bool VectorThrusterROS::request_command(double fx, double fy, double current_ang
          delta_angle = std::atan(fy/fx);
     }
 
+    if(delta_angle > m_servo_angle_step || delta_angle <-m_servo_angle_step)
+    {
+        printf("solution not good, angle [%lf] out of bound\r\n", delta_angle);
+    }
+    //delta angle saturation
+    delta_angle = std::max(-m_servo_angle_step, std::min(m_servo_angle_step, delta_angle));
+
     // printf("angle = %lf, Fy =%lf\r\n", delta_angle, fy);
     new_angle = delta_angle + current_angle;
 
+    //saturation
+    new_angle = std::max(m_servo_angle_min, std::min(m_servo_angle_max, new_angle));
     // printf("angle =%lf, %lf, %lf\r\n", current_angle, new_angle, delta_angle);
 
 

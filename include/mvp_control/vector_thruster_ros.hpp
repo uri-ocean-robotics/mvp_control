@@ -72,6 +72,8 @@ namespace ctrl {
 
         double m_servo_angle_min;
 
+        double m_servo_angle_step;
+
         double m_servo_angle;
 
         double m_servo_speed;
