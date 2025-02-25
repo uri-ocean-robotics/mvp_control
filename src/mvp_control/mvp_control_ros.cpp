@@ -1346,7 +1346,7 @@ void MvpControlROS::f_control_loop() {
                 std_msgs::msg::Float64 msg;
                 msg.data = 0.0;
                 m_vector_thrusters.at(i)->m_thrust_publisher->publish(msg);
-                m_vector_thrusters.at(i)->m_angle_publisher->publish(msg);
+                // m_vector_thrusters.at(i)->m_angle_publisher->publish(msg);
             }
             continue;
         }
