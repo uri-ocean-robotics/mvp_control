@@ -226,7 +226,9 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
 
     // Conduct some checks to see if everything is ready to be initialized
     if(m_thrusters.empty()) {
-        throw control_ros_exception("no thruster specified");
+        // throw control_ros_exception("no thruster specified");
+        RCLCPP_WARN_STREAM(this->get_logger(), "!!! No thruster specified !!!");
+
     }
     else{
         // Control allocation matrix is generated based on each thruster. Each
@@ -260,7 +262,11 @@ void MvpControlROS::f_generate_control_allocation_matrix() {
         }
     }
 
+    if(m_thrusters.empty()&&m_vector_thrusters.empty())
+    {
+        throw control_ros_exception("no thruster specified");
 
+    }
     // Initialize the control allocation matrix based on zero matrix.
     // M by N matrix. M -> number of all controllable DOF, N -> number of
     // thrusters
@@ -780,13 +786,16 @@ bool MvpControlROS::f_update_control_allocation_matrix() {
             m_control_allocation_matrix(DOF::X, count) = fx_xyz.x();
             m_control_allocation_matrix(DOF::Y, count) = fx_xyz.y();
             m_control_allocation_matrix(DOF::Z, count) = fx_xyz.z();
+            // m_control_allocation_matrix(DOF::Z, count) = 0; //remove vector thruster on depth
             
             // printf("thruster->%s = ", m_vector_thrusters[j]->get_link_id().c_str());
             // std::cout<<fx_xyz<<std::endl;
 
             m_control_allocation_matrix(DOF::X, count+1) = fy_xyz.x();
             m_control_allocation_matrix(DOF::Y, count+1) = fy_xyz.y();
-            m_control_allocation_matrix(DOF::Z, count+1) = fy_xyz.z();
+            m_control_allocation_matrix(DOF::Z, count+1) = fy_xyz.z(); 
+            // m_control_allocation_matrix(DOF::Z, count+1) = 0;   //remove vector thruster on depth
+
             // Convert prq to world_frame angular rate:
 
             auto tx_rpy = ang_vel_tranform * tx_pqr;
@@ -885,6 +894,7 @@ void MvpControlROS::f_update_osqp_matrix_auto_direction()
         alpha_l = std::max(m_vector_thrusters[i]->m_servo_angle_min - m_vector_thrusters[i]->get_thruster_servo_angle(), 
                            -m_vector_thrusters[i]->m_servo_speed/m_controller_frequency);
 
+        // printf("thruster [%d]:%lf,%lf\r\n", i, alpha_u, alpha_l);
         double sin_u = std::sin(alpha_u);
         double cos_u = std::cos(alpha_u);
         double sin_l = std::sin(alpha_l);
@@ -902,7 +912,9 @@ void MvpControlROS::f_update_osqp_matrix_auto_direction()
             // lower_limit[row_count+7] = m_vector_thrusters[i]->m_force_min*cos_l;
             lower_limit[row_count+6] = m_vector_thrusters[i]->m_force_min;
             lower_limit[row_count+7] = m_vector_thrusters[i]->m_force_min;
-    
+            // lower_limit[row_count+8] = N_INFINITY;
+            // lower_limit[row_count+9] = 0;
+
             upper_limit[row_count] = P_INFINITY;
             upper_limit[row_count+1] = 0;
             // upper_limit[row_count+2] = m_vector_thrusters[i]->m_force_max*cos_u;
@@ -913,7 +925,10 @@ void MvpControlROS::f_update_osqp_matrix_auto_direction()
             upper_limit[row_count+5] = P_INFINITY;
             upper_limit[row_count+6] = 0;
             upper_limit[row_count+7] = 0;
-
+            // upper_limit[row_count+8] = 0;
+            // upper_limit[row_count+9] = P_INFINITY;
+            
+            //tan(alpha_l)*(Fx+ + Fx-) < Fy < tan(alpha_u)*(Fx+ + Fx -)
             constraints_matrix.insert(row_count, col_count) = std::tan(alpha_u);
             constraints_matrix.insert(row_count, col_count +1) = -1;
             constraints_matrix.insert(row_count, col_count +2) = 0;
@@ -945,6 +960,16 @@ void MvpControlROS::f_update_osqp_matrix_auto_direction()
             constraints_matrix.insert(row_count+7, col_count) = 0;
             constraints_matrix.insert(row_count+7, col_count +1) = std::tan(alpha_u/2); //0;
             constraints_matrix.insert(row_count+7, col_count +2) = 1;
+
+            // constraints_matrix.insert(row_count+8, col_count) = std::tan(alpha_l);
+            // constraints_matrix.insert(row_count+8, col_count +1) = -1;
+            // constraints_matrix.insert(row_count+8, col_count +2) = std::tan(alpha_l);
+            
+            // constraints_matrix.insert(row_count+9, col_count) = std::tan(alpha_u);
+            // constraints_matrix.insert(row_count+9, col_count +1) = -1;
+            // constraints_matrix.insert(row_count+9, col_count +2) = std::tan(alpha_u);
+
+
         }
         //manual direction//
         else{
@@ -1321,7 +1346,7 @@ void MvpControlROS::f_control_loop() {
                 std_msgs::msg::Float64 msg;
                 msg.data = 0.0;
                 m_vector_thrusters.at(i)->m_thrust_publisher->publish(msg);
-                m_vector_thrusters.at(i)->m_angle_publisher->publish(msg);
+                // m_vector_thrusters.at(i)->m_angle_publisher->publish(msg);
             }
             continue;
         }
@@ -1393,6 +1418,8 @@ void MvpControlROS::f_control_loop() {
                 {
                         std_msgs::msg::Float64 msg, ang_msg;
                         msg.data = command;
+                        
+                        // new_angle = std::max(m_vector_thrusters[i]->m_servo_angle_min, std::min(m_vector_thrusters[i]->m_servo_angle_max, new_angle));
                         ang_msg.data = new_angle;
                         m_vector_thrusters.at(i)->m_thrust_publisher->publish(msg);
                         m_vector_thrusters.at(i)->m_angle_publisher->publish(ang_msg);
@@ -1766,6 +1793,8 @@ void MvpControlROS::f_load_control_config()
             // printf("    command_topic: %s\r\n", topic_name.c_str());
             this->declare_parameter(std::string()+CONF_THRUSTER_SERVO_SPEED + "/" + t_name, speed);
             t->set_thruster_servo_speed(speed);
+            t->m_servo_angle_step = t->get_thruster_servo_speed()/m_controller_frequency;  //get angle step.
+
 
             std::vector<float> angle_min_max;
             angle_min_max = map["vector_thruster_ids"][t_name]["angle_limits"].as<std::vector<float> >();
