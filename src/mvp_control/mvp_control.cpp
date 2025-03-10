@@ -192,6 +192,7 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
     // // Control matrix
     Eigen::VectorXd U(m_controlled_freedoms.size());
     Eigen::VectorXd B1 =m_direction_cost_matrix_c;
+    // std::cout << "restore:  " << m_restoring_force_matrix << std::endl;
 
     {
         /**

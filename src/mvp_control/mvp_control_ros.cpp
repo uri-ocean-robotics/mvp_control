@@ -116,16 +116,19 @@ MvpControlROS::MvpControlROS(std::string name) : Node(name)
 
     //gravity and buoyancy param
     this->declare_parameter("gravity", 0.0);
-    this->declare_parameter("gravity", m_gravity);
+    this->get_parameter("gravity", m_gravity);
 
-    this->declare_parameter("gravity_link", m_tf_prefix + "cg_link");
-    this->declare_parameter("gravity_link", m_gravity_link);
+    this->declare_parameter("gravity_link", "cg_link");
+    this->get_parameter("gravity_link", m_gravity_link);
+    m_gravity_link = m_tf_prefix + m_gravity_link;
 
     this->declare_parameter("buoyancy", 0.0);
-    this->declare_parameter("buoyancy", m_buoyancy);
+    this->get_parameter("buoyancy", m_buoyancy);
 
-    this->declare_parameter("buoyancy_link", m_tf_prefix + "cb_link");
-    this->declare_parameter("buoyancy_link", m_buoyancy_link);
+    this->declare_parameter("buoyancy_link", "cb_link");
+    this->get_parameter("buoyancy_link", m_buoyancy_link);
+    m_buoyancy_link = m_tf_prefix + m_buoyancy_link;
+
 
     //End of ROS Params
 
@@ -670,8 +673,13 @@ bool MvpControlROS::f_initial_tf_check(){
         RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s",
             m_buoyancy_link.c_str(), m_world_link_id_initial.c_str(), e.what() ); 
     }
+    printf("setting restoring matrix\r\n");
+    Eigen::VectorXd m_restore_matrix;
+    m_restore_matrix =  Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
 
-    Eigen::VectorXd m_restore_matrix = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
+    m_mvp_control->set_restoring_force_matrix(m_restore_matrix);
+    printf("setting restoring matrix\r\n");
+
     return true;
 
 }
@@ -1090,14 +1098,15 @@ void MvpControlROS::f_update_restoring_matrix(){
     g.x() = 0;
     g.y() = 0;
     g.z() = m_gravity;
-
+    std::string restore_global_link = m_tf_prefix + "world_ned";
     Eigen::VectorXd m_g_restore;
+    m_g_restore = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
     //convert the force into the world frame
     try {
         //convert force in to the world frame
         geometry_msgs::msg::TransformStamped tf_cg = m_transform_buffer->lookupTransform(
             m_world_link_id,
-            m_tf_prefix+"world_ned",
+            restore_global_link,
             tf2::TimePointZero,
             10ms
             );
@@ -1112,10 +1121,10 @@ void MvpControlROS::f_update_restoring_matrix(){
         //convert force into the local frame
         geometry_msgs::msg::TransformStamped tf_w2c = m_transform_buffer->lookupTransform(
             m_child_link_id,
-            m_tf_prefix+"world_ned",
+            restore_global_link,
             tf2::TimePointZero,
             10ms
-            );
+            );        
 
         tf_eigen = tf2::transformToEigen(tf_w2c);
         Eigen::Vector3d g_uvw = tf_eigen.rotation()*g;
@@ -1146,6 +1155,7 @@ void MvpControlROS::f_update_restoring_matrix(){
             tf2::TimePointZero,
             10ms
         );
+
         Eigen::Matrix3d ang_vel_tranform = f_angular_velocity_transform(tf_child_world);
 
         auto t_rpy = ang_vel_tranform * t_pqr;
@@ -1160,19 +1170,20 @@ void MvpControlROS::f_update_restoring_matrix(){
     }
 
 
-    //update gravity frame 
+    //update buoyancy frame 
     Eigen::Vector3d b;
     b.x() = 0;
     b.y() = 0;
     b.z() = m_buoyancy;
 
     Eigen::VectorXd m_b_restore;
+    m_b_restore = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
     //convert the force into the world frame
     try {
         //convert force in to the world frame
         geometry_msgs::msg::TransformStamped tf_cb = m_transform_buffer->lookupTransform(
             m_world_link_id,
-            m_tf_prefix+"world_ned",
+            restore_global_link,
             tf2::TimePointZero,
             10ms
             );
@@ -1187,7 +1198,7 @@ void MvpControlROS::f_update_restoring_matrix(){
         //convert force into the local frame
         geometry_msgs::msg::TransformStamped tf_w2c = m_transform_buffer->lookupTransform(
             m_child_link_id,
-            m_tf_prefix+"world_ned",
+            restore_global_link,
             tf2::TimePointZero,
             10ms
             );
@@ -1242,6 +1253,7 @@ bool MvpControlROS::f_compute_process_values() {
     rclcpp::Time now = this->get_clock()->now();
 
     f_update_control_allocation_matrix();
+    f_update_restoring_matrix();
 
     try {
         // Transform child frame to world
