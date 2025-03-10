@@ -113,23 +113,27 @@ MvpControlROS::MvpControlROS(std::string name) : Node(name)
     this->declare_parameter(CONF_GENERATOR_TYPE, CONF_GENERATOR_TYPE_OPT_TF);
     this->get_parameter(CONF_GENERATOR_TYPE, generator_type);
 
+    this->declare_parameter("use_restoring_effort", false);
+    this->get_parameter("use_restoring_effort", m_restoring_effort_flag);
 
     //gravity and buoyancy param
-    this->declare_parameter("gravity", 0.0);
-    this->get_parameter("gravity", m_gravity);
+    if (m_restoring_effort_flag)
+    {
+        this->declare_parameter("gravity", 0.0);
+        this->get_parameter("gravity", m_gravity);
 
-    this->declare_parameter("gravity_link", "cg_link");
-    this->get_parameter("gravity_link", m_gravity_link);
-    m_gravity_link = m_tf_prefix + m_gravity_link;
+        this->declare_parameter("gravity_link", "cg_link");
+        this->get_parameter("gravity_link", m_gravity_link);
+        m_gravity_link = m_tf_prefix + m_gravity_link;
 
-    this->declare_parameter("buoyancy", 0.0);
-    this->get_parameter("buoyancy", m_buoyancy);
+        this->declare_parameter("buoyancy", 0.0);
+        this->get_parameter("buoyancy", m_buoyancy);
 
-    this->declare_parameter("buoyancy_link", "cb_link");
-    this->get_parameter("buoyancy_link", m_buoyancy_link);
-    m_buoyancy_link = m_tf_prefix + m_buoyancy_link;
+        this->declare_parameter("buoyancy_link", "cb_link");
+        this->get_parameter("buoyancy_link", m_buoyancy_link);
+        m_buoyancy_link = m_tf_prefix + m_buoyancy_link;
 
-
+    }
     //End of ROS Params
 
     /**
@@ -645,33 +649,36 @@ bool MvpControlROS::f_initial_tf_check(){
         }
     }
 
-    //checking restoring force and moment
-    try {
-        geometry_msgs::msg::TransformStamped tf_cg = m_transform_buffer->lookupTransform(
-            m_world_link_id_initial,
-            m_gravity_link,
-            tf2::TimePointZero,
-            10ms
-            );
+    if(m_restoring_effort_flag)
+    {
+        //checking restoring force and moment
+        try {
+            geometry_msgs::msg::TransformStamped tf_cg = m_transform_buffer->lookupTransform(
+                m_world_link_id_initial,
+                m_gravity_link,
+                tf2::TimePointZero,
+                10ms
+                );
 
-    } catch (const tf2::TransformException & e) {
-        RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF for gravity: ") + e.what());
-        RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s",
-                m_gravity_link.c_str(), m_world_link_id_initial.c_str(), e.what() ); 
-    }
+        } catch (const tf2::TransformException & e) {
+            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF for gravity: ") + e.what());
+            RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s",
+                    m_gravity_link.c_str(), m_world_link_id_initial.c_str(), e.what() ); 
+        }
 
-    try {
-        geometry_msgs::msg::TransformStamped tf_cb = m_transform_buffer->lookupTransform(
-            m_world_link_id_initial,
-            m_buoyancy_link,
-            tf2::TimePointZero,
-            10ms
-            );
+        try {
+            geometry_msgs::msg::TransformStamped tf_cb = m_transform_buffer->lookupTransform(
+                m_world_link_id_initial,
+                m_buoyancy_link,
+                tf2::TimePointZero,
+                10ms
+                );
 
-    } catch (const tf2::TransformException & e) {
-        RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF for gravity: ") + e.what());
-        RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s",
-            m_buoyancy_link.c_str(), m_world_link_id_initial.c_str(), e.what() ); 
+        } catch (const tf2::TransformException & e) {
+            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF for gravity: ") + e.what());
+            RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s",
+                m_buoyancy_link.c_str(), m_world_link_id_initial.c_str(), e.what() ); 
+        }
     }
     printf("setting restoring matrix\r\n");
     Eigen::VectorXd m_restore_matrix;
@@ -1253,7 +1260,10 @@ bool MvpControlROS::f_compute_process_values() {
     rclcpp::Time now = this->get_clock()->now();
 
     f_update_control_allocation_matrix();
-    f_update_restoring_matrix();
+    
+    if(m_restoring_effort_flag){
+        f_update_restoring_matrix();
+    }
 
     try {
         // Transform child frame to world

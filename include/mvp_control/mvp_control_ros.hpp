@@ -199,6 +199,8 @@ namespace ctrl {
         double m_buoyancy;
         std::string m_buoyancy_link;
 
+        bool m_restoring_effort_flag;
+
         //! @brief Get control modes ros service server
         // ros::ServiceServer m_get_control_modes_server;
         rclcpp::Service<mvp_msgs::srv::GetControlModes>::SharedPtr m_get_control_modes_server;
