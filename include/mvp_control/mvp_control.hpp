@@ -86,6 +86,7 @@ namespace ctrl {
 
         double m_total_force_cost_factor;
 
+        Eigen::VectorXd m_restoring_force_matrix;
 
         /** @brief Calculates PID using #MimoPID
          *
@@ -162,6 +163,9 @@ namespace ctrl {
 
         void set_total_force_cost_factor(
             const decltype(m_total_force_cost_factor) &factor);
+        
+        void set_restoring_force_matrix(
+            const decltype(m_restoring_force_matrix) &matrix);
 
         //! @brief Standard shared pointer type
         typedef std::shared_ptr<MvpControl> Ptr;

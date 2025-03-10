@@ -94,6 +94,10 @@ void MvpControl::set_total_force_cost_factor(
     m_total_force_cost_factor = factor;
 }
 
+void MvpControl::set_restoring_force_matrix(
+    const decltype(m_restoring_force_matrix)& matrix) {
+        m_restoring_force_matrix = matrix;
+}
 
 auto MvpControl::get_pid() -> decltype(m_pid) {
     return m_pid;
@@ -209,7 +213,7 @@ bool MvpControl::f_optimize_thrust(Eigen::VectorXd *t, Eigen::VectorXd u) {
             T.row(i) = m_control_allocation_matrix.row(m_controlled_freedoms.at(i));
             // B2.row(i) = m_direction_cost_matrix.row(m_controlled_freedoms.at(i));
             
-            U(i) = u(m_controlled_freedoms.at(i));
+            U(i) = u(m_controlled_freedoms.at(i)) - m_restoring_force_matrix(m_controlled_freedoms.at(i));
         }
     }
 
