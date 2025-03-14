@@ -1270,7 +1270,9 @@ bool MvpControlROS::f_cb_srv_enable(
     m_enabled = true;
     std_msgs::Bool controller_state;
     controller_state.data=m_enabled;
-
+    auto m_i = m_mvp_control->get_pid()->get_m_i();
+    m_i.setZero();
+    m_mvp_control->get_pid()->set_m_i(m_i);
     m_controller_state_publisher.publish(controller_state);
     return true;
 }
