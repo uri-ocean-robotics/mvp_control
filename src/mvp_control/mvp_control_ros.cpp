@@ -1968,6 +1968,9 @@ bool MvpControlROS::f_cb_srv_set_controller(
 
     // Publish the message
     m_controller_state_publisher->publish(msg);
+    Eigen::VectorXd m_i(CONTROLLABLE_DOF_LENGTH);
+    m_i.setZero();
+    m_mvp_control->get_pid()->set_m_i(m_i);
     return true;
 }
 
