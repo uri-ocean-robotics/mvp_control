@@ -192,6 +192,15 @@ namespace ctrl {
 
         double m_total_force_cost_factor;
 
+
+        double m_gravity;
+        std::string m_gravity_link;
+
+        double m_buoyancy;
+        std::string m_buoyancy_link;
+
+        bool m_restoring_effort_flag;
+
         //! @brief Get control modes ros service server
         // ros::ServiceServer m_get_control_modes_server;
         rclcpp::Service<mvp_msgs::srv::GetControlModes>::SharedPtr m_get_control_modes_server;
@@ -308,6 +317,8 @@ namespace ctrl {
          * @return
          */
         bool f_initial_tf_check();
+
+        void f_update_restoring_matrix();
 
 
         /** @brief Generate thrusters

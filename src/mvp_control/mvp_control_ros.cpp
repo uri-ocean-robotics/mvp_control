@@ -113,6 +113,27 @@ MvpControlROS::MvpControlROS(std::string name) : Node(name)
     this->declare_parameter(CONF_GENERATOR_TYPE, CONF_GENERATOR_TYPE_OPT_TF);
     this->get_parameter(CONF_GENERATOR_TYPE, generator_type);
 
+    this->declare_parameter("use_restoring_effort", false);
+    this->get_parameter("use_restoring_effort", m_restoring_effort_flag);
+
+    //gravity and buoyancy param
+    if (m_restoring_effort_flag)
+    {
+        this->declare_parameter("gravity", 0.0);
+        this->get_parameter("gravity", m_gravity);
+
+        this->declare_parameter("gravity_link", "cg_link");
+        this->get_parameter("gravity_link", m_gravity_link);
+        m_gravity_link = m_tf_prefix + m_gravity_link;
+
+        this->declare_parameter("buoyancy", 0.0);
+        this->get_parameter("buoyancy", m_buoyancy);
+
+        this->declare_parameter("buoyancy_link", "cb_link");
+        this->get_parameter("buoyancy_link", m_buoyancy_link);
+        m_buoyancy_link = m_tf_prefix + m_buoyancy_link;
+
+    }
     //End of ROS Params
 
     /**
@@ -628,6 +649,44 @@ bool MvpControlROS::f_initial_tf_check(){
         }
     }
 
+    if(m_restoring_effort_flag)
+    {
+        //checking restoring force and moment
+        try {
+            geometry_msgs::msg::TransformStamped tf_cg = m_transform_buffer->lookupTransform(
+                m_world_link_id_initial,
+                m_gravity_link,
+                tf2::TimePointZero,
+                10ms
+                );
+
+        } catch (const tf2::TransformException & e) {
+            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF for gravity: ") + e.what());
+            RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s",
+                    m_gravity_link.c_str(), m_world_link_id_initial.c_str(), e.what() ); 
+        }
+
+        try {
+            geometry_msgs::msg::TransformStamped tf_cb = m_transform_buffer->lookupTransform(
+                m_world_link_id_initial,
+                m_buoyancy_link,
+                tf2::TimePointZero,
+                10ms
+                );
+
+        } catch (const tf2::TransformException & e) {
+            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF for gravity: ") + e.what());
+            RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s",
+                m_buoyancy_link.c_str(), m_world_link_id_initial.c_str(), e.what() ); 
+        }
+    }
+    printf("setting restoring matrix\r\n");
+    Eigen::VectorXd m_restore_matrix;
+    m_restore_matrix =  Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
+
+    m_mvp_control->set_restoring_force_matrix(m_restore_matrix);
+    printf("setting restoring matrix\r\n");
+
     return true;
 
 }
@@ -1039,125 +1098,172 @@ void MvpControlROS::f_update_osqp_matrix_auto_direction()
 }
 
 
-// void MvpControlROS::f_update_osqp_matrix()
-// {
- 
-//     int row_num;  //number of constraints
-//     int col_num;  //number of forces
+void MvpControlROS::f_update_restoring_matrix(){
 
-//     int constraints_per_thruster, forces_per_thruster;
-//     if (m_vector_thrusters.empty())
-//     {
-//         constraints_per_thruster = 0;
-//         forces_per_thruster = 0;
-//     }
-//     else{
-//         constraints_per_thruster= m_vector_thrusters[0]->get_thruster_constraint_count();
-//         forces_per_thruster = m_vector_thrusters[0]->get_thruster_force_count();
-//     }
-
-//     row_num = m_thrusters.size() + constraints_per_thruster*m_vector_thrusters.size(); //each vector thruster has 4 constraints
-//     col_num = m_thrusters.size() + forces_per_thruster*m_vector_thrusters.size(); //each vector thruster has 2 forces
-//     ///prepare OSQP matrix
-//     Eigen::VectorXd upper_limit(row_num);
-//     Eigen::VectorXd lower_limit(row_num);
-//     Eigen::SparseMatrix<double> constraints_matrix(row_num,col_num);
-//     constraints_matrix.setZero();
-
-//     double P_INFINITY =  std::numeric_limits<double>::infinity();
-//     double N_INFINITY = -std::numeric_limits<double>::infinity();
-
-//     int row_count=0;
-//     int col_count = 0;
-//     for(uint64_t i = 0 ; i < m_thrusters.size() ; i++) {
-//         upper_limit[row_count] = m_thrusters[i]->m_force_max;
-//         lower_limit[row_count] = m_thrusters[i]->m_force_min;
-//         constraints_matrix.insert(row_count, col_count) = 1; //diagnoal element set to 1
-//         row_count ++;
-//         col_count ++;
-//     }
-
-
-//     double alpha_u;
-//     double alpha_l;    
-//     for(uint64_t i = 0; i<m_vector_thrusters.size(); i ++){
+    //update gravity frame 
+    Eigen::Vector3d g;
+    g.x() = 0;
+    g.y() = 0;
+    g.z() = m_gravity;
+    std::string restore_global_link = m_tf_prefix + "world_ned";
+    Eigen::VectorXd m_g_restore;
+    m_g_restore = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
+    //convert the force into the world frame
+    try {
+        //convert force in to the world frame
+        geometry_msgs::msg::TransformStamped tf_cg = m_transform_buffer->lookupTransform(
+            m_world_link_id,
+            restore_global_link,
+            tf2::TimePointZero,
+            10ms
+            );
         
-//         //find the alpha u and alpah l;
-//         alpha_u = std::min(m_vector_thrusters[i]->m_servo_angle_max - m_vector_thrusters[i]->get_thruster_servo_angle(), 
-//                             m_vector_thrusters[i]->m_servo_speed/m_controller_frequency);
-//         alpha_l = std::max(m_vector_thrusters[i]->m_servo_angle_min - m_vector_thrusters[i]->get_thruster_servo_angle(), 
-//                            -m_vector_thrusters[i]->m_servo_speed/m_controller_frequency);
-
-//         double sin_u = std::sin(alpha_u);
-//         double cos_u = std::cos(alpha_u);
-//         double sin_l = std::sin(alpha_l);
-//         double cos_l = std::cos(alpha_l);
+        auto tf_eigen = tf2::transformToEigen(tf_cg);
+        Eigen::Vector3d g_xyz = tf_eigen.rotation()*g;
+        m_g_restore(DOF::X) = g_xyz.x();
+        m_g_restore(DOF::Y) = g_xyz.y();
+        m_g_restore(DOF::Z) = g_xyz.z();
         
-//         if(m_vector_thrusters[i]->get_thruster_direction()>0){
-//             lower_limit[row_count] = 0;
-//             upper_limit[row_count] = P_INFINITY;
-//             constraints_matrix.insert(row_count, col_count) = std::tan(alpha_u);
-//             constraints_matrix.insert(row_count, col_count +1) = -1;
 
-//             lower_limit[row_count+1] = N_INFINITY;
-//             upper_limit[row_count+1] = 0;
-//             constraints_matrix.insert(row_count+1, col_count) = std::tan(alpha_l);
-//             constraints_matrix.insert(row_count+1, col_count +1) = -1;
+        //convert force into the local frame
+        geometry_msgs::msg::TransformStamped tf_w2c = m_transform_buffer->lookupTransform(
+            m_child_link_id,
+            restore_global_link,
+            tf2::TimePointZero,
+            10ms
+            );        
 
-//             lower_limit[row_count+2] = 0;
-//             upper_limit[row_count+2] = m_vector_thrusters[i]->m_force_max*cos_u;
-//             constraints_matrix.insert(row_count+2, col_count) = 1;
-//             constraints_matrix.insert(row_count+2, col_count +1) =0; 
- 
-//             lower_limit[row_count+3] = 0;
-//             upper_limit[row_count+3] = m_vector_thrusters[i]->m_force_max*cos_l;
-//             constraints_matrix.insert(row_count+3, col_count) = 1;
-//             constraints_matrix.insert(row_count+3, col_count +1) = 0;
+        tf_eigen = tf2::transformToEigen(tf_w2c);
+        Eigen::Vector3d g_uvw = tf_eigen.rotation()*g;
+        m_g_restore(DOF::U) = g_uvw.x();
+        m_g_restore(DOF::V) = g_uvw.y();
+        m_g_restore(DOF::W) = g_uvw.z();
 
-//         }
-//         else{
-//             // printf("negative thrust direction\r\n");
-//             lower_limit[row_count] = N_INFINITY;
-//             upper_limit[row_count] = 0;
-//             constraints_matrix.insert(row_count, col_count) = std::tan(alpha_u);
-//             constraints_matrix.insert(row_count, col_count +1) = -1;
-   
+        //get torque in pqr
+        geometry_msgs::msg::TransformStamped tf_local = m_transform_buffer->lookupTransform(
+            m_child_link_id,
+            m_gravity_link,
+            tf2::TimePointZero,
+            10ms
+            );
 
-//             lower_limit[row_count+1] = 0;
-//             upper_limit[row_count+1] = P_INFINITY;
-            
-//             constraints_matrix.insert(row_count+1, col_count) = std::tan(alpha_l);
-//             constraints_matrix.insert(row_count+1, col_count +1) = -1;
- 
-//             lower_limit[row_count+2] = m_vector_thrusters[i]->m_force_min *cos_u;
-//             upper_limit[row_count+2] = 0;
-//             constraints_matrix.insert(row_count+2, col_count) =  1;
-//             constraints_matrix.insert(row_count+2, col_count +1) = 0;
-     
-//             lower_limit[row_count+3] = m_vector_thrusters[i]->m_force_min *cos_l;
-//             upper_limit[row_count+3] = 0;
-//             constraints_matrix.insert(row_count+3, col_count) = 1;
-//             constraints_matrix.insert(row_count+3, col_count +1) = 0;
-//         }
-//         //each vecot thruster will create 4 rows and 2 columns in allocation matrix.
-//         row_count = row_count + m_vector_thrusters[0]->get_thruster_constraint_count(); 
-//         col_count = col_count + m_vector_thrusters[0]->get_thruster_force_count();
+        tf_eigen = tf2::transformToEigen(tf_local);
 
-//     }
+        auto trans_xyz = tf_eigen.translation();
+        auto t_pqr = trans_xyz.cross(g_uvw);
+        m_g_restore(DOF::P) = t_pqr.x();
+        m_g_restore(DOF::Q) = t_pqr.y();
+        m_g_restore(DOF::R) = t_pqr.z();
 
+        //get torque in roll pitch yaw
+        geometry_msgs::msg::TransformStamped tf_child_world = m_transform_buffer->lookupTransform(
+            m_world_link_id,
+            m_child_link_id,
+            tf2::TimePointZero,
+            10ms
+        );
 
-//     m_mvp_control->set_lower_limit(lower_limit);
-//     m_mvp_control->set_upper_limit(upper_limit);
-//     m_mvp_control->set_constraint_matrix(constraints_matrix);
+        Eigen::Matrix3d ang_vel_tranform = f_angular_velocity_transform(tf_child_world);
+
+        auto t_rpy = ang_vel_tranform * t_pqr;
+        m_g_restore(DOF::ROLL) = t_rpy.x();
+        m_g_restore(DOF::PITCH) = t_rpy.y();
+        m_g_restore(DOF::YAW) = t_rpy.z();
+
+    } catch (const tf2::TransformException & e) {
+        auto steady_clock = rclcpp::Clock();
+
+        RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF for gravity: ") + e.what());
+    }
 
 
-// }
+    //update buoyancy frame 
+    Eigen::Vector3d b;
+    b.x() = 0;
+    b.y() = 0;
+    b.z() = m_buoyancy;
+
+    Eigen::VectorXd m_b_restore;
+    m_b_restore = Eigen::VectorXd::Zero(CONTROLLABLE_DOF_LENGTH);
+    //convert the force into the world frame
+    try {
+        //convert force in to the world frame
+        geometry_msgs::msg::TransformStamped tf_cb = m_transform_buffer->lookupTransform(
+            m_world_link_id,
+            restore_global_link,
+            tf2::TimePointZero,
+            10ms
+            );
+        
+        auto tf_eigen = tf2::transformToEigen(tf_cb);
+        Eigen::Vector3d b_xyz = tf_eigen.rotation()*b;
+        m_b_restore(DOF::X) = b_xyz.x();
+        m_b_restore(DOF::Y) = b_xyz.y();
+        m_b_restore(DOF::Z) = b_xyz.z();
+        
+
+        //convert force into the local frame
+        geometry_msgs::msg::TransformStamped tf_w2c = m_transform_buffer->lookupTransform(
+            m_child_link_id,
+            restore_global_link,
+            tf2::TimePointZero,
+            10ms
+            );
+
+        tf_eigen = tf2::transformToEigen(tf_w2c);
+        Eigen::Vector3d b_uvw = tf_eigen.rotation()*b;
+        m_b_restore(DOF::U) = b_uvw.x();
+        m_b_restore(DOF::V) = b_uvw.y();
+        m_b_restore(DOF::W) = b_uvw.z();
+
+        //get torque in pqr
+        geometry_msgs::msg::TransformStamped tf_local = m_transform_buffer->lookupTransform(
+            m_child_link_id,
+            m_buoyancy_link,
+            tf2::TimePointZero,
+            10ms
+            );
+
+        tf_eigen = tf2::transformToEigen(tf_local);
+
+        auto trans_xyz = tf_eigen.translation();
+        auto t_pqr = trans_xyz.cross(b_uvw);
+        m_b_restore(DOF::P) = t_pqr.x();
+        m_b_restore(DOF::Q) = t_pqr.y();
+        m_b_restore(DOF::R) = t_pqr.z();
+
+        //get torque in roll pitch yaw
+        geometry_msgs::msg::TransformStamped tf_child_world = m_transform_buffer->lookupTransform(
+            m_world_link_id,
+            m_child_link_id,
+            tf2::TimePointZero,
+            10ms
+        );
+        Eigen::Matrix3d ang_vel_tranform = f_angular_velocity_transform(tf_child_world);
+
+        auto t_rpy = ang_vel_tranform * t_pqr;
+        m_b_restore(DOF::ROLL) = t_rpy.x();
+        m_b_restore(DOF::PITCH) = t_rpy.y();
+        m_b_restore(DOF::YAW) = t_rpy.z();
+
+    } catch (const tf2::TransformException & e) {
+        auto steady_clock = rclcpp::Clock();
+
+        RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF for buoyancy: ") + e.what());
+    }
+
+    m_mvp_control->set_restoring_force_matrix(m_b_restore+m_g_restore);
+}
 
 bool MvpControlROS::f_compute_process_values() {
     auto steady_clock = rclcpp::Clock();
     rclcpp::Time now = this->get_clock()->now();
 
     f_update_control_allocation_matrix();
+    
+    if(m_restoring_effort_flag){
+        f_update_restoring_matrix();
+    }
 
     try {
         // Transform child frame to world
@@ -1862,6 +1968,9 @@ bool MvpControlROS::f_cb_srv_set_controller(
 
     // Publish the message
     m_controller_state_publisher->publish(msg);
+    Eigen::VectorXd m_i(CONTROLLABLE_DOF_LENGTH);
+    m_i.setZero();
+    m_mvp_control->get_pid()->set_m_i(m_i);
     return true;
 }
 
