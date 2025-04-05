@@ -104,6 +104,8 @@ namespace ctrl {
         //! @brief Thruster list
         std::vector<ThrusterROS::Ptr> m_thrusters;
 
+        std::vector<double> m_integral_reset_limit = std::vector<double>(12, 0.0);
+
         /**! @brief Control Allocation Matrix
          *
          *  Control allocation matrix is generated from individual

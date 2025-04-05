@@ -60,6 +60,10 @@ MvpControlROS::MvpControlROS()
     m_pnh.param<std::string>(CONF_CG_LINK, cg_link_id, CONF_CG_LINK_DEFAULT);
     m_cg_link_id = m_tf_prefix + cg_link_id;
 
+    //read integral-reset threshold float array
+    m_pnh.getParam("integral_reset_limit", m_integral_reset_limit);
+
+
     // Read configuration: world link
     m_pnh.param<std::string>(
             CONF_WORLD_LINK,
@@ -860,6 +864,10 @@ void MvpControlROS::f_control_loop() {
         if(!m_enabled || time_since_last_setpoint > m_no_setpoint_timeout) {
              for(int i = 0 ; i < m_thrusters.size() ; i++) {
                 m_thrusters.at(i)->command(0);
+                //reset integral if timeout
+                auto m_i = m_mvp_control->get_pid()->get_m_i();
+                m_i.setZero();
+                m_mvp_control->get_pid()->set_m_i(m_i);
             }
             continue;
         }
@@ -1589,8 +1597,26 @@ bool MvpControlROS::f_amend_set_point(
     // printf("integral size %d\r\n", m_i.size());
     //reset the integral for the DOF that has changed setpoint.
     for (int i = 0; i < m_set_point.size(); ++i) {
-        if (m_set_point[i] != new_set_point[i]) {
+        // if (m_set_point[i] != new_set_point[i]) {
+        //     m_i[i] = 0;
+        // }
+        double s1 = m_set_point[i];
+        double s2 = new_set_point[i];
+        double diff; 
+        diff = m_set_point[i] - new_set_point[i];
+
+        if(i >2 && i<6) //rpy has different calculation
+        {
+            
+            s1 = fmod(s1 + std::copysign(M_PI, s1), 2*M_PI) - std::copysign(M_PI, s1);
+            s2 = fmod(s2 + std::copysign(M_PI, s2), 2*M_PI) - std::copysign(M_PI, s2);
+            diff = (fmod(s1-s2 + std::copysign(M_PI, s1-s2), 2*M_PI) - std::copysign(M_PI, s1-s2));
+        }
+
+        if(std::fabs(diff) > m_integral_reset_limit[i])
+        {
             m_i[i] = 0;
+            // printf("reset integral for %d, %lf, %lf\r\n", i, diff, m_integral_reset_limit[i]);
         }
     }
 
