@@ -1445,13 +1445,13 @@ void MvpControlROS::f_control_loop() {
                 // m_thrusters.at(i)->command(0);
                 std_msgs::msg::Float64 msg;
                 msg.data = 0.0;
-                m_thrusters.at(i)->m_thrust_publisher->publish(msg);
+                // m_thrusters.at(i)->m_thrust_publisher->publish(msg);
             }
 
             for(uint64_t i = 0 ; i < m_vector_thrusters.size() ; i++) {
                 std_msgs::msg::Float64 msg;
                 msg.data = 0.0;
-                m_vector_thrusters.at(i)->m_thrust_publisher->publish(msg);
+                // m_vector_thrusters.at(i)->m_thrust_publisher->publish(msg);
                 // m_vector_thrusters.at(i)->m_angle_publisher->publish(msg);
             }
             continue;
@@ -1485,7 +1485,7 @@ void MvpControlROS::f_control_loop() {
                 if (m_thrusters.at(i)->request_command(needed_forces(i), command)){
                         std_msgs::msg::Float64 msg;
                         msg.data = command;
-                        m_thrusters.at(i)->m_thrust_publisher->publish(msg);
+                        // m_thrusters.at(i)->m_thrust_publisher->publish(msg);
                 }
                 
             }
@@ -1527,8 +1527,8 @@ void MvpControlROS::f_control_loop() {
                         
                         // new_angle = std::max(m_vector_thrusters[i]->m_servo_angle_min, std::min(m_vector_thrusters[i]->m_servo_angle_max, new_angle));
                         ang_msg.data = new_angle;
-                        m_vector_thrusters.at(i)->m_thrust_publisher->publish(msg);
-                        m_vector_thrusters.at(i)->m_angle_publisher->publish(ang_msg);
+                        // m_vector_thrusters.at(i)->m_thrust_publisher->publish(msg);
+                        // m_vector_thrusters.at(i)->m_angle_publisher->publish(ang_msg);
                 }
 
 
@@ -1540,12 +1540,12 @@ void MvpControlROS::f_control_loop() {
             for(uint64_t i = 0 ; i < m_thrusters.size() ; i++) {
                 std_msgs::msg::Float64 msg;
                 msg.data = 0;
-                m_thrusters.at(i)->m_thrust_publisher->publish(msg);
+                // m_thrusters.at(i)->m_thrust_publisher->publish(msg);
                 }
             for(uint64_t i = 0 ; i < m_vector_thrusters.size() ; i++) {
                 std_msgs::msg::Float64 msg;
                 msg.data = 0;
-                m_vector_thrusters.at(i)->m_thrust_publisher->publish(msg);
+                // m_vector_thrusters.at(i)->m_thrust_publisher->publish(msg);
             }
                 
         }
