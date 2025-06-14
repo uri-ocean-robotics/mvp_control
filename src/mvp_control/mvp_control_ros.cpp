@@ -934,8 +934,10 @@ void MvpControlROS::f_update_osqp_matrix_auto_direction()
     int col_count = 0;
     //regular thrusters
     for(uint64_t i = 0 ; i < m_thrusters.size() ; i++) {
-        upper_limit[row_count] = m_thrusters[i]->m_force_max;
-        lower_limit[row_count] = m_thrusters[i]->m_force_min;
+        upper_limit[row_count] = std::min(m_thrusters[i]->m_force_max, m_thrusters[i]->m_current_force + m_thrusters[i]->m_force_delta_limit);
+        lower_limit[row_count] = std::max(m_thrusters[i]->m_force_min, m_thrusters[i]->m_current_force - m_thrusters[i]->m_force_delta_limit);
+        
+
         constraints_matrix.insert(row_count, col_count) = 1; //diagnoal element set to 1
         row_count ++;
         col_count ++;
@@ -1445,12 +1447,15 @@ void MvpControlROS::f_control_loop() {
                 // m_thrusters.at(i)->command(0);
                 std_msgs::msg::Float64 msg;
                 msg.data = 0.0;
+                m_thrusters.at(i)->m_current_force = 0.0;
                 m_thrusters.at(i)->m_thrust_publisher->publish(msg);
             }
 
             for(uint64_t i = 0 ; i < m_vector_thrusters.size() ; i++) {
                 std_msgs::msg::Float64 msg;
                 msg.data = 0.0;
+                m_vector_thrusters.at(i)->m_current_force = 0.0;
+
                 m_vector_thrusters.at(i)->m_thrust_publisher->publish(msg);
                 // m_vector_thrusters.at(i)->m_angle_publisher->publish(msg);
             }
@@ -1479,6 +1484,7 @@ void MvpControlROS::f_control_loop() {
                 std_msgs::msg::Float64 Nmsg;
                 Nmsg.data = needed_forces(i);
                 // printf("###force for thruster %d: %f\r\n", i, needed_forces(i));
+                m_thrusters.at(i)->m_current_force = Nmsg.data;
 
                 m_thrusters.at(i)->m_force_publisher->publish(Nmsg);
                 
@@ -1518,6 +1524,9 @@ void MvpControlROS::f_control_loop() {
                 angle = m_vector_thrusters[i]->get_thruster_servo_angle();
 
                 Nmsg.data = std::copysign(1.0, fx) * std::sqrt(std::pow(fx, 2) + std::pow(fy, 2));
+
+                m_vector_thrusters.at(i)->m_current_force = Nmsg.data;
+
                 m_vector_thrusters.at(i)->m_force_publisher->publish(Nmsg);
 
                 if (m_vector_thrusters.at(i)->request_command(fx, fy, angle, command, new_angle) )
@@ -1810,6 +1819,10 @@ void MvpControlROS::f_load_control_config()
             this->declare_parameter(std::string()+CONF_THRUSTER_LIMITS + "/" + t_name + "/" + CONF_THRUSTER_MAX, min_max[1]);
             this->get_parameter(std::string()+CONF_THRUSTER_LIMITS + "/" + t_name + "/" + CONF_THRUSTER_MAX, t->m_force_max);
 
+            double delta_limit;
+            delta_limit = map["thruster_ids"][t_name]["delta_limit"].as<double>();
+            this->declare_parameter(std::string()+CONF_THRUSTER_LIMITS + "/" + t_name + "/" + CONF_THRUSTER_D_LIMIT, delta_limit);
+            this->get_parameter(std::string()+CONF_THRUSTER_LIMITS + "/" + t_name + "/" + CONF_THRUSTER_D_LIMIT, t->m_force_delta_limit);
 
             std::vector<double> poly_coef;
             poly_coef = map["thruster_ids"][t_name]["polynomials"].as<std::vector<double> >();
@@ -1867,6 +1880,11 @@ void MvpControlROS::f_load_control_config()
 
             this->declare_parameter(std::string()+CONF_THRUSTER_LIMITS + "/" + t_name + "/" + CONF_THRUSTER_MAX, min_max[1]);
             this->get_parameter(std::string()+CONF_THRUSTER_LIMITS + "/" + t_name + "/" + CONF_THRUSTER_MAX, t->m_force_max);
+
+            double delta_limit;
+            delta_limit = map["vector_thruster_ids"][t_name]["delta_limit"].as<double>();
+            this->declare_parameter(std::string()+CONF_THRUSTER_LIMITS + "/" + t_name + "/" + CONF_THRUSTER_D_LIMIT, delta_limit);
+            this->get_parameter(std::string()+CONF_THRUSTER_LIMITS + "/" + t_name + "/" + CONF_THRUSTER_D_LIMIT, t->m_force_delta_limit);
 
             std::vector<double> poly_coef;
             poly_coef = map["vector_thruster_ids"][t_name]["polynomials"].as<std::vector<double> >();

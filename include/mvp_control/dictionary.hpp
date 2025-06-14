@@ -51,6 +51,7 @@ namespace ctrl {
     static constexpr const char * CONF_THRUSTER_IDS = "thruster_ids";
 
     static constexpr const char * CONF_THRUSTER_LIMITS = "thruster_limits";
+    static constexpr const char * CONF_THRUSTER_D_LIMIT = "delta_limit";
     static constexpr const char * CONF_THRUSTER_MAX = "max";
     static constexpr const char * CONF_THRUSTER_MIN = "min";
 
