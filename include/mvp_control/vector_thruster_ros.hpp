@@ -68,6 +68,10 @@ namespace ctrl {
 
         double m_force_min;
 
+        double m_current_force;
+
+        double m_force_delta_limit;
+
         double m_servo_angle_max;
 
         double m_servo_angle_min;

@@ -81,6 +81,10 @@ namespace ctrl {
 
         double m_force_min;
 
+        double m_force_delta_limit;
+
+        double m_current_force;
+
     public:
 
         //! @brief Default constructor
