@@ -1271,43 +1271,24 @@ bool MvpControlROS::f_compute_process_values() {
         // Transform child frame to world
         geometry_msgs::msg::TransformStamped odom_world = m_transform_buffer->lookupTransform(
             m_world_link_id,
-            m_odometry_msg.header.frame_id,
+            m_child_link_id,
             tf2::TimePointZero,
             10ms
         );
 
-
-        geometry_msgs::msg::PoseStamped pose_in, pose_out;
-        pose_in.header = m_odometry_msg.header;
-        pose_in.pose.position.x = m_odometry_msg.pose.pose.position.x;
-        pose_in.pose.position.y = m_odometry_msg.pose.pose.position.y;
-        pose_in.pose.position.z = m_odometry_msg.pose.pose.position.z;
-        pose_in.pose.orientation.x = m_odometry_msg.pose.pose.orientation.x;
-        pose_in.pose.orientation.y = m_odometry_msg.pose.pose.orientation.y;
-        pose_in.pose.orientation.z = m_odometry_msg.pose.pose.orientation.z;
-        pose_in.pose.orientation.w = m_odometry_msg.pose.pose.orientation.w;
-
-        
-        pose_out.header.frame_id = m_world_link_id;
-
-        tf2::doTransform(pose_in, pose_out, odom_world);
+        m_process_values(DOF::X) = odom_world.transform.translation.x;
+        m_process_values(DOF::Y) = odom_world.transform.translation.y;
+        m_process_values(DOF::Z) = odom_world.transform.translation.z;
 
         tf2::Quaternion quat;
-        quat.setW(pose_out.pose.orientation.w);
-        quat.setX(pose_out.pose.orientation.x);
-        quat.setY(pose_out.pose.orientation.y);
-        quat.setZ(pose_out.pose.orientation.z);
+        tf2::fromMsg(odom_world.transform.rotation, quat);
 
-
+        // Convert to Euler angles (roll, pitch, yaw)
         tf2::Matrix3x3(quat).getRPY(
             m_process_values(DOF::ROLL),
             m_process_values(DOF::PITCH),
             m_process_values(DOF::YAW)
         );
-
-        m_process_values(DOF::X) = pose_out.pose.position.x;
-        m_process_values(DOF::Y) = pose_out.pose.position.y;
-        m_process_values(DOF::Z) = pose_out.pose.position.z;
 
     } catch(tf2::TransformException &e) {
         RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't compute process values: ") + e.what());
