@@ -772,9 +772,9 @@ bool MvpControlROS::f_update_control_allocation_matrix() {
             //F_xyz = R*F_uwv
             Eigen::Vector3d f_xyz = tf_eigen.rotation() * f_uvw;
 
-            m_control_allocation_matrix(DOF::X, j) = f_xyz.x();
-            m_control_allocation_matrix(DOF::Y, j) = f_xyz.y();
-            m_control_allocation_matrix(DOF::Z, j) = f_xyz.z();
+            m_control_allocation_matrix(DOF::X, j) = f_xyz.x()*m_thrusters[j]->m_xyz_flag_vector.x();
+            m_control_allocation_matrix(DOF::Y, j) = f_xyz.y()*m_thrusters[j]->m_xyz_flag_vector.y();
+            m_control_allocation_matrix(DOF::Z, j) = f_xyz.z()*m_thrusters[j]->m_xyz_flag_vector.z();
             
             // Convert prq to world_frame angular rate:
             //  Eq.(2.12), Eq.(2.14) from Thor I. Fossen, Guidance and Control of Ocean Vehicles, Page 10
@@ -1802,6 +1802,8 @@ void MvpControlROS::f_load_control_config()
 
             double delta_limit;
             delta_limit = map["thruster_ids"][t_name]["delta_limit"].as<double>();
+            // delta_limit = map["thruster_ids"][t_name]["delta_limit"].as<double>(200.0);
+
             this->declare_parameter(std::string()+CONF_THRUSTER_LIMITS + "/" + t_name + "/" + CONF_THRUSTER_D_LIMIT, delta_limit);
             this->get_parameter(std::string()+CONF_THRUSTER_LIMITS + "/" + t_name + "/" + CONF_THRUSTER_D_LIMIT, t->m_force_delta_limit);
 
@@ -1810,6 +1812,19 @@ void MvpControlROS::f_load_control_config()
             // std::cout<<poly_coef<<std::endl;
             this->declare_parameter(std::string()+CONF_THRUSTER_POLY + "/" + t_name, poly_coef);
             t->get_poly_solver()->set_coeff(poly_coef);
+
+
+            std::vector<float> xyz_flag;
+            // xyz_flag = map["thruster_ids"][t_name]["xyz_flag"].as<std::vector<float> >();
+            if (map["thruster_ids"][t_name]["xyz_flag"]) {
+                xyz_flag = map["thruster_ids"][t_name]["xyz_flag"].as<std::vector<float>>();
+            } else {
+                xyz_flag = {1.0f, 1.0f, 1.0f};  // default value
+            }
+            this->declare_parameter(std::string()+CONF_THRUSTER_XYZ_FLAG + "/" + t_name, xyz_flag);
+            Eigen::Vector3d xyz_flag_vector(xyz_flag[0], xyz_flag[1], xyz_flag[2]);
+            t->m_xyz_flag_vector = xyz_flag_vector;
+
             m_thrusters.emplace_back(t);
         }
 

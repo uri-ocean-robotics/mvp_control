@@ -46,6 +46,8 @@ namespace ctrl {
     static constexpr const char * CONF_DOF_R = "r";
 
     static constexpr const char * CONF_THRUSTER_POLY = "thruster_polynomials";
+    static constexpr const char * CONF_THRUSTER_XYZ_FLAG = "thruster_xyz_flag";
+
     static constexpr const char * CONF_THRUST_COMMAND_TOPICS = "thruster_command_topics";
     static constexpr const char * CONF_THRUSTER_FORCE_TOPICS = "thruster_force_topics";
     static constexpr const char * CONF_THRUSTER_IDS = "thruster_ids";

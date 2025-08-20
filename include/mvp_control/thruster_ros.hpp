@@ -85,6 +85,8 @@ namespace ctrl {
 
         double m_current_force;
 
+        Eigen::Vector3d m_xyz_flag_vector;
+
     public:
 
         //! @brief Default constructor
