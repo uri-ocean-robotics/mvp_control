@@ -472,7 +472,7 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
             t->set_contribution_vector(contribution_vector);
 
         } catch (const tf2::TransformException & e) {
-            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, 
+            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 1000, 
                                         std::string("mvp_control allocation matrix generation error:") + e.what());
           return;
 
@@ -578,7 +578,7 @@ void MvpControlROS::f_generate_control_allocation_from_tf() {
 
 
         } catch (const tf2::TransformException & e) {
-            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, 
+            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 1000, 
                                         std::string("mvp_control allocation matrix generation error:") + e.what());
         return;
 
@@ -605,7 +605,7 @@ bool MvpControlROS::f_initial_tf_check(){
             );
 
         } catch(tf2::TransformException &e) {
-            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF between world and cg: ") + e.what());
+            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 1000, std::string("Can't find TF between world and cg: ") + e.what());
             return false;
         }
     RCLCPP_INFO_STREAM(this->get_logger(), "initial world_link to child_link found");
@@ -623,7 +623,7 @@ bool MvpControlROS::f_initial_tf_check(){
                 );
 
         } catch (const tf2::TransformException & e) {
-            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF for thrusters: ") + e.what());
+            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 1000, std::string("Can't find TF for thrusters: ") + e.what());
             RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s",
                          t->get_link_id().c_str(), m_child_link_id_initial.c_str(), e.what() ); 
           return false;
@@ -642,7 +642,7 @@ bool MvpControlROS::f_initial_tf_check(){
                 );
 
         } catch (const tf2::TransformException & e) {
-            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF for thrusters: ") + e.what());
+            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 1000, std::string("Can't find TF for thrusters: ") + e.what());
             RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s",
                         t->get_link_id().c_str(), m_child_link_id_initial.c_str(), e.what() ); 
         return false;
@@ -661,7 +661,7 @@ bool MvpControlROS::f_initial_tf_check(){
                 );
 
         } catch (const tf2::TransformException & e) {
-            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF for gravity: ") + e.what());
+            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 1000, std::string("Can't find TF for gravity: ") + e.what());
             RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s",
                     m_gravity_link.c_str(), m_world_link_id_initial.c_str(), e.what() ); 
         }
@@ -675,7 +675,7 @@ bool MvpControlROS::f_initial_tf_check(){
                 );
 
         } catch (const tf2::TransformException & e) {
-            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF for gravity: ") + e.what());
+            RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 1000, std::string("Can't find TF for gravity: ") + e.what());
             RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s",
                 m_buoyancy_link.c_str(), m_world_link_id_initial.c_str(), e.what() ); 
         }
@@ -880,7 +880,7 @@ bool MvpControlROS::f_update_control_allocation_matrix() {
 
     } catch(tf2::TransformException& e) {
         auto steady_clock = rclcpp::Clock();
-        RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't update control allocation matrix ") + e.what());
+        RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 1000, std::string("Can't update control allocation matrix ") + e.what());
         return false;
     }
 
@@ -1175,7 +1175,7 @@ void MvpControlROS::f_update_restoring_matrix(){
     } catch (const tf2::TransformException & e) {
         auto steady_clock = rclcpp::Clock();
 
-        RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF for gravity: ") + e.what());
+        RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 1000, std::string("Can't find TF for gravity: ") + e.what());
     }
 
 
@@ -1251,7 +1251,7 @@ void MvpControlROS::f_update_restoring_matrix(){
     } catch (const tf2::TransformException & e) {
         auto steady_clock = rclcpp::Clock();
 
-        RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't find TF for buoyancy: ") + e.what());
+        RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 1000, std::string("Can't find TF for buoyancy: ") + e.what());
     }
 
     m_mvp_control->set_restoring_force_matrix(m_b_restore+m_g_restore);
@@ -1291,7 +1291,7 @@ bool MvpControlROS::f_compute_process_values() {
         );
 
     } catch(tf2::TransformException &e) {
-        RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't compute process values: ") + e.what());
+        RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 1000, std::string("Can't compute process values: ") + e.what());
         return false;
     }
 
@@ -1335,7 +1335,7 @@ bool MvpControlROS::f_compute_process_values() {
         m_process_values(DOF::R) = angular_rate.z();
 
     } catch(tf2::TransformException &e) {
-        RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 10, std::string("Can't compute process values!, check odometry!: ") + e.what());
+        RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), steady_clock, 1000, std::string("Can't compute process values!, check odometry!: ") + e.what());
         return false;
     }
 
