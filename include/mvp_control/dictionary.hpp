@@ -89,6 +89,8 @@ namespace ctrl {
     static constexpr const char * CONF_PID_P = "p";
     static constexpr const char * CONF_PID_I = "i";
     static constexpr const char * CONF_PID_D = "d";
+    static constexpr const char * CONF_PID_V = "v";
+
     static constexpr const char * CONF_PID_MAX = "pid_max";
     static constexpr const char * CONF_PID_MIN = "pid_min";
     static constexpr const char * CONF_CONTROL_ALLOCATION_MATRIX = "control_allocation_matrix";
