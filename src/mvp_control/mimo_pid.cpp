@@ -84,7 +84,7 @@ bool MimoPID::calculate(Eigen::VectorXd* u, const Eigen::ArrayXd& desired, const
     }
     m_ps = current; //update previous state value
 
-    printf("d_yaw = %lf\r\n", ds(DOF::YAW));
+    // printf("d_yaw = %lf\r\n", ds(DOF::YAW));
     
     Eigen::ArrayXd v = - m_kv*(ds/dt);
 
