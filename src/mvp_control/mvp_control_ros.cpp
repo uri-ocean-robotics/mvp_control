@@ -1737,6 +1737,7 @@ void MvpControlROS::f_load_control_config()
                     param_name = "control_modes/" + mode + "/" + dof_name + "/";
                     this->get_parameter(param_name + CONF_PID_P, m.pid_r.kp);
                     this->get_parameter(param_name + CONF_PID_I, m.pid_r.ki);
+                    this->get_parameter(param_name + CONF_PID_D, m.pid_r.kd);
                     this->get_parameter(param_name + CONF_PID_V, m.pid_r.kv);
                     this->get_parameter(param_name + CONF_PID_MAX, m.pid_r.pid_max);
                     this->get_parameter(param_name + CONF_PID_MIN, m.pid_r.pid_min);
