@@ -34,6 +34,13 @@ MimoPID::MimoPID() : m_dt_i(10000), m_error_function(nullptr) {
 
 bool MimoPID::calculate(Eigen::VectorXd* u, const Eigen::ArrayXd& desired, const Eigen::ArrayXd& current, double dt) {
 
+    // std::cout << "ROLL=" << DOF::ROLL
+    //       << " PITCH=" << DOF::PITCH
+    //       << " YAW=" << DOF::YAW
+    //       << " size=" << current.size()
+    //       << std::endl;
+
+
     if(m_error_function == nullptr) {
         throw control_exception("error function is not defined for MIMO pid.");
     }
@@ -52,11 +59,11 @@ bool MimoPID::calculate(Eigen::VectorXd* u, const Eigen::ArrayXd& desired, const
     delta_i = m_ki * (error *dt);
 
     // Derivation term
-    if(!m_pe.data()) {
+    if(m_pe.size()==0) {
         m_pe = Eigen::VectorXd::Zero(error.size());
         return false;
     }
-    if(!m_ps.data()) {
+    if(m_ps.size()==0) {
         m_ps = Eigen::VectorXd::Zero(error.size());
         return false;
     }
