@@ -385,8 +385,7 @@ Eigen::ArrayXd MvpControl::f_error_function(Eigen::ArrayXd desired,
 
     Eigen::ArrayXd error = desired - current;
 
-    for(const auto& i : {DOF::ROLL, DOF::PITCH, DOF::YAW,
-                         DOF::P, DOF::Q, DOF::R}) {
+    for(const auto& i : {DOF::ROLL, DOF::PITCH, DOF::YAW}) {
 
         // todo: wrap2pi implementation
 

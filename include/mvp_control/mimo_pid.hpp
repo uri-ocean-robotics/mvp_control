@@ -66,12 +66,18 @@ namespace ctrl {
         //! @brief Derivation gain
         Eigen::ArrayXd m_kd;
 
+        //! @brief velocity gain
+        Eigen::ArrayXd m_kv;
+
         //! @brief Integration gain
         Eigen::ArrayXd m_ki;
 
         //! @brief Error from the previous iteration
         Eigen::ArrayXd m_pe;
 
+        //! @brief states from the previous iteration
+        Eigen::ArrayXd m_ps;
+        
         //! @brief Integral queue
         std::deque<Eigen::ArrayXd> m_integral_queue;
 
@@ -118,6 +124,15 @@ namespace ctrl {
 
         //! @brief Default getter for derivative gain
         auto get_kd() -> decltype(m_kd);
+
+        /*! @brief Default setter for derivative gain
+         *
+         * @param gain
+         */
+        void set_kv(const decltype(m_kv) &gain);
+
+        //! @brief Default getter for derivative gain
+        auto get_kv() -> decltype(m_kv);
 
         /*! @brief Default setter for derivative gain
          *

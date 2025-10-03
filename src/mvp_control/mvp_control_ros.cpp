@@ -1268,6 +1268,7 @@ bool MvpControlROS::f_compute_process_values() {
     }
 
     try {
+        //xyz and roll pitch yaw can be obtained directly from the TF
         // Transform child frame to world
         geometry_msgs::msg::TransformStamped odom_world = m_transform_buffer->lookupTransform(
             m_world_link_id,
@@ -1275,14 +1276,15 @@ bool MvpControlROS::f_compute_process_values() {
             tf2::TimePointZero,
             10ms
         );
-
+        //get x,y,z in world link
         m_process_values(DOF::X) = odom_world.transform.translation.x;
         m_process_values(DOF::Y) = odom_world.transform.translation.y;
         m_process_values(DOF::Z) = odom_world.transform.translation.z;
 
         tf2::Quaternion quat;
         tf2::fromMsg(odom_world.transform.rotation, quat);
-
+        
+        //get current state roll pitch yaw
         // Convert to Euler angles (roll, pitch, yaw)
         tf2::Matrix3x3(quat).getRPY(
             m_process_values(DOF::ROLL),
@@ -1297,6 +1299,7 @@ bool MvpControlROS::f_compute_process_values() {
 
         // Transform from odom to world
     try{
+        //transform child frame velocity terms from odometry to our controlled child link
         std::scoped_lock lock(m_odom_lock);
 
         geometry_msgs::msg::TransformStamped cg_odom = m_transform_buffer->lookupTransform(
@@ -1632,7 +1635,7 @@ void MvpControlROS::f_load_control_config()
                 std::string dof_name = it->first.as<std::string>();
                 // printf("    dof_name = %s\r\n", dof_name.c_str());
                 //get PID values
-                for(const auto& key : {"p", "i", "d", "pid_max", "pid_min"})
+                for(const auto& key : {"p", "i", "d", "v", "pid_max", "pid_min"})
                 {
                     param_name = "control_modes/" + mode + "/" + dof_name + "/" + key;
                     // printf("         param = %s\r\n", param_name.c_str());
@@ -1644,6 +1647,7 @@ void MvpControlROS::f_load_control_config()
                     this->get_parameter(param_name + CONF_PID_P, m.pid_x.kp);
                     this->get_parameter(param_name + CONF_PID_I, m.pid_x.ki);
                     this->get_parameter(param_name + CONF_PID_D, m.pid_x.kd);
+                    this->get_parameter(param_name + CONF_PID_V, m.pid_x.kv);
                     this->get_parameter(param_name + CONF_PID_MAX, m.pid_x.pid_max);
                     this->get_parameter(param_name + CONF_PID_MIN, m.pid_x.pid_min);
                 }
@@ -1652,6 +1656,7 @@ void MvpControlROS::f_load_control_config()
                     this->get_parameter(param_name + CONF_PID_P, m.pid_y.kp);
                     this->get_parameter(param_name + CONF_PID_I, m.pid_y.ki);
                     this->get_parameter(param_name + CONF_PID_D, m.pid_y.kd);
+                    this->get_parameter(param_name + CONF_PID_V, m.pid_y.kv);
                     this->get_parameter(param_name + CONF_PID_MAX, m.pid_y.pid_max);
                     this->get_parameter(param_name + CONF_PID_MIN, m.pid_y.pid_min);
                 }
@@ -1660,6 +1665,7 @@ void MvpControlROS::f_load_control_config()
                     this->get_parameter(param_name + CONF_PID_P, m.pid_z.kp);
                     this->get_parameter(param_name + CONF_PID_I, m.pid_z.ki);
                     this->get_parameter(param_name + CONF_PID_D, m.pid_z.kd);
+                    this->get_parameter(param_name + CONF_PID_V, m.pid_z.kv);
                     this->get_parameter(param_name + CONF_PID_MAX, m.pid_z.pid_max);
                     this->get_parameter(param_name + CONF_PID_MIN, m.pid_z.pid_min);
                 }
@@ -1668,6 +1674,7 @@ void MvpControlROS::f_load_control_config()
                     this->get_parameter(param_name + CONF_PID_P, m.pid_roll.kp);
                     this->get_parameter(param_name + CONF_PID_I, m.pid_roll.ki);
                     this->get_parameter(param_name + CONF_PID_D, m.pid_roll.kd);
+                    this->get_parameter(param_name + CONF_PID_V, m.pid_roll.kv);
                     this->get_parameter(param_name + CONF_PID_MAX, m.pid_roll.pid_max);
                     this->get_parameter(param_name + CONF_PID_MIN, m.pid_roll.pid_min);
                 }
@@ -1676,6 +1683,7 @@ void MvpControlROS::f_load_control_config()
                     this->get_parameter(param_name + CONF_PID_P, m.pid_pitch.kp);
                     this->get_parameter(param_name + CONF_PID_I, m.pid_pitch.ki);
                     this->get_parameter(param_name + CONF_PID_D, m.pid_pitch.kd);
+                    this->get_parameter(param_name + CONF_PID_V, m.pid_pitch.kv);
                     this->get_parameter(param_name + CONF_PID_MAX, m.pid_pitch.pid_max);
                     this->get_parameter(param_name + CONF_PID_MIN, m.pid_pitch.pid_min);
                 }
@@ -1684,6 +1692,7 @@ void MvpControlROS::f_load_control_config()
                     this->get_parameter(param_name + CONF_PID_P, m.pid_yaw.kp);
                     this->get_parameter(param_name + CONF_PID_I, m.pid_yaw.ki);
                     this->get_parameter(param_name + CONF_PID_D, m.pid_yaw.kd);
+                    this->get_parameter(param_name + CONF_PID_V, m.pid_yaw.kv);
                     this->get_parameter(param_name + CONF_PID_MAX, m.pid_yaw.pid_max);
                     this->get_parameter(param_name + CONF_PID_MIN, m.pid_yaw.pid_min);
                 }
@@ -1692,6 +1701,7 @@ void MvpControlROS::f_load_control_config()
                     this->get_parameter(param_name + CONF_PID_P, m.pid_u.kp);
                     this->get_parameter(param_name + CONF_PID_I, m.pid_u.ki);
                     this->get_parameter(param_name + CONF_PID_D, m.pid_u.kd);
+                    this->get_parameter(param_name + CONF_PID_V, m.pid_u.kv);
                     this->get_parameter(param_name + CONF_PID_MAX, m.pid_u.pid_max);
                     this->get_parameter(param_name + CONF_PID_MIN, m.pid_u.pid_min);
                 }
@@ -1700,6 +1710,7 @@ void MvpControlROS::f_load_control_config()
                     this->get_parameter(param_name + CONF_PID_P, m.pid_v.kp);
                     this->get_parameter(param_name + CONF_PID_I, m.pid_v.ki);
                     this->get_parameter(param_name + CONF_PID_D, m.pid_v.kd);
+                    this->get_parameter(param_name + CONF_PID_V, m.pid_v.kv);
                     this->get_parameter(param_name + CONF_PID_MAX, m.pid_v.pid_max);
                     this->get_parameter(param_name + CONF_PID_MIN, m.pid_v.pid_min);
                 }
@@ -1709,6 +1720,7 @@ void MvpControlROS::f_load_control_config()
                     this->get_parameter(param_name + CONF_PID_P, m.pid_p.kp);
                     this->get_parameter(param_name + CONF_PID_I, m.pid_p.ki);
                     this->get_parameter(param_name + CONF_PID_D, m.pid_p.kd);
+                    this->get_parameter(param_name + CONF_PID_V, m.pid_p.kv);
                     this->get_parameter(param_name + CONF_PID_MAX, m.pid_p.pid_max);
                     this->get_parameter(param_name + CONF_PID_MIN, m.pid_p.pid_min);
                 }
@@ -1717,6 +1729,7 @@ void MvpControlROS::f_load_control_config()
                     this->get_parameter(param_name + CONF_PID_P, m.pid_q.kp);
                     this->get_parameter(param_name + CONF_PID_I, m.pid_q.ki);
                     this->get_parameter(param_name + CONF_PID_D, m.pid_q.kd);
+                    this->get_parameter(param_name + CONF_PID_V, m.pid_q.kv);
                     this->get_parameter(param_name + CONF_PID_MAX, m.pid_q.pid_max);
                     this->get_parameter(param_name + CONF_PID_MIN, m.pid_q.pid_min);
                 }
@@ -1725,6 +1738,7 @@ void MvpControlROS::f_load_control_config()
                     this->get_parameter(param_name + CONF_PID_P, m.pid_r.kp);
                     this->get_parameter(param_name + CONF_PID_I, m.pid_r.ki);
                     this->get_parameter(param_name + CONF_PID_D, m.pid_r.kd);
+                    this->get_parameter(param_name + CONF_PID_V, m.pid_r.kv);
                     this->get_parameter(param_name + CONF_PID_MAX, m.pid_r.pid_max);
                     this->get_parameter(param_name + CONF_PID_MIN, m.pid_r.pid_min);
                 }
@@ -2074,6 +2088,8 @@ bool MvpControlROS::f_amend_control_mode(std::string mode) {
         Eigen::VectorXd p(CONTROLLABLE_DOF_LENGTH);
         Eigen::VectorXd i(CONTROLLABLE_DOF_LENGTH);
         Eigen::VectorXd d(CONTROLLABLE_DOF_LENGTH);
+        Eigen::VectorXd v(CONTROLLABLE_DOF_LENGTH);
+
         Eigen::VectorXd pid_max(CONTROLLABLE_DOF_LENGTH);
         Eigen::VectorXd pid_min(CONTROLLABLE_DOF_LENGTH);
 
@@ -2119,6 +2135,20 @@ bool MvpControlROS::f_amend_control_mode(std::string mode) {
                 found->pid_q.kd,
                 found->pid_r.kd;
 
+        v <<
+                found->pid_x.kv,
+                found->pid_y.kv,
+                found->pid_z.kv,
+                found->pid_roll.kv,
+                found->pid_pitch.kv,
+                found->pid_yaw.kv,
+                found->pid_u.kv,
+                found->pid_v.kv,
+                found->pid_w.kv,
+                found->pid_p.kv,
+                found->pid_q.kv,
+                found->pid_r.kv;
+
         pid_max <<
                 found->pid_x.pid_max,
                 found->pid_y.pid_max,
@@ -2149,6 +2179,8 @@ bool MvpControlROS::f_amend_control_mode(std::string mode) {
         m_mvp_control->get_pid()->set_kp(p);
         m_mvp_control->get_pid()->set_ki(i);
         m_mvp_control->get_pid()->set_kd(d);
+        m_mvp_control->get_pid()->set_kv(v);
+
         m_mvp_control->get_pid()->set_pid_max(pid_max);
         m_mvp_control->get_pid()->set_pid_min(pid_min);
 

@@ -34,6 +34,13 @@ MimoPID::MimoPID() : m_dt_i(10000), m_error_function(nullptr) {
 
 bool MimoPID::calculate(Eigen::VectorXd* u, const Eigen::ArrayXd& desired, const Eigen::ArrayXd& current, double dt) {
 
+    // std::cout << "ROLL=" << DOF::ROLL
+    //       << " PITCH=" << DOF::PITCH
+    //       << " YAW=" << DOF::YAW
+    //       << " size=" << current.size()
+    //       << std::endl;
+
+
     if(m_error_function == nullptr) {
         throw control_exception("error function is not defined for MIMO pid.");
     }
@@ -52,8 +59,12 @@ bool MimoPID::calculate(Eigen::VectorXd* u, const Eigen::ArrayXd& desired, const
     delta_i = m_ki * (error *dt);
 
     // Derivation term
-    if(!m_pe.data()) {
+    if(m_pe.size()==0) {
         m_pe = Eigen::VectorXd::Zero(error.size());
+        return false;
+    }
+    if(m_ps.size()==0) {
+        m_ps = Eigen::VectorXd::Zero(error.size());
         return false;
     }
 
@@ -61,7 +72,30 @@ bool MimoPID::calculate(Eigen::VectorXd* u, const Eigen::ArrayXd& desired, const
 
     m_pe = error;
 
-    Eigen::ArrayXd pid_sum = p + m_i + d;
+    //compute delta
+    Eigen::ArrayXd ds = current - m_ps;
+    //avoid wrapping
+    for(const auto& i : {DOF::ROLL, DOF::PITCH, DOF::YAW}) {
+
+        // todo: wrap2pi implementation
+
+        //wrap desired and current in to -pi to pi
+        auto s = (fmod(current(i) + std::copysign(M_PI, current(i)), 2*M_PI) 
+                - std::copysign(M_PI, current(i)));
+        auto ps = (fmod(m_ps(i) + std::copysign(M_PI,m_ps(i)), 2*M_PI) 
+                - std::copysign(M_PI,m_ps(i)));
+        auto t = s - ps;
+        double diff = (fmod(t + std::copysign(M_PI,t), 2*M_PI) 
+                - std::copysign(M_PI,t));
+        ds(i) = diff;
+    }
+    m_ps = current; //update previous state value
+
+    // printf("d_yaw = %lf\r\n", ds(DOF::YAW));
+    
+    Eigen::ArrayXd v = - m_kv*(ds/dt);
+
+    Eigen::ArrayXd pid_sum = p + m_i + d + v;
 
     pid_sum = (pid_sum > m_pid_max).select(m_pid_max, pid_sum);
     pid_sum = (pid_sum < m_pid_min).select(m_pid_min, pid_sum);
@@ -107,6 +141,16 @@ auto MimoPID::get_kd() -> decltype(m_kd) {
 void MimoPID::set_kd(const decltype(m_kd) &gain) {
     m_kd = gain;
 }
+
+
+auto MimoPID::get_kv() -> decltype(m_kv) {
+    return m_kv;
+}
+
+void MimoPID::set_kv(const decltype(m_kv) &gain) {
+    m_kv = gain;
+}
+
 
 auto MimoPID::get_dt() const -> decltype(m_dt) {
     return m_dt;
