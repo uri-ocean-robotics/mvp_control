@@ -64,9 +64,12 @@ bool MimoPID::calculate(Eigen::VectorXd* u, const Eigen::ArrayXd& desired, const
         return false;
     }
     if(m_ps.size()==0) {
-        m_ps = Eigen::VectorXd::Zero(error.size());
+        // m_ps = Eigen::VectorXd::Zero(error.size());
+        m_ps = current;
         return false;
     }
+
+
 
     Eigen::ArrayXd d = m_kd * ((error - m_pe) / dt);
 
