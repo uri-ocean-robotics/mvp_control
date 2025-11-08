@@ -167,6 +167,12 @@ MvpControlROS::MvpControlROS(std::string name) : Node(name)
     m_process_error_publisher = this->create_publisher<mvp_msgs::msg::ControlProcess>(TOPIC_CONTROL_PROCESS_ERROR, 10);
     m_controller_state_publisher = this->create_publisher<std_msgs::msg::Bool>(TOPIC_CONTROLLER_STATE, 10);
 
+    m_d_publisher = this->create_publisher<std_msgs::msg::Float64MultiArray>("controller/process/d_value", 10);
+    m_v_publisher = this->create_publisher<std_msgs::msg::Float64MultiArray>("controller/process/v_value", 10);
+    m_i_publisher = this->create_publisher<std_msgs::msg::Float64MultiArray>("controller/process/i_value", 10);
+    m_p_publisher = this->create_publisher<std_msgs::msg::Float64MultiArray>("controller/process/p_value", 10);
+
+
     /**
      * Initialize services
      */
@@ -1542,6 +1548,55 @@ void MvpControlROS::f_control_loop() {
             }
                 
         }
+
+
+        //grab PIDV vvalues and publish
+        Eigen::VectorXd m_d(CONTROLLABLE_DOF_LENGTH);
+        Eigen::VectorXd m_v(CONTROLLABLE_DOF_LENGTH);
+        Eigen::VectorXd m_i(CONTROLLABLE_DOF_LENGTH);
+        Eigen::VectorXd m_p(CONTROLLABLE_DOF_LENGTH);
+
+
+        m_d = m_mvp_control->get_pid()->get_m_d();
+        m_v = m_mvp_control->get_pid()->get_m_v();
+        m_i = m_mvp_control->get_pid()->get_m_i();
+        m_p = m_mvp_control->get_pid()->get_m_p();
+
+
+        std_msgs::msg::Float64MultiArray msg;
+
+        //propotional
+        msg.data.resize(m_p.size());
+        for (int i = 0; i < m_p.size(); ++i)
+        {
+            msg.data[i] = m_p(i);
+        }
+        m_p_publisher->publish(msg);
+
+
+        //derivative
+        msg.data.resize(m_d.size());
+        for (int i = 0; i < m_d.size(); ++i)
+        {
+            msg.data[i] = m_d(i);
+        }
+        m_d_publisher->publish(msg);
+
+        //velocity
+        msg.data.resize(m_v.size());
+        for (int i = 0; i < m_v.size(); ++i)
+        {
+            msg.data[i] = m_v(i);
+        }
+        m_v_publisher->publish(msg);
+
+        //integral
+        msg.data.resize(m_i.size());
+        for (int i = 0; i < m_i.size(); ++i)
+        {
+            msg.data[i] = m_i(i);
+        }
+        m_i_publisher->publish(msg);
 
 
         // /**

@@ -81,7 +81,13 @@ namespace ctrl {
         //! @brief Integral queue
         std::deque<Eigen::ArrayXd> m_integral_queue;
 
+        Eigen::ArrayXd m_p;
+
         Eigen::ArrayXd m_i;
+
+        Eigen::ArrayXd m_d;
+
+        Eigen::ArrayXd m_v;
 
         std::function<Eigen::ArrayXd(const Eigen::ArrayXd &desired,
                                      const Eigen::ArrayXd &current)> m_error_function;
@@ -178,7 +184,16 @@ namespace ctrl {
 
         void set_m_i(const decltype(m_i) &new_m_i);
 
+        auto get_m_p()->decltype(m_p);
+        
         auto get_m_i()->decltype(m_i);
+
+        auto get_m_d()->decltype(m_d);
+
+        auto get_m_v()->decltype(m_v);
+
+
+        
 
         //! @brief Default getter for error function
         auto get_error_function() -> decltype(m_error_function);

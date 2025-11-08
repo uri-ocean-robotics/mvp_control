@@ -43,6 +43,7 @@
 
 
 #include "std_msgs/msg/float32.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_msgs/msg/int16_multi_array.hpp"
 #include "std_srvs/srv/empty.hpp"
 #include "std_srvs/srv/trigger.hpp"
@@ -255,7 +256,13 @@ namespace ctrl {
         // ros::Publisher m_process_error_publisher;
         rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr m_controller_state_publisher;
         
-        
+        rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr m_p_publisher;
+
+        rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr m_d_publisher;
+
+        rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr m_v_publisher;
+
+        rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr m_i_publisher;
 
         // //! @brief Thrust publisher
         // rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr m_thrust_publisher;

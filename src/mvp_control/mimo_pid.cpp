@@ -97,6 +97,11 @@ bool MimoPID::calculate(Eigen::VectorXd* u, const Eigen::ArrayXd& desired, const
 
     Eigen::ArrayXd pid_sum = p + m_i + d + v;
 
+    //store the data for publishing in ros
+    m_p = p;
+    m_d = d;
+    m_v = v;
+
     pid_sum = (pid_sum > m_pid_max).select(m_pid_max, pid_sum);
     pid_sum = (pid_sum < m_pid_min).select(m_pid_min, pid_sum);
 
@@ -191,6 +196,20 @@ void MimoPID::set_m_i(const decltype(m_i) &new_m_i){
 auto MimoPID::get_m_i()->decltype(m_i){
     return m_i;
 }
+
+auto MimoPID::get_m_d()->decltype(m_d){
+    return m_d;
+}
+
+auto MimoPID::get_m_v()->decltype(m_v){
+    return m_v;
+}
+
+auto MimoPID::get_m_p()->decltype(m_p){
+    return m_p;
+}
+
+
 
 auto MimoPID::get_error_function() -> decltype(m_error_function) {
     return m_error_function;
