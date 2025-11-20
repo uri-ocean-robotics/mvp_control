@@ -1413,10 +1413,12 @@ void MvpControlROS::f_control_loop() {
          * Record the time that loop ends. Later, it will feed the PID
          * controller.
          */
-
         if(!r.sleep()) {
             continue;
         }
+        double dt = rclcpp::Clock(RCL_ROS_TIME).now().seconds() - pt;
+        pt = rclcpp::Clock(RCL_ROS_TIME).now().seconds();
+
 
         /**
          * Compute the state of the system. Continue on failure. This may
@@ -1459,7 +1461,7 @@ void MvpControlROS::f_control_loop() {
         /**
          * Get time difference to feed PID controller
          */
-        double dt = rclcpp::Clock(RCL_ROS_TIME).now().seconds() - pt;
+        // double dt = rclcpp::Clock(RCL_ROS_TIME).now().seconds() - pt;
         
         /**
          * Calculate forces to be requested from thrusters. If operation fails,
@@ -1603,7 +1605,7 @@ void MvpControlROS::f_control_loop() {
         //  * Record the time that loop ends. Later, it will feed the PID
         //  * controller.
         //  */
-        pt = rclcpp::Clock(RCL_ROS_TIME).now().seconds();
+        // pt = rclcpp::Clock(RCL_ROS_TIME).now().seconds();
     }
 }
 
